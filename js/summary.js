@@ -6,7 +6,7 @@
 //   Document: sample.txt (1,240 words)
 //   CHUNK_SIZE=400  CHUNK_OVERLAP=50  → 18 chunks, 6 mid-sentence cuts
 //   Mode: Glass Box (TF-IDF, 1,284 dims)
-//   Question: How much PTO do new employees get?
+//   Question: How many days of PTO do new employees get?
 //   TOP_K=3
 //     1. chunk 07  score 0.21
 //     2. chunk 02  score 0.19

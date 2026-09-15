@@ -174,7 +174,7 @@ The built-in document is `data/sample.txt`, a fictional employee handbook for "F
 
 The sample questions live in `js/copy.js` under `SAMPLE_QUESTIONS`. Each has a label, the question text, and a one-sentence teaching note that appears under the question box.
 
-**The synonym probe is fragile, on purpose.** The course's centrepiece demonstration is that "How much PTO do new employees get?" fails in Glass Box (the vacation chunk is outside the top 3) and succeeds in Black Box (rank 1). That depends on the exact wording of the handbook:
+**The synonym probe is fragile, on purpose.** The course's centrepiece demonstration is that "How many days of PTO do new employees get?" fails in Glass Box (the vacation chunk is outside the top 3) and succeeds in Black Box (rank 1). That depends on the exact wording of the handbook:
 
 - The handbook says "vacation" and never "PTO" or "paid time off", so Glass Box has nothing to match.
 - The vacation allowance is worded as "A newly hired employee gets ten vacation days a year". To TF-IDF, *employee*, *gets*, and *newly* are different words from the question's *employees*, *get*, and *new*, so that chunk scores zero; the neural model reads them as the same meaning.
@@ -193,7 +193,7 @@ node tools/probe.mjs
 
 It prints the vacation chunk's rank in both modes for each sample question and ends with PASS or FAIL. The first command is a one-time, dev-only download of about 100 MB; it is not part of the app and `node_modules/` is ignored by git. The Glass Box side is also checked by `npm test`.
 
-Two measured alternatives, should you want a safer margin: the question "How many days of PTO do new employees get?" scores about four times further ahead with the same text and model, and "How many days off do new hires get each year?" further still. Either is one string in `js/copy.js`.
+The question was chosen for its margin: "How much PTO do new employees get?" also passes but by a quarter of the distance, and "How many days off do new hires get each year?" scores further ahead still but drops the word "PTO". The question is one string in `js/copy.js`.
 
 ---
 
@@ -238,12 +238,12 @@ RAG Lab run — 2026-09-15 14:02
 Document: sample.txt (1,105 words)
 CHUNK_SIZE=400  CHUNK_OVERLAP=50  → 20 chunks, 19 mid-sentence cuts
 Mode: Glass Box (TF-IDF, 392 dims)
-Question: How much PTO do new employees get?
+Question: How many days of PTO do new employees get?
 TOP_K=3
   1. chunk 02  score 0.21
   2. chunk 03  score 0.16
   3. chunk 07  score 0.11
-Prompt length: 1,483 chars
+Prompt length: 1,491 chars
 ```
 
 Chunk numbers are the same 1-based, zero-padded numbers shown on the cards. (The Colab notebook's Python lists start at 0; tell students the lab counts from 1.) An assignment can say "run RAG Lab with CHUNK_SIZE=200 and paste your summary" and be graded from text.

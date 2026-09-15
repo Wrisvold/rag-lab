@@ -88,7 +88,7 @@ export const SAMPLE_QUESTIONS = [
   {
     key: 'synonym',
     label: 'Synonym probe',
-    text: 'How much PTO do new employees get?',
+    text: 'How many days of PTO do new employees get?',
     note: "The handbook says \"vacation\", never \"PTO\". Watch this fail in Glass Box and succeed in Black Box.",
   },
   {

@@ -35,5 +35,5 @@ test('empty and null input', () => {
 });
 
 test('the synonym probe question keeps only its content words', () => {
-  assert.deepEqual(tokenize('How much PTO do new employees get?', options), ['pto', 'new', 'employees', 'get']);
+  assert.deepEqual(tokenize('How many days of PTO do new employees get?', options), ['days', 'pto', 'new', 'employees', 'get']);
 });

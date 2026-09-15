@@ -18,7 +18,7 @@ Updated at the end of each phase. Newest phase first.
 - The AWS scripts were not executed against an account. They use only standard AWS CLI v2 commands and a plain CloudFormation template; the first real run will tell you whether the department's permissions allow CloudFront creation.
 - The answer step was not exercised with a live key.
 
-**Open decision carried from Phase 5:** whether to reword the synonym probe question for a safer margin. The brief's wording stays until you say otherwise.
+**Decision closed after review:** Ward approved rewording the synonym probe to "How many days of PTO do new employees get?". Measured at the defaults with the brief's model: Glass Box rank 6 (score 0.03, well outside the top 3), Black Box rank 1 (0.555, +0.086 over the orientation chunk). Verified with `tools/probe.mjs` and in the browser (0.55 vs 0.48). The Colab notebook should use the same question so the two layers match.
 
 ## Phase 5 — Black Box mode and the optional answer step (done, reviewed)
 
