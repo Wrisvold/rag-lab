@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RAG Lab · CBIS 5530</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#station-panel">Skip to the current station</a>
+
+  <header class="app-header">
+    <div class="app-header__text">
+      <h1 id="app-title"></h1>
+      <p id="app-subtitle" class="app-header__subtitle"></p>
+    </div>
+    <p id="app-course" class="app-header__course"></p>
+  </header>
+
+  <!-- The stepper is built by js/main.js from the STEPS list in js/copy.js -->
+  <nav class="stepper" aria-label="Pipeline steps">
+    <ol id="stepper" class="stepper__list"></ol>
+  </nav>
+
+  <div class="layout">
+    <!-- Sidebar: the three dials. Built by js/main.js from js/constants.js -->
+    <aside class="sidebar" aria-labelledby="dials-heading">
+      <h2 id="dials-heading"></h2>
+      <p id="dials-intro" class="sidebar__intro"></p>
+      <form id="dials" class="dials" autocomplete="off"></form>
+      <p id="dials-message" class="dials__message" role="status" aria-live="polite"></p>
+    </aside>
+
+    <!-- The current station renders here -->
+    <main id="station-panel" class="station" tabindex="-1"></main>
+  </div>
+
+  <footer class="app-footer">
+    <p id="app-footer"></p>
+  </footer>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
