@@ -1,0 +1,51 @@
+# Optional: deploy to AWS automatically on every push to main.
+#
+# Setup (once), then this workflow needs no secrets in plain text:
+#   1. Run deploy/aws/deploy.sh once by hand so the stack exists.
+#   2. In IAM, create an OpenID Connect provider for GitHub and a role that
+#      trusts repo Wrisvold/rag-lab on branch main, with permission to write
+#      to the bucket and to create CloudFront invalidations.
+#   3. In the repo: Settings -> Secrets and variables -> Actions, add
+#        AWS_ROLE_ARN            arn:aws:iam::ACCOUNT:role/rag-lab-deploy
+#        AWS_REGION              us-east-1
+#        RAG_LAB_BUCKET          the bucket name
+#        RAG_LAB_DISTRIBUTION_ID from the stack outputs
+#   4. Remove the "if: false" line below.
+name: Deploy to AWS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    if: false   # delete this line once the secrets above exist
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run the tests first
+        run: npm test
+
+      - name: Sign in to AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Upload the site
+        run: |
+          aws s3 sync . "s3://${{ secrets.RAG_LAB_BUCKET }}" --delete \
+            --exclude "*" --include "index.html" --include "styles.css" --include "js/*" --include "data/*" \
+            --cache-control "public, max-age=300"
+          aws s3 cp "s3://${{ secrets.RAG_LAB_BUCKET }}/js" "s3://${{ secrets.RAG_LAB_BUCKET }}/js" --recursive \
+            --exclude "*" --include "*.js" --content-type "text/javascript; charset=utf-8" \
+            --cache-control "public, max-age=300" --metadata-directive REPLACE
+
+      - name: Refresh CloudFront
+        run: aws cloudfront create-invalidation --distribution-id "${{ secrets.RAG_LAB_DISTRIBUTION_ID }}" --paths "/*"

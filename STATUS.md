@@ -2,7 +2,25 @@
 
 Updated at the end of each phase. Newest phase first.
 
-## Phase 5 — Black Box mode and the optional answer step (done, awaiting Ward's review)
+## Phase 6 — Polish, README, AWS hosting kit (done)
+
+**Done**
+- **Contrast pass.** Measured every text/background pair in the palette. Four failed 4.5:1: teal and amber small text on their soft backgrounds and on white, and the white labels on teal map points. Added `--teal-ink` (#0F5C5C) and `--amber-ink` (#8A4A0B) for small text and darkened the map point fill; all pairs now pass (lowest 5.6:1). Gold is still only a background or border.
+- **Motion.** `prefers-reduced-motion` turns off the progress-bar animation and the map hover transition.
+- **Keyboard.** Checked the focus order from a fresh load: skip link, stepper, dials (slider then number for each), explainer summary, textarea, upload, sample, continue. Map points are buttons; the details panels are native. Nothing traps focus.
+- **Page head.** Added a description, `color-scheme`, and an inline SVG favicon (green square, gold R) so the tab has an icon and the console has no 404.
+- **README** rewritten in full: five-minute walkthrough; hosting on GitHub Pages, on AWS (S3 + CloudFront) with the scripts, automatic deploys, any static host, and the exact external addresses the browser must reach; a table of every constant; how to swap the sample document and re-run the probe; where the copy lives and the rules the tests enforce; how keys are handled in the answer step and why a shared key is impossible in a static page; the run summary; tests; folder layout; browser support; known limitations; extension points.
+- **AWS hosting kit** in `deploy/aws/`: `template.yaml` (CloudFormation: private encrypted versioned S3 bucket, CloudFront with Origin Access Control, HTTPS redirect, compression, `index.html` default root, bucket policy scoped to that distribution, commented custom-domain block, outputs for bucket, distribution id, and URL), `deploy.sh` and `deploy.ps1` (create/update the stack, sync only the files the page needs, force `text/javascript` on modules, invalidate the cache, print the URL). `.github/workflows/deploy-aws.yml` is an optional push-to-deploy workflow using OIDC, switched off until the secrets exist.
+- Test suite: 75 passing. No console errors on load.
+
+**Not done here, by necessity**
+- Firefox and Safari were not run: only the Chrome engine is available in this environment. The README lists the features relied on (`:has()`, dynamic `import()`, clipboard API with fallback) and their minimum versions; a quick pass through the five stations in Firefox and Safari is the remaining manual check.
+- The AWS scripts were not executed against an account. They use only standard AWS CLI v2 commands and a plain CloudFormation template; the first real run will tell you whether the department's permissions allow CloudFront creation.
+- The answer step was not exercised with a live key.
+
+**Open decision carried from Phase 5:** whether to reword the synonym probe question for a safer margin. The brief's wording stays until you say otherwise.
+
+## Phase 5 — Black Box mode and the optional answer step (done, reviewed)
 
 **Read this first: the centrepiece needed a corpus change**
 
