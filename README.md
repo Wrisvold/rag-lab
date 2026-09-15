@@ -2,6 +2,8 @@
 
 A browser-based teaching simulator of the retrieval-augmented generation (RAG) pipeline, built for **CBIS 5530 · Introduction to RAG**, MS in AI Strategy, Georgia College & State University.
 
+**Live site:** https://wrisvold.github.io/rag-lab/
+
 A student pastes or uploads a document and watches it move through the four stages of a RAG pipeline, with every intermediate artifact on screen:
 
 | Station | Artifact | When it runs |
@@ -73,13 +75,15 @@ RAG Lab is a folder of static files. Anything that can serve a folder over HTTPS
 
 ### GitHub Pages
 
-The repository is already laid out for it: `index.html` is at the root and a `.nojekyll` file is present.
+This is how the site is published today: **https://wrisvold.github.io/rag-lab/**. The repository is laid out for it (`index.html` at the root, a `.nojekyll` file present), and Pages is enabled in the repository settings.
+
+If it ever needs re-enabling, or for a fork:
 
 1. On GitHub open **Settings → Pages**.
 2. Under **Build and deployment**, set **Source** to "Deploy from a branch", pick branch `main` and folder `/ (root)`, and save.
-3. After a minute the page reports the address, normally `https://wrisvold.github.io/rag-lab/`.
+3. After a minute the page reports the address.
 
-Every push to `main` republishes automatically. Students need nothing but the link.
+Every push to `main` republishes automatically within a minute or two. Students need nothing but the link.
 
 ### AWS: S3 and CloudFront
 
