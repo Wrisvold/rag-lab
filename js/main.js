@@ -1,46 +1,127 @@
-// RAG Lab — entry point. Wires copy.js and constants.js to the page.
-// Phase 0: renders the header, the stepper, the dials sidebar, and the
-// Station 0 shell. Station behaviour arrives in later phases.
+// RAG Lab — entry point. Holds the application state, renders the stepper and
+// the dials, and routes to the station renderers in js/stations/.
 //
 // All user-facing text comes from js/copy.js. Do not type sentences here.
 
 import * as constants from './constants.js';
 import * as copy from './copy.js';
+import { el, fill } from './dom.js';
+import { chunkText } from './chunker.js';
+import { countWords, normalizeNewlines } from './text.js';
+import { loadSession, saveSession } from './session.js';
+import { renderDocumentStation, updateDocumentStatus } from './stations/document.js';
+import { renderChunkStation } from './stations/chunk.js';
 
 // ---------------------------------------------------------------------------
-// Application state (kept deliberately small and plain)
+// State
 // ---------------------------------------------------------------------------
 const state = {
   currentStep: 'document',
-  // Which steps are unlocked. Phase 1+ flips these as artifacts are produced.
-  completed: { document: false, chunk: false, embed: false, retrieve: false, assemble: false },
   dials: {
     chunkSize: constants.CHUNK_SIZE_DEFAULT,
     chunkOverlap: constants.CHUNK_OVERLAP_DEFAULT,
     topK: constants.TOP_K_DEFAULT,
   },
+  // false while a dial holds a value the app refused (out of range, overlap too large)
+  dialsValid: true,
+  document: { text: '', name: '', words: 0, chars: 0, version: 0 },
+  // Artifacts remember the settings and document version they were made
+  // from, so "stale" is computed, never guessed.
+  artifacts: {
+    chunks: null, // { chunks, summary, settings: { chunkSize, chunkOverlap }, documentVersion }
+    // Phase 2+: embeddings, retrieval, prompt
+  },
+};
+
+// Which stations exist in code so far. Others are shown as locked.
+const STATION_RENDERERS = {
+  document: renderDocumentStation,
+  chunk: renderChunkStation,
 };
 
 // ---------------------------------------------------------------------------
-// Small DOM helpers
+// Actions shared with the stations (passed as `app`)
 // ---------------------------------------------------------------------------
-function el(tag, attrs = {}, children = []) {
-  const node = document.createElement(tag);
-  for (const [key, value] of Object.entries(attrs)) {
-    if (key === 'class') node.className = value;
-    else if (key === 'text') node.textContent = value;
-    else if (key.startsWith('on') && typeof value === 'function') node.addEventListener(key.slice(2), value);
-    else if (value !== null && value !== undefined) node.setAttribute(key, value);
-  }
-  for (const child of [].concat(children)) {
-    if (child === null || child === undefined) continue;
-    node.append(child instanceof Node ? child : document.createTextNode(child));
-  }
-  return node;
+const app = {
+  state,
+  copy,
+  constants,
+
+  setDocument(text, name) {
+    const clean = normalizeNewlines(text);
+    if (clean === state.document.text && name === state.document.name) return;
+    state.document = {
+      text: clean,
+      name: clean ? name : '',
+      words: countWords(clean),
+      chars: clean.length,
+      version: state.document.version + 1,
+    };
+    persist();
+    app.refreshDocumentStatus();
+    renderStepper();
+  },
+
+  refreshDocumentStatus() {
+    updateDocumentStatus(app);
+  },
+
+  /** Runs the chunker on the current document with the current dials. */
+  runChunking({ goToStation = true } = {}) {
+    if (!state.document.text || !state.dialsValid) return false;
+    const settings = { chunkSize: state.dials.chunkSize, chunkOverlap: state.dials.chunkOverlap };
+    let result;
+    try {
+      result = chunkText(state.document.text, settings, constants.SENTENCE_END_CHARS);
+    } catch (error) {
+      showDialMessage(error.code === 'OVERLAP_TOO_LARGE' ? copy.DIALS.overlapTooLarge : String(error.message));
+      return false;
+    }
+    state.artifacts.chunks = { ...result, settings, documentVersion: state.document.version };
+    if (goToStation) showStep('chunk');
+    else { renderStepper(); renderStation(); }
+    return true;
+  },
+
+  /** True when an artifact was made from settings or a document that have since changed. */
+  isStale(artifactId) {
+    if (artifactId === 'chunks') {
+      const artifact = state.artifacts.chunks;
+      if (!artifact) return false;
+      return artifact.documentVersion !== state.document.version
+        || artifact.settings.chunkSize !== state.dials.chunkSize
+        || artifact.settings.chunkOverlap !== state.dials.chunkOverlap;
+    }
+    return false;
+  },
+
+  showStep,
+};
+
+// ---------------------------------------------------------------------------
+// Session persistence (document text and dials survive a reload)
+// ---------------------------------------------------------------------------
+function persist() {
+  saveSession(constants.SESSION_STORAGE_KEY, {
+    document: { text: state.document.text, name: state.document.name },
+    dials: state.dials,
+  });
 }
 
-function fill(template, values) {
-  return template.replace(/\{(\w+)\}/g, (_, key) => String(values[key] ?? ''));
+function restore() {
+  const saved = loadSession(constants.SESSION_STORAGE_KEY);
+  if (!saved) return;
+  if (saved.dials) {
+    for (const spec of DIAL_SPECS) {
+      const value = Number(saved.dials[spec.key]);
+      if (Number.isFinite(value) && value >= spec.min && value <= spec.max) state.dials[spec.key] = value;
+    }
+    if (state.dials.chunkOverlap >= state.dials.chunkSize) state.dials.chunkOverlap = constants.CHUNK_OVERLAP_DEFAULT;
+  }
+  if (saved.document && typeof saved.document.text === 'string' && saved.document.text) {
+    const text = saved.document.text;
+    state.document = { text, name: saved.document.name || copy.STATION_DOCUMENT.pastedName, words: countWords(text), chars: text.length, version: 1 };
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -56,22 +137,40 @@ function renderChrome() {
 // ---------------------------------------------------------------------------
 // Stepper
 // ---------------------------------------------------------------------------
-function isUnlocked(stepIndex) {
-  if (stepIndex === 0) return true;
-  const previous = copy.STEPS[stepIndex - 1];
-  return state.completed[previous.id] === true;
+// A step is unlocked when the step before it has produced its artifact.
+function isUnlocked(stepId) {
+  switch (stepId) {
+    case 'document': return true;
+    case 'chunk': return state.document.chars > 0;
+    // Phase 2+: embed needs chunks, retrieve needs embeddings, and so on.
+    default: return false;
+  }
+}
+
+function stepIsStale(stepId) {
+  if (stepId === 'chunk') return app.isStale('chunks');
+  return false;
 }
 
 function renderStepper() {
   const list = document.getElementById('stepper');
   list.replaceChildren();
-  copy.STEPS.forEach((step, index) => {
-    const unlocked = isUnlocked(index);
+  for (const step of copy.STEPS) {
+    const unlocked = isUnlocked(step.id);
+    const built = Boolean(STATION_RENDERERS[step.id]);
+    const stale = stepIsStale(step.id);
     const lane = step.lane ? copy.LANES[step.lane] : null;
+    const enabled = unlocked && built;
+
+    let hint = '';
+    if (!unlocked) hint = copy.UI.lockedPrefix + step.lockedHint;
+    else if (!built) hint = copy.UI.notBuilt;
+    else if (stale) hint = copy.UI.staleStep;
+
     const button = el('button', {
       type: 'button',
-      class: 'step__button',
-      disabled: unlocked ? null : '',
+      class: `step__button${stale ? ' step__button--stale' : ''}`,
+      disabled: !enabled,
       'aria-current': state.currentStep === step.id ? 'step' : null,
       'aria-describedby': `step-hint-${step.id}`,
       onclick: () => showStep(step.id),
@@ -86,13 +185,9 @@ function renderStepper() {
       title: lane ? lane.name : null,
       text: lane ? lane.label : '·',
     });
-    const hint = el('p', {
-      class: 'step__hint',
-      id: `step-hint-${step.id}`,
-      text: unlocked ? '' : copy.UI.lockedPrefix + step.lockedHint,
-    });
-    list.append(el('li', { class: 'step' }, [button, laneTag, hint]));
-  });
+    const hintNode = el('p', { class: `step__hint${stale ? ' step__hint--stale' : ''}`, id: `step-hint-${step.id}`, text: hint });
+    list.append(el('li', { class: 'step' }, [button, laneTag, hintNode]));
+  }
 }
 
 function showStep(stepId) {
@@ -111,6 +206,10 @@ const DIAL_SPECS = [
   { key: 'topK', copyKey: 'topK', min: constants.TOP_K_MIN, max: constants.TOP_K_MAX, step: 1 },
 ];
 
+function showDialMessage(text) {
+  document.getElementById('dials-message').textContent = text || '';
+}
+
 function renderDials() {
   document.getElementById('dials-heading').textContent = copy.DIALS.heading;
   document.getElementById('dials-intro').textContent = copy.DIALS.intro;
@@ -124,7 +223,11 @@ function renderDials() {
     const number = el('input', { type: 'number', id, min: spec.min, max: spec.max, step: spec.step, value: state.dials[spec.key] });
 
     range.addEventListener('input', () => { number.value = range.value; onDialChange(spec, Number(range.value)); });
-    number.addEventListener('change', () => { range.value = number.value; onDialChange(spec, Number(number.value)); });
+    number.addEventListener('input', () => {
+      const value = Number(number.value);
+      if (value >= spec.min && value <= spec.max) range.value = number.value;
+      onDialChange(spec, value);
+    });
 
     form.append(el('div', { class: 'dial' }, [
       el('label', { for: id, text: text.label }),
@@ -136,22 +239,29 @@ function renderDials() {
 }
 
 // Validates a dial change and explains problems instead of clamping.
-// Phase 1 will also mark downstream artifacts stale from here.
+// A valid change updates state and lets the stations show "stale" notices.
 function onDialChange(spec, value) {
-  const message = document.getElementById('dials-message');
-  message.textContent = '';
-
   if (!Number.isFinite(value) || value < spec.min || value > spec.max) {
-    message.textContent = fill(copy.DIALS.outOfRange, { min: spec.min, max: spec.max });
+    state.dialsValid = false;
+    showDialMessage(fill(copy.DIALS.outOfRange, { min: spec.min, max: spec.max }));
+    app.refreshDocumentStatus();
     return;
   }
   const next = { ...state.dials, [spec.key]: value };
   if (next.chunkOverlap >= next.chunkSize) {
-    message.textContent = copy.DIALS.overlapTooLarge;
+    state.dialsValid = false;
+    showDialMessage(copy.DIALS.overlapTooLarge);
+    app.refreshDocumentStatus();
     return;
   }
+  state.dialsValid = true;
+  showDialMessage('');
   state.dials = next;
-  // EXTENSION POINT (Phase 1): invalidate downstream artifacts here.
+  persist();
+  app.refreshDocumentStatus();
+  renderStepper();
+  // Re-render the station so a now-stale artifact greys out immediately.
+  if (state.currentStep !== 'document') renderStation();
 }
 
 // ---------------------------------------------------------------------------
@@ -164,10 +274,16 @@ function renderExplainer(stepId) {
     el('p', {}, [el('strong', { text: 'Why it matters. ' }), text.why]),
   ];
   if (text.cosine) paragraphs.push(el('p', {}, [el('strong', { text: 'About the score. ' }), text.cosine]));
-  return el('details', { class: 'explainer', open: '' }, [
+  return el('details', { class: 'explainer', open: true }, [
     el('summary', { text: copy.EXPLAINER_TITLE }),
     ...paragraphs,
   ]);
+}
+
+function stationHeading(step) {
+  if (step.id === 'document') return copy.STATION_DOCUMENT.heading;
+  if (step.id === 'chunk') return copy.STATION_CHUNK.heading;
+  return step.label;
 }
 
 function renderStation() {
@@ -177,39 +293,19 @@ function renderStation() {
   const lane = step.lane ? copy.LANES[step.lane] : null;
 
   panel.append(el('div', { class: 'station__header' }, [
-    el('h2', { text: `${step.number} · ${step.id === 'document' ? copy.STATION_DOCUMENT.heading : step.label}` }),
+    el('h2', { text: `${step.number} · ${stationHeading(step)}` }),
     lane ? el('span', { class: `lane-tag lane-tag--${step.lane}`, text: lane.label }) : null,
   ]));
   panel.append(renderExplainer(step.id));
 
-  if (step.id === 'document') renderDocumentStation(panel);
-  // Phase 1+: chunk, embed, retrieve, assemble, answer stations render here.
-}
-
-// Station 0 shell. Behaviour (upload, sample, counts) is wired in Phase 1.
-function renderDocumentStation(panel) {
-  const text = copy.STATION_DOCUMENT;
-  panel.append(
-    el('div', { class: 'callout', role: 'note', text: copy.CALLOUTS.privacy }),
-    el('textarea', { class: 'document-input', id: 'document-text', placeholder: text.placeholder, 'aria-label': text.heading }),
-    el('div', { class: 'toolbar' }, [
-      el('label', { class: 'button button--file' }, [
-        text.uploadButton,
-        el('input', { type: 'file', accept: constants.ACCEPTED_UPLOAD_EXTENSIONS.join(','), 'aria-label': text.uploadButton }),
-      ]),
-      el('button', { type: 'button', class: 'button', text: text.sampleButton }),
-      el('span', { class: 'hint', text: text.uploadHint }),
-      el('span', { class: 'toolbar__spacer' }),
-      el('span', { class: 'count', id: 'document-count', role: 'status', text: text.emptyCount }),
-    ]),
-    el('p', { class: 'message--error', id: 'document-message', role: 'alert' }),
-    el('button', { type: 'button', class: 'button button--primary', disabled: '', text: text.continueButton }),
-  );
+  const render = STATION_RENDERERS[step.id];
+  if (render) render(panel, app);
 }
 
 // ---------------------------------------------------------------------------
 // Boot
 // ---------------------------------------------------------------------------
+restore();
 renderChrome();
 renderStepper();
 renderDials();

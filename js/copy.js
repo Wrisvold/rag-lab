@@ -128,11 +128,36 @@ export const STATION_DOCUMENT = {
   uploadButton: 'Upload a file',
   uploadHint: 'Accepts .txt, .md, and .docx',
   sampleButton: 'Load the sample document',
-  wordCount: '{words} words · {chars} characters',
+  wordCount: '{name} · {words} words · {chars} characters',
   emptyCount: 'No text yet',
+  pastedName: 'pasted text',
+  reading: 'Reading {name}…',
   rejectedFile: 'That file type is not supported. Please upload a .txt, .md, or .docx file.',
   readError: 'That file could not be read. Try saving it again as .txt or .docx and re-uploading.',
+  sampleError: 'The sample document could not be loaded. If you opened index.html straight from a folder, run it from a web server instead (see README.md).',
   continueButton: 'Chunk this document',
+};
+
+// ---------------------------------------------------------------------------
+// Station 1 — Chunk
+// ---------------------------------------------------------------------------
+export const STATION_CHUNK = {
+  heading: 'Chunks',
+  notYet: 'Your document has not been chunked yet.',
+  runButton: 'Chunk this document',
+  rerunButton: 'Re-chunk',
+  continueButton: 'Embed these chunks',
+  summaryCount: '{count} chunks',
+  summaryAverage: 'average {average} characters',
+  summaryCuts: '{mid} of {boundaries} cuts fell mid-sentence',
+  settingsUsed: 'CHUNK_SIZE={chunkSize}  CHUNK_OVERLAP={chunkOverlap}',
+  cardTitle: 'Chunk {n}',
+  cardSpan: 'chars {start}–{end}',
+  cardLength: '{length} chars',
+  overlapLabel: 'These {count} characters are repeated from the end of chunk {n}',
+  cutLabel: 'cut mid-sentence',
+  cleanCutLabel: 'cut at a sentence end',
+  endLabel: 'end of document',
 };
 
 // ---------------------------------------------------------------------------
@@ -141,5 +166,7 @@ export const STATION_DOCUMENT = {
 export const UI = {
   optionalTag: 'optional',
   lockedPrefix: 'Locked: ',
+  notBuilt: 'Not built yet',
+  staleStep: 'Re-run to update',
   footer: 'Nothing you type leaves this browser tab unless you choose the optional answer step. No account, no cookies, no tracking.',
 };
