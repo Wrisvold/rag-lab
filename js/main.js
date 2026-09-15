@@ -15,6 +15,9 @@ import { renderEmbedStation } from './stations/embed.js';
 import { embedChunksGlassBox } from './glassBox.js';
 import { projectTo2D } from './pca.js';
 import { unitVector } from './cosine.js';
+import { applyPca } from './pca.js';
+import { rankChunks, selectTopK } from './retrieval.js';
+import { renderRetrieveStation } from './stations/retrieve.js';
 
 // ---------------------------------------------------------------------------
 // State
@@ -31,17 +34,21 @@ const state = {
   document: { text: '', name: '', words: 0, chars: 0, version: 0 },
   // 'glass' (TF-IDF) or 'black' (neural model, Phase 5)
   embeddingMode: 'glass',
+  // The student's question (Station 3). Kept across a reload.
+  question: '',
   // Artifacts remember the settings and document version they were made
   // from, so "stale" is computed, never guessed.
   artifacts: {
     chunks: null,     // { chunks, summary, settings: { chunkSize, chunkOverlap }, documentVersion, version }
-    embeddings: null, // { embedding, projection: { fit, points }, mode, chunksVersion }
-    // Phase 3+: retrieval, prompt
+    embeddings: null, // { embedding, projection: { fit, points }, mode, chunksVersion, version }
+    retrieval: null,  // { question, query, ranked, topK, topKValue, questionPoint, questionHasDirection, embeddingsVersion }
+    // Phase 4+: prompt
   },
   // Per-visit interface state that is not an artifact
   ui: { selectedChunk: null },
   // Counts every successful chunking run, so later artifacts can tell which run they came from
   chunkRuns: 0,
+  embedRuns: 0,
 };
 
 // Which stations exist in code so far. Others are shown as locked.
@@ -49,6 +56,7 @@ const STATION_RENDERERS = {
   document: renderDocumentStation,
   chunk: renderChunkStation,
   embed: renderEmbedStation,
+  retrieve: renderRetrieveStation,
 };
 
 // ---------------------------------------------------------------------------
@@ -69,6 +77,10 @@ const app = {
       chars: clean.length,
       version: state.document.version + 1,
     };
+    // Loading the sample document offers the synonym probe as the first question.
+    if (name === constants.SAMPLE_DOCUMENT_NAME && !state.question.trim()) {
+      state.question = copy.SAMPLE_QUESTIONS[0].text;
+    }
     persist();
     app.refreshDocumentStatus();
     renderStepper();
@@ -98,7 +110,7 @@ const app = {
   },
 
   /** Embeds every chunk in the current mode and projects the vectors to 2D. */
-  runEmbedding({ goToStation = false } = {}) {
+  runEmbedding({ goToStation = false, render = true } = {}) {
     // Re-running an upstream step is cheap and deterministic, so a stale
     // chunking is redone here rather than sending the student back a step.
     if (state.artifacts.chunks && app.isStale('chunks')) {
@@ -119,8 +131,39 @@ const app = {
     }
     // The map shows directions (what cosine similarity compares), so project unit vectors.
     const projection = projectTo2D(embedding.vectors.map(unitVector));
-    state.artifacts.embeddings = { embedding, projection, mode: state.embeddingMode, chunksVersion: chunksArtifact.version };
+    state.embedRuns += 1;
+    state.artifacts.embeddings = { embedding, projection, mode: state.embeddingMode, chunksVersion: chunksArtifact.version, version: state.embedRuns };
     if (goToStation) showStep('embed');
+    else if (render) { renderStepper(); renderStation(); }
+    return true;
+  },
+
+  setQuestion(text) {
+    state.question = text;
+    persist();
+    renderStepper();
+  },
+
+  /** Embeds the question, scores every chunk, and cuts the list at TOP_K. */
+  runRetrieval({ goToStation = false } = {}) {
+    const question = state.question.trim();
+    if (!question) return false;
+    if (!state.artifacts.embeddings || app.isStale('embeddings')) {
+      if (!app.runEmbedding({ render: false })) return false;
+    }
+    const { embedding, projection } = state.artifacts.embeddings;
+    const query = embedding.embedQuery(question);
+    const ranked = rankChunks(query.vector, embedding.vectors);
+    const topKValue = state.dials.topK;
+    const topK = selectTopK(ranked, topKValue);
+    const questionHasDirection = Array.from(query.vector).some((value) => value !== 0);
+    // A question with no direction has nothing to project; it sits at the mean (the origin).
+    const questionPoint = questionHasDirection ? applyPca(projection.fit, unitVector(query.vector)) : [0, 0];
+    state.artifacts.retrieval = {
+      question, query, ranked, topK, topKValue, questionPoint, questionHasDirection,
+      embeddingsVersion: state.artifacts.embeddings.version,
+    };
+    if (goToStation) showStep('retrieve');
     else { renderStepper(); renderStation(); }
     return true;
   },
@@ -150,6 +193,15 @@ const app = {
         || artifact.chunksVersion !== state.artifacts.chunks.version
         || artifact.mode !== state.embeddingMode;
     }
+    if (artifactId === 'retrieval') {
+      const artifact = state.artifacts.retrieval;
+      if (!artifact) return false;
+      return app.isStale('embeddings')
+        || !state.artifacts.embeddings
+        || artifact.embeddingsVersion !== state.artifacts.embeddings.version
+        || artifact.question !== state.question.trim()
+        || artifact.topKValue !== state.dials.topK;
+    }
     return false;
   },
 
@@ -163,6 +215,7 @@ function persist() {
   saveSession(constants.SESSION_STORAGE_KEY, {
     document: { text: state.document.text, name: state.document.name },
     dials: state.dials,
+    question: state.question,
   });
 }
 
@@ -179,6 +232,10 @@ function restore() {
   if (saved.document && typeof saved.document.text === 'string' && saved.document.text) {
     const text = saved.document.text;
     state.document = { text, name: saved.document.name || copy.STATION_DOCUMENT.pastedName, words: countWords(text), chars: text.length, version: 1 };
+  }
+  if (typeof saved.question === 'string') state.question = saved.question;
+  if (state.document.name === constants.SAMPLE_DOCUMENT_NAME && !state.question.trim()) {
+    state.question = copy.SAMPLE_QUESTIONS[0].text;
   }
 }
 
@@ -202,7 +259,8 @@ function isUnlocked(stepId) {
     case 'chunk': return state.document.chars > 0;
     case 'embed': return Boolean(state.artifacts.chunks);
     case 'retrieve': return Boolean(state.artifacts.embeddings);
-    // Phase 3+: assemble needs a retrieval, answer needs a prompt.
+    case 'assemble': return Boolean(state.artifacts.retrieval);
+    // Phase 4+: answer needs a prompt.
     default: return false;
   }
 }
@@ -210,6 +268,7 @@ function isUnlocked(stepId) {
 function stepIsStale(stepId) {
   if (stepId === 'chunk') return app.isStale('chunks');
   if (stepId === 'embed') return app.isStale('embeddings');
+  if (stepId === 'retrieve') return app.isStale('retrieval');
   return false;
 }
 
@@ -345,6 +404,7 @@ function stationHeading(step) {
   if (step.id === 'document') return copy.STATION_DOCUMENT.heading;
   if (step.id === 'chunk') return copy.STATION_CHUNK.heading;
   if (step.id === 'embed') return copy.STATION_EMBED.heading;
+  if (step.id === 'retrieve') return copy.STATION_RETRIEVE.heading;
   return step.label;
 }
 

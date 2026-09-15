@@ -27,12 +27,17 @@ export function embedChunksGlassBox(chunks, options) {
     /** Embed a question with the same vocabulary and weights. */
     embedQuery(text) {
       const { tokens } = tokenizeDetailed(text, options);
-      const known = tokens.filter((word) => index.indexOf.has(word));
-      const unknown = tokens.filter((word) => !index.indexOf.has(word));
-      return { vector: vectorFor(index, tokens), tokens, known, unknown };
+      const known = unique(tokens.filter((word) => index.indexOf.has(word)));
+      const unknown = unique(tokens.filter((word) => !index.indexOf.has(word)));
+      const dropped = unique(
+        (text || '').toLowerCase().replace(/['’]/g, '').split(/[^a-z0-9]+/)
+          .filter((word) => word && (word.length < options.minTokenLength || options.stopwords.has(word))),
+      );
+      return { vector: vectorFor(index, tokens), tokens, known, unknown, dropped };
     },
 
     /** What a student sees when they click a chunk. */
+    // (unique() below keeps first occurrences, in order.)
     inspect(chunkIndex) {
       const vector = index.vectors[chunkIndex];
       return {
@@ -44,4 +49,8 @@ export function embedChunksGlassBox(chunks, options) {
       };
     },
   };
+}
+
+function unique(words) {
+  return [...new Set(words)];
 }

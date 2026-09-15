@@ -190,6 +190,43 @@ export const STATION_EMBED = {
 };
 
 // ---------------------------------------------------------------------------
+// Station 3 — Retrieve
+// ---------------------------------------------------------------------------
+export const STATION_RETRIEVE = {
+  heading: 'Retrieved passages',
+  questionLabel: 'Your question',
+  questionPlaceholder: 'Type a question about your document',
+  sampleLabel: 'Sample questions',
+  samplePlaceholder: 'Choose a sample question…',
+  runButton: 'Retrieve',
+  rerunButton: 'Retrieve again',
+  continueButton: 'Assemble the prompt',
+  notYet: 'Ask a question and press Retrieve to score every chunk against it.',
+  emptyQuestion: 'Type a question first.',
+  summary: '{count} chunks scored · TOP_K={topK} · the top {topK} are highlighted in gold',
+  wordsHeading: 'How the question was read',
+  knownWords: 'Question words that appear in the document:',
+  unknownWords: 'Not in the document, so they count for nothing here:',
+  noKnownWords: 'None of the words in your question appear in the document. In Glass Box mode the question has no direction at all, so every chunk scores 0.',
+  droppedWords: 'Dropped as common words:',
+  mapHeading: 'Where the question landed',
+  mapIntro: 'The amber diamond is your question, placed on the same map as the chunks. Dashed lines lead to the passages it retrieved.',
+  questionMarker: 'Your question',
+  questionNoDirection: 'Your question shares no words with the document, so it is drawn at the centre of the map.',
+  tableHeading: 'Every chunk, ranked',
+  tableIntro: 'Retrieval scores all of them and simply cuts the list at TOP_K. Nothing below the line is "wrong"; it just did not make the cut.',
+  colRank: 'Rank',
+  colChunk: 'Chunk',
+  colScore: 'Score',
+  colPreview: 'Preview',
+  colTopK: 'Kept?',
+  topKMark: '★ top-k',
+  cardsHeading: 'The top {topK} passages, in rank order',
+  rankBadge: 'Rank {rank}',
+  scoreBadge: 'score {score}',
+};
+
+// ---------------------------------------------------------------------------
 // Shared bits
 // ---------------------------------------------------------------------------
 export const UI = {

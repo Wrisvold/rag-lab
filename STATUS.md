@@ -2,7 +2,27 @@
 
 Updated at the end of each phase. Newest phase first.
 
-## Phase 2 — Glass Box embedding and the map (done, awaiting Ward's review)
+## Phase 3 — Retrieval (done, awaiting Ward's review)
+
+**Done**
+- `js/retrieval.js` (pure): `rankChunks` scores every chunk with exact cosine similarity and sorts (ties keep chunk order), `selectTopK` cuts the list (k larger than the list is tolerated), `rankOf` for tests and the run summary.
+- `tests/retrieval.test.js`: ranking, ties, cutting, zero query, and **the automated Glass Box synonym probe on the real sample document**: "pto" is not in the vocabulary, the vacation chunk ranks outside the top 3, and no top-3 chunk mentions vacation. Also the direct-match probe (expense chunk is rank 1) and the grounding probe (nothing mentions parental leave, yet retrieval still returns chunks).
+- Station 3 (`js/stations/retrieve.js`): question box (Enter runs it), sample-question dropdown with the sample's teaching note underneath, Retrieve / Retrieve again, summary line with TOP_K and the mode, "How the question was read" (Glass Box: words found in the document, words not in the document shown struck through, common words dropped), the map with the question as an amber diamond and dashed lines to its top-k neighbours, the ranked table of every chunk with the top-k rows in gold, and the top-k cards with rank and score badges. "Assemble the prompt" is visible but disabled until Phase 4.
+- Wiring: loading the sample document prefills the synonym probe; the question survives a reload; retrieval remembers the question, TOP_K, and the embedding run it came from, so it goes stale when any of those change. Retrieve re-embeds (and re-chunks) first if needed, so a student can change CHUNK_SIZE and press Retrieve in one motion. Typing a new question greys the old results immediately without losing the cursor.
+- `embedQuery` in Glass Box now also reports the dropped common words so the station can show all three groups.
+- Test suite: 55 passing.
+
+**Verified in the browser**
+- With CHUNK_SIZE changed to 400 on the Retrieve station, one press of Retrieve re-chunked (20), re-embedded, and ranked. Summary "20 chunks scored · TOP_K=3". Known words: new, employees, get. Unknown: pto. Dropped: how, much, do. Top 3: chunks 02, 03, 07 (orientation, check-ins, badges). Vacation chunk at rank 9. Three cards, three map lines, three highlighted neighbours. Stepper shows nothing stale. No new console errors.
+
+**Decisions made without asking**
+- Changing TOP_K makes the retrieval stale rather than re-cutting the list live, to keep the rule "change a dial, re-run the step" the same for all three dials.
+- A question with no known words (all scores 0) is drawn at the centre of the map with a note saying why, instead of being hidden.
+- Scores are shown to two decimals, matching the brief's examples.
+
+**Next: Phase 4** — three-block prompt builder, Copy prompt with a token estimate, Copy run summary in the brief's exact format, and the "paste into an LLM" callout.
+
+## Phase 2 — Glass Box embedding and the map (done, reviewed)
 
 **Done**
 - Pure modules, each with a test file: `js/tokenizer.js` (lowercase, strip apostrophes, split on non-letters, drop short tokens and stopwords, count what was dropped), `js/tfidf.js` (vocabulary, IDF = ln(N/df), one vector per chunk, query vectors from the same index, top terms), `js/cosine.js` (cosine similarity plus `unitVector`), `js/pca.js` (power iteration with deflation; `fitPca` / `applyPca` so a question can be projected onto the same axes in Phase 3), `js/glassBox.js` (the embedding-mode object both modes will share: `{ mode, dimensions, vectors, embedQuery, inspect, stats }`).

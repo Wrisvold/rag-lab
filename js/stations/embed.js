@@ -51,7 +51,7 @@ export function renderEmbedStation(panel, app) {
     ]),
     el('span', { class: 'toolbar__spacer' }),
     !stale && el('button', { type: 'button', class: 'button', text: text.rerunButton, onclick: () => app.runEmbedding() }),
-    el('button', { type: 'button', class: 'button button--primary', text: text.continueButton, disabled: true, title: copy.UI.notBuilt }),
+    el('button', { type: 'button', class: 'button button--primary', text: text.continueButton, disabled: stale, onclick: () => app.showStep('retrieve') }),
   ]));
 
   const content = el('div', { class: stale ? 'stale' : '' });
