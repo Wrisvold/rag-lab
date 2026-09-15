@@ -11,6 +11,10 @@ import { countWords, normalizeNewlines } from './text.js';
 import { loadSession, saveSession } from './session.js';
 import { renderDocumentStation, updateDocumentStatus } from './stations/document.js';
 import { renderChunkStation } from './stations/chunk.js';
+import { renderEmbedStation } from './stations/embed.js';
+import { embedChunksGlassBox } from './glassBox.js';
+import { projectTo2D } from './pca.js';
+import { unitVector } from './cosine.js';
 
 // ---------------------------------------------------------------------------
 // State
@@ -25,18 +29,26 @@ const state = {
   // false while a dial holds a value the app refused (out of range, overlap too large)
   dialsValid: true,
   document: { text: '', name: '', words: 0, chars: 0, version: 0 },
+  // 'glass' (TF-IDF) or 'black' (neural model, Phase 5)
+  embeddingMode: 'glass',
   // Artifacts remember the settings and document version they were made
   // from, so "stale" is computed, never guessed.
   artifacts: {
-    chunks: null, // { chunks, summary, settings: { chunkSize, chunkOverlap }, documentVersion }
-    // Phase 2+: embeddings, retrieval, prompt
+    chunks: null,     // { chunks, summary, settings: { chunkSize, chunkOverlap }, documentVersion, version }
+    embeddings: null, // { embedding, projection: { fit, points }, mode, chunksVersion }
+    // Phase 3+: retrieval, prompt
   },
+  // Per-visit interface state that is not an artifact
+  ui: { selectedChunk: null },
+  // Counts every successful chunking run, so later artifacts can tell which run they came from
+  chunkRuns: 0,
 };
 
 // Which stations exist in code so far. Others are shown as locked.
 const STATION_RENDERERS = {
   document: renderDocumentStation,
   chunk: renderChunkStation,
+  embed: renderEmbedStation,
 };
 
 // ---------------------------------------------------------------------------
@@ -67,7 +79,7 @@ const app = {
   },
 
   /** Runs the chunker on the current document with the current dials. */
-  runChunking({ goToStation = true } = {}) {
+  runChunking({ goToStation = true, render = true } = {}) {
     if (!state.document.text || !state.dialsValid) return false;
     const settings = { chunkSize: state.dials.chunkSize, chunkOverlap: state.dials.chunkOverlap };
     let result;
@@ -77,10 +89,48 @@ const app = {
       showDialMessage(error.code === 'OVERLAP_TOO_LARGE' ? copy.DIALS.overlapTooLarge : String(error.message));
       return false;
     }
-    state.artifacts.chunks = { ...result, settings, documentVersion: state.document.version };
+    state.chunkRuns += 1;
+    state.artifacts.chunks = { ...result, settings, documentVersion: state.document.version, version: state.chunkRuns };
+    state.ui.selectedChunk = null;
     if (goToStation) showStep('chunk');
+    else if (render) { renderStepper(); renderStation(); }
+    return true;
+  },
+
+  /** Embeds every chunk in the current mode and projects the vectors to 2D. */
+  runEmbedding({ goToStation = false } = {}) {
+    // Re-running an upstream step is cheap and deterministic, so a stale
+    // chunking is redone here rather than sending the student back a step.
+    if (state.artifacts.chunks && app.isStale('chunks')) {
+      if (!app.runChunking({ goToStation: false, render: false })) return false;
+    }
+    const chunksArtifact = state.artifacts.chunks;
+    if (!chunksArtifact) return false;
+    let embedding;
+    if (state.embeddingMode === 'glass') {
+      embedding = embedChunksGlassBox(chunksArtifact.chunks, {
+        stopwords: constants.STOPWORDS,
+        minTokenLength: constants.MIN_TOKEN_LENGTH,
+        topTermCount: constants.GLASS_BOX_TOP_TERMS,
+      });
+    } else {
+      // Phase 5: Black Box. Until then the toggle is disabled in the UI.
+      return false;
+    }
+    // The map shows directions (what cosine similarity compares), so project unit vectors.
+    const projection = projectTo2D(embedding.vectors.map(unitVector));
+    state.artifacts.embeddings = { embedding, projection, mode: state.embeddingMode, chunksVersion: chunksArtifact.version };
+    if (goToStation) showStep('embed');
     else { renderStepper(); renderStation(); }
     return true;
+  },
+
+  /** Switching mode re-embeds straight away (Glass Box is instant). */
+  setEmbeddingMode(mode) {
+    if (mode === state.embeddingMode) return;
+    state.embeddingMode = mode;
+    if (state.artifacts.embeddings) app.runEmbedding();
+    else { renderStepper(); renderStation(); }
   },
 
   /** True when an artifact was made from settings or a document that have since changed. */
@@ -91,6 +141,14 @@ const app = {
       return artifact.documentVersion !== state.document.version
         || artifact.settings.chunkSize !== state.dials.chunkSize
         || artifact.settings.chunkOverlap !== state.dials.chunkOverlap;
+    }
+    if (artifactId === 'embeddings') {
+      const artifact = state.artifacts.embeddings;
+      if (!artifact) return false;
+      return app.isStale('chunks')
+        || !state.artifacts.chunks
+        || artifact.chunksVersion !== state.artifacts.chunks.version
+        || artifact.mode !== state.embeddingMode;
     }
     return false;
   },
@@ -142,13 +200,16 @@ function isUnlocked(stepId) {
   switch (stepId) {
     case 'document': return true;
     case 'chunk': return state.document.chars > 0;
-    // Phase 2+: embed needs chunks, retrieve needs embeddings, and so on.
+    case 'embed': return Boolean(state.artifacts.chunks);
+    case 'retrieve': return Boolean(state.artifacts.embeddings);
+    // Phase 3+: assemble needs a retrieval, answer needs a prompt.
     default: return false;
   }
 }
 
 function stepIsStale(stepId) {
   if (stepId === 'chunk') return app.isStale('chunks');
+  if (stepId === 'embed') return app.isStale('embeddings');
   return false;
 }
 
@@ -283,6 +344,7 @@ function renderExplainer(stepId) {
 function stationHeading(step) {
   if (step.id === 'document') return copy.STATION_DOCUMENT.heading;
   if (step.id === 'chunk') return copy.STATION_CHUNK.heading;
+  if (step.id === 'embed') return copy.STATION_EMBED.heading;
   return step.label;
 }
 

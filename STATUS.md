@@ -2,7 +2,28 @@
 
 Updated at the end of each phase. Newest phase first.
 
-## Phase 1 — Station 0 and Station 1 (done, awaiting Ward's review)
+## Phase 2 — Glass Box embedding and the map (done, awaiting Ward's review)
+
+**Done**
+- Pure modules, each with a test file: `js/tokenizer.js` (lowercase, strip apostrophes, split on non-letters, drop short tokens and stopwords, count what was dropped), `js/tfidf.js` (vocabulary, IDF = ln(N/df), one vector per chunk, query vectors from the same index, top terms), `js/cosine.js` (cosine similarity plus `unitVector`), `js/pca.js` (power iteration with deflation; `fitPca` / `applyPca` so a question can be projected onto the same axes in Phase 3), `js/glassBox.js` (the embedding-mode object both modes will share: `{ mode, dimensions, vectors, embedQuery, inspect, stats }`).
+- `js/map.js`: SVG scatter plot. Points are keyboard-focusable buttons with the chunk number inside and the first 80 characters as the accessible name; hover or focus writes the preview to a readout line under the map (no floating tooltip to position). Already supports a question marker and lines to neighbours for Phase 3.
+- Station 2 (`js/stations/embed.js`): mode toggle (Black Box shown but disabled, "Arrives in a later phase"), summary line with the vector count and dimensions, the "Dropped N common words" line Ward agreed to, Re-embed, the map, a row of chunk-number chips, and the Glass Box inspector: heading in the brief's format, chunk preview, bar list of the 12 heaviest terms with weights, non-zero dimension count, per-chunk kept/dropped word counts, and the "a word in every chunk scores 0" note. Map point, chip, and inspector stay in sync without rebuilding the SVG.
+- Wiring: "Embed these chunks" on Station 1 runs the embedding and moves to Station 2; the Embed step unlocks once chunks exist; embeddings remember which chunking run and which mode they came from, so they go stale on a dial change, a re-chunk, or a mode switch. Re-embed re-chunks first if the chunks are stale. Retrieve step is visible but "Not built yet".
+- Test suite: 48 passing.
+
+**Verified in the browser**
+- Sample at CHUNK_SIZE=400: 20 vectors, 387 dimensions; at 600: 13 vectors, 383 dimensions, 398 stopwords dropped, 778 words kept. No console errors.
+- Clicking chip 07 and map point 13 each update the inspector, the gold point on the map, and the pressed chip. Chunk 13 (the AI-tools and questions section) lists "questions", "ai", "tool", "accurate" as its heaviest words.
+- The map groups the welcome/working sections, the time-away/pay policies, and the conduct sections into three visible clusters.
+
+**Decisions made without asking**
+- The map projects unit-length vectors. Raw TF-IDF vectors differ in length (short chunks have big weights), which made PCA put one short chunk in a corner and pile everything else together. Cosine similarity ignores length, so the map now shows what retrieval will actually compare. Same rule will apply to Black Box vectors.
+- The Glass Box inspector shows term weights as computed (TF × IDF), not re-normalised, so the numbers a student reads match the formula in the explainer.
+- The Retrieve step becomes clickable only after embeddings exist, and until Phase 3 its hint says "Not built yet".
+
+**Next: Phase 3** — question box with the sample-question dropdown, exact cosine ranking of every chunk, full ranked table with top-k highlighted, top-k cards, question marker and neighbour lines on the map, and the automated Glass Box synonym-probe test.
+
+## Phase 1 — Station 0 and Station 1 (done, reviewed)
 
 **Done**
 - `js/chunker.js`: pure fixed-size chunker with overlap. Returns chunks with start/end, overlap-with-previous, and a mid-sentence flag, plus a summary (count, average length, boundaries, mid-sentence cuts). Throws coded errors instead of clamping. Extension point for other strategies is marked in the file.

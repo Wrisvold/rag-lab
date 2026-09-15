@@ -161,12 +161,42 @@ export const STATION_CHUNK = {
 };
 
 // ---------------------------------------------------------------------------
+// Station 2 — Embed
+// ---------------------------------------------------------------------------
+export const STATION_EMBED = {
+  heading: 'Embeddings',
+  notYet: 'Your chunks have not been embedded yet.',
+  runButton: 'Embed all chunks',
+  rerunButton: 'Re-embed',
+  continueButton: 'Retrieve passages',
+  modeLabel: 'Embedding mode',
+  modeGlass: 'Glass Box (TF-IDF)',
+  modeGlassHelp: 'Every dimension is a word you can read.',
+  modeBlack: 'Black Box (neural model)',
+  modeBlackHelp: '384 numbers no one can read. Matches meaning, not spelling.',
+  summaryGlass: '{count} vectors · {dimensions} dimensions, one per distinct word in your document',
+  summaryBlack: '{count} vectors · {dimensions} dimensions from the neural model',
+  droppedWords: 'Dropped {dropped} common words such as "the" and "of" before counting, and kept {kept}.',
+  mapHeading: 'The map',
+  mapIntro: 'Every chunk is a point. Chunks with similar words sit close together. The two directions that spread the points out most were chosen as the axes (a method called PCA), so the axes have no names of their own.',
+  mapHover: 'Hover over or tab to a point to read which chunk it is.',
+  inspectHeading: 'Inspect one chunk',
+  inspectIntro: 'Click a point on the map, or a number below, to see that chunk as a vector.',
+  inspectTitleGlass: 'Chunk {n} — Glass Box vector ({dimensions} dimensions; showing the {shown} heaviest)',
+  inspectNonZero: 'Every other dimension is 0 — this chunk does not contain those words. Only {nonZero} of {dimensions} dimensions are above zero.',
+  inspectDropped: 'This chunk kept {kept} words and dropped {dropped} common ones.',
+  inspectZeroWeight: 'A word that appears in every chunk also scores 0. It cannot tell chunks apart, so it is worth nothing here.',
+  noSelection: 'No chunk selected yet.',
+};
+
+// ---------------------------------------------------------------------------
 // Shared bits
 // ---------------------------------------------------------------------------
 export const UI = {
   optionalTag: 'optional',
   lockedPrefix: 'Locked: ',
   notBuilt: 'Not built yet',
+  notBuiltParenthetical: '(Arrives in a later phase.)',
   staleStep: 'Re-run to update',
   footer: 'Nothing you type leaves this browser tab unless you choose the optional answer step. No account, no cookies, no tracking.',
 };

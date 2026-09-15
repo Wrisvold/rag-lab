@@ -42,7 +42,7 @@ export function renderChunkStation(panel, app) {
       ]),
       el('span', { class: 'toolbar__spacer' }),
       !stale && el('button', { type: 'button', class: 'button', text: text.rerunButton, onclick: () => app.runChunking() }),
-      el('button', { type: 'button', class: 'button button--primary', text: text.continueButton, disabled: true, title: copy.UI.notBuilt }),
+      el('button', { type: 'button', class: 'button button--primary', text: text.continueButton, disabled: stale, onclick: () => app.runEmbedding({ goToStation: true }) }),
     ]),
   );
 
