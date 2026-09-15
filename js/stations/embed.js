@@ -162,16 +162,33 @@ function renderInspector(container, app, chunkIndex) {
     return;
   }
 
-  // Black Box inspector arrives in Phase 5; this branch is unreachable until then.
-  container.append(el('p', { class: 'hint', text: copy.UI.notBuilt }));
-  void constants;
+  // ---- Black Box: a heat strip of every number, the first few printed, and the point ----
+  const strip = el('div', { class: 'heat-strip', role: 'img', 'aria-label': fill(text.heatStripLabel, { dimensions: formatNumber(view.dimensions) }) });
+  const scale = view.maxAbs || 1;
+  for (let i = 0; i < view.values.length; i += 1) {
+    const value = view.values[i];
+    const strength = Math.min(1, Math.abs(value) / scale);
+    // teal for positive, amber for negative; alpha carries the size
+    const colour = value >= 0 ? `rgba(31, 138, 138, ${0.12 + strength * 0.88})` : `rgba(200, 116, 26, ${0.12 + strength * 0.88})`;
+    strip.append(el('span', { class: 'heat-strip__cell', style: `background:${colour}`, title: `[${i}] ${value.toFixed(4)}` }));
+  }
+  container.append(
+    el('h4', { text: fill(text.inspectTitleBlack, { n: number, dimensions: formatNumber(view.dimensions) }) }),
+    el('p', { class: 'chunk-preview', text: preview(chunk.text, 160) }),
+    strip,
+    el('p', { class: 'hint', text: fill(text.heatStripLabel, { dimensions: formatNumber(view.dimensions) }) }),
+    el('p', { class: 'hint', text: fill(text.firstNumbers, { count: constants.BLACK_BOX_PREVIEW_COUNT }) }),
+    el('p', { class: 'number-list', text: view.preview.map((v) => v.toFixed(4)).join(' ') }),
+    el('p', { class: 'callout', text: copy.CALLOUTS.blackBoxUnreadable }),
+  );
 }
 
 function renderModeToggle(app) {
   const { state, copy } = app;
   const text = copy.STATION_EMBED;
+  const blackAvailable = state.blackBox.available;
   const glass = el('input', { type: 'radio', name: 'embedding-mode', id: 'mode-glass', value: 'glass', checked: state.embeddingMode === 'glass' });
-  const black = el('input', { type: 'radio', name: 'embedding-mode', id: 'mode-black', value: 'black', checked: state.embeddingMode === 'black', disabled: true, title: copy.UI.notBuilt });
+  const black = el('input', { type: 'radio', name: 'embedding-mode', id: 'mode-black', value: 'black', checked: state.embeddingMode === 'black', disabled: !blackAvailable });
   glass.addEventListener('change', () => { if (glass.checked) app.setEmbeddingMode('glass'); });
   black.addEventListener('change', () => { if (black.checked) app.setEmbeddingMode('black'); });
   return el('fieldset', { class: 'mode-toggle' }, [
@@ -181,10 +198,10 @@ function renderModeToggle(app) {
       el('span', { class: 'mode-toggle__name', text: text.modeGlass }),
       el('span', { class: 'mode-toggle__help', text: text.modeGlassHelp }),
     ]),
-    el('label', { class: 'mode-toggle__option is-disabled', for: 'mode-black' }, [
+    el('label', { class: `mode-toggle__option${blackAvailable ? '' : ' is-disabled'}`, for: 'mode-black' }, [
       black,
       el('span', { class: 'mode-toggle__name', text: text.modeBlack }),
-      el('span', { class: 'mode-toggle__help', text: text.modeBlackHelp + ' ' + copy.UI.notBuiltParenthetical }),
+      el('span', { class: 'mode-toggle__help', text: blackAvailable ? text.modeBlackHelp : text.blackUnavailable }),
     ]),
   ]);
 }

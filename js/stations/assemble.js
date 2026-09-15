@@ -124,7 +124,7 @@ export function renderAssembleStation(panel, app) {
 
   // ---- Continue ----
   body.append(el('div', { class: 'toolbar' }, [
-    el('button', { type: 'button', class: 'button', text: text.continueButton, disabled: true, title: copy.UI.notBuilt }),
+    el('button', { type: 'button', class: 'button', text: text.continueButton, disabled: stale, onclick: () => app.showStep('answer') }),
   ]));
 
   refreshPrompt();

@@ -75,13 +75,14 @@ test('summary counts mid-sentence cuts', () => {
   assert.equal(mid.summary.midSentenceCuts, 2);
 });
 
-test('at the default settings the sample handbook splits policy 3.2 across a boundary', async () => {
+test('at the default settings the sample handbook splits policy 3.1 (Vacation) across a boundary', async () => {
   const handbook = await readFile(new URL('../data/sample.txt', import.meta.url), 'utf8');
   const { chunks, summary } = chunkText(handbook, { chunkSize: CHUNK_SIZE_DEFAULT, chunkOverlap: CHUNK_OVERLAP_DEFAULT }, SENTENCE_END_CHARS);
-  const policyStart = handbook.indexOf('3.2 Vacation.');
-  const policyEnd = handbook.indexOf('3.3 Sick Leave.');
+  const policyStart = handbook.indexOf('3.1 Vacation.');
+  const policyEnd = handbook.indexOf('3.2 Paid Holidays.');
+  assert.ok(policyStart > 0 && policyEnd > policyStart, 'expected policy 3.1 Vacation followed by 3.2 Paid Holidays');
   const straddling = chunks.filter((c) => c.start > policyStart && c.start < policyEnd);
-  assert.ok(straddling.length >= 1, 'no chunk boundary falls inside policy 3.2');
+  assert.ok(straddling.length >= 1, 'no chunk boundary falls inside policy 3.1');
   assert.ok(straddling.every((c) => chunks[c.index - 1].endsMidSentence), 'the straddling cut should be flagged mid-sentence');
   assert.ok(summary.midSentenceCuts >= 1);
 });

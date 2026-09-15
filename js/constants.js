@@ -106,20 +106,38 @@ export const CHARS_PER_TOKEN_ESTIMATE = 4;
 // ---------------------------------------------------------------------------
 
 // Providers a student can choose from. The key is held in memory for the
-// current visit only. Model names go stale; update them here if a provider
-// retires one.
+// current visit only and is sent in a request header, never in the address.
+// Model names go stale; update the `model` line here if a provider retires one.
 export const ANSWER_PROVIDERS = {
   gemini: {
     label: 'Google Gemini',
     model: 'gemini-2.5-flash',
+    endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent',
     keyHelpUrl: 'https://aistudio.google.com/apikey',
+    note: 'Has a free tier.',
   },
   openai: {
     label: 'OpenAI',
-    model: 'gpt-4o-mini',
+    model: 'gpt-5-mini',
+    endpoint: 'https://api.openai.com/v1/chat/completions',
     keyHelpUrl: 'https://platform.openai.com/api-keys',
+    note: 'Needs prepaid credit.',
+  },
+  anthropic: {
+    label: 'Anthropic Claude',
+    model: 'claude-opus-5',
+    endpoint: 'https://api.anthropic.com/v1/messages',
+    apiVersion: '2023-06-01',
+    keyHelpUrl: 'https://console.anthropic.com/settings/keys',
+    note: 'Needs prepaid credit.',
   },
 };
+
+// The longest reply the answer step will accept, in tokens.
+export const ANSWER_MAX_OUTPUT_TOKENS = 1024;
+
+// How many chunks Black Box embeds at a time before updating the progress bar.
+export const BLACK_BOX_BATCH_SIZE = 8;
 
 // ---------------------------------------------------------------------------
 // Housekeeping

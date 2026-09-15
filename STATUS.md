@@ -2,7 +2,53 @@
 
 Updated at the end of each phase. Newest phase first.
 
-## Phase 4 — Prompt assembly and export (done, awaiting Ward's review)
+## Phase 5 — Black Box mode and the optional answer step (done, awaiting Ward's review)
+
+**Read this first: the centrepiece needed a corpus change**
+
+The brief's success criterion 3 says the PTO question must rank the vacation chunk **outside** the top 3 in Glass Box and **at rank 1** in Black Box. With the Phase 0 handbook, Black Box put it at rank 6. I reproduced this outside the browser with the real model (`tools/probe.mjs`) and tested 30-odd wordings and five small models before changing anything. Findings:
+
+- `all-MiniLM-L6-v2` barely associates "PTO" with "vacation". The question's other words ("new employees get") decide the ranking, so chunks about orientation, reimbursements, and benefits win.
+- Mean pooling over a 400-character chunk dilutes any one sentence. The vacation policy also shared its chunk with the holiday-pay sentence.
+- No wording of the original layout passed with the brief's model. Larger or retrieval-trained small models (`bge-small-en-v1.5`, `gte-small`) passed only after the same wording changes, by margins of about 0.02.
+
+What I changed in `data/sample.txt` (1,105 words; still no "PTO" or "paid time off"):
+
+1. Vacation is now policy **3.1**, first in Section 3, so at the defaults it opens chunk 08 instead of trailing the holiday paragraph. Holidays became 3.2.
+2. The allowance is stated in words the question does *not* use: "A newly hired employee gets ten vacation days a year." To TF-IDF, `employee`/`employees`, `gets`/`get`, and `newly`/`new` are different words, so the Glass Box score for this chunk stays 0. To the neural model they mean the same thing. This is a second, honest layer of the same lesson (no stemming, no synonyms), and it is why the Glass Box side is now even clearer.
+3. Toned down three semantic decoys so they do not outrank the vacation chunk: 1.2 Orientation (no "new employee" check-in sentence), 4.4 Retirement (no "after ninety days of employment"), 4.5 Professional Development (no "dollars per year"). "New Year's Day", "New hires receive a photo badge", and "get a replacement badge" stay as the lexical decoys for Glass Box.
+
+Result with the brief's model and the brief's question, at the defaults: **Glass Box rank 9 (score 0.00), Black Box rank 1 (0.336, +0.019 over chunk 03)**. Verified in Node and in the browser. The margin is thin: **if you edit the handbook or the question, run `node tools/probe.mjs` and check that it still says PASS.**
+
+**For your decision (I did not change these):** the question "How many days of PTO do new employees get?" gives a margin of +0.086 with the same model and text, and "How many days off do new hires get each year?" gives +0.15. Either is one string in `js/copy.js`. Switching the model to `Xenova/bge-small-en-v1.5` (33 MB) is also one line in `constants.js`, but it did not help enough on its own to be worth breaking the brief.
+
+**Done**
+- `js/blackBox.js`: lazy `import()` of Transformers.js from the pinned jsdelivr address, `Xenova/all-MiniLM-L6-v2` quantized, progress folded across model files into one percentage, a stall watchdog (90 s without progress rejects), chunks embedded in batches of 8 with progress, the same `{ mode, dimensions, vectors, embedQuery, inspect }` shape as Glass Box (`embedQuery` is async).
+- Global progress bar and notice area under the stepper (`#global-status`), visible whichever station is open, with the brief's download message: "Downloading a 23 MB embedding model to your browser. This happens once."
+- Fallback: any load failure flips `state.blackBox.available` to false, reverts the mode to Glass Box, re-embeds, shows "The neural model could not be loaded… Glass Box mode still works fully…" with a Dismiss button, disables the Black Box radio with "unavailable in this browser session", and logs one `console.warn` line (message only, no stack).
+- Station 2 in Black Box: summary "20 vectors · 384 dimensions from the neural model"; inspector shows a 384-cell heat strip (teal above zero, amber below, darker = larger, each cell titled with its index and value), the first 10 numbers printed, and the brief's line "These 384 numbers are not words…". The same map re-projects the neural vectors.
+- Station 3 in Black Box: "How the question was read" explains that the question became 384 numbers and there are no words to compare.
+- Every run action is now `async`; the chain (assemble → retrieve → embed → chunk) awaits each step, and `state.busy` blocks double clicks during a download or an API call.
+- `js/answer.js`: `buildRequest` / `parseAnswer` / `describeError` (pure, tested) plus `askModel` (the only network call). Gemini via `x-goog-api-key` header, OpenAI via `Authorization: Bearer`, Anthropic via `x-api-key` + `anthropic-version` + the browser opt-in header. Keys go in headers only; a test asserts none appears in a URL or body. Errors map to eight plain codes.
+- Station 5: provider dropdown (Gemini "Has a free tier", OpenAI and Anthropic "Needs prepaid credit"), model name shown with a pointer to `constants.js`, password-type key field with autocomplete off, "Forget key", the memory-only callout, "Ask the model", plain-language error messages, then a two-column view of what the model was given and what it said, and a three-item "Now judge it" checklist. The key lives in `state.ui.apiKey` and nowhere else. The answer goes stale if the prompt text changes.
+- `tools/probe.mjs`: the manual Black Box check, scripted. `npm install --no-save @xenova/transformers@2.17.2` once, then `node tools/probe.mjs`. Exits non-zero on FAIL.
+- Test suite: 75 passing.
+
+**Verified in the browser**
+- Switching to Black Box downloaded the model with the progress bar and embedded 20 chunks in about three seconds on this connection. Inspector for chunk 08: 384 cells, first ten numbers, the note. Map re-projected into a different layout.
+- Synonym probe in Black Box: vacation chunk rank 1 (0.33), then orientation (0.33) and health insurance (0.32). Three lines on the map. Glass Box, same text: rank 9.
+- Station 5 renders with Gemini selected, a password-type key field with autocomplete off, the memory-only callout, and a link to the provider's key page. "Ask the model" with no key shows "Paste a key first." and focuses the field. I did not enter a key (that is a student's own credential), so the live calls are verified only by the unit tests of the request shapes; please try one provider yourself.
+- The fallback path, tested by pointing the Transformers.js constant at a non-existent CDN address and switching to Black Box: the gold notice appeared with the brief's wording, the mode flipped back to Glass Box and re-embedded (20 vectors, 392 dims), the Black Box option became disabled with "unavailable in this browser session", and the console showed one warning line with the failure message and no stack trace.
+
+**Decisions made without asking**
+- Raw `fetch` for all three providers rather than vendor SDKs, to keep the brief's zero-dependency rule. The Anthropic call sends the `anthropic-dangerous-direct-browser-access` header, which exists to stop shared keys being shipped in pages; here the key is the student's own and goes only to Anthropic.
+- Model names in `constants.js`: `gemini-2.5-flash`, `gpt-5-mini`, `claude-opus-5`. Each is one commented line.
+- Answer length capped at 1,024 tokens (`ANSWER_MAX_OUTPUT_TOKENS`).
+- The Black Box batch size (8) and stall timeout (90 s) are constants.
+
+**Next: Phase 6** — explainer copy pass, accessibility pass (keyboard order, focus, contrast), cross-browser check (Edge, Firefox, Safari), full README (hosting on GitHub Pages and on S3/CloudFront, changing defaults, swapping the sample, editing copy, known limitations), final STATUS.
+
+## Phase 4 — Prompt assembly and export (done, reviewed)
 
 **Done**
 - `js/prompt.js` (pure): `buildPrompt` joins the three blocks (instruction, `[Passage n]` passages, `Question: …`) with blank lines; `estimateTokens` at ~4 characters per token (the constant is in `constants.js`).

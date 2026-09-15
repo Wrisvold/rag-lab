@@ -187,6 +187,14 @@ export const STATION_EMBED = {
   inspectDropped: 'This chunk kept {kept} words and dropped {dropped} common ones.',
   inspectZeroWeight: 'A word that appears in every chunk also scores 0. It cannot tell chunks apart, so it is worth nothing here.',
   noSelection: 'No chunk selected yet.',
+  inspectTitleBlack: 'Chunk {n} — Black Box vector ({dimensions} dimensions)',
+  heatStripLabel: 'All {dimensions} numbers as a strip of colours: teal above zero, amber below, darker means larger.',
+  firstNumbers: 'The first {count} numbers, as they are:',
+  blackUnavailable: 'Black Box mode is unavailable in this browser session.',
+  progressDownload: 'Downloading the model… {percent}%',
+  progressPreparing: 'Preparing the model…',
+  progressEmbedding: 'Embedding chunk {done} of {total}…',
+  progressQuestion: 'Embedding your question…',
 };
 
 // ---------------------------------------------------------------------------
@@ -224,6 +232,47 @@ export const STATION_RETRIEVE = {
   cardsHeading: 'The top {topK} passages, in rank order',
   rankBadge: 'Rank {rank}',
   scoreBadge: 'score {score}',
+  blackBoxNote: 'In Black Box mode the question became {dimensions} numbers, just like the chunks. There are no words to compare. The model placed the question near chunks that mean similar things, whether or not they share any words.',
+};
+
+// ---------------------------------------------------------------------------
+// Station 5 — Answer (optional)
+// ---------------------------------------------------------------------------
+export const STATION_ANSWER = {
+  heading: 'The answer (optional)',
+  notYet: 'Assemble a prompt first.',
+  intro: 'Send the assembled prompt to a language model with a key of your own. Nothing here is required for the course. It is the last step of the pipeline, made visible.',
+  providerLabel: 'Provider',
+  modelLabel: 'Model',
+  modelHint: 'Set on one line in js/constants.js.',
+  keyLabel: 'Your API key',
+  keyPlaceholder: 'Paste a key you created for this class',
+  keyHelpLink: 'Get a key from {provider}',
+  forgetButton: 'Forget key',
+  askButton: 'Ask the model',
+  asking: 'Waiting for {provider}…',
+  noKey: 'Paste a key first.',
+  costNote: 'A run this size costs a fraction of a cent on the paid providers.',
+  givenHeading: 'What the model was given',
+  answerHeading: 'What the model said',
+  answerMeta: '{provider} · {model}',
+  checkHeading: 'Now judge it',
+  checkIntro: 'Read the reply against the passages. Every claim in it should trace back to one of them.',
+  checks: [
+    'Did the answer stay inside the passages?',
+    'If the passages did not contain the answer, did the model say so, in the words the instruction asked for?',
+    'Did it add anything the passages never said?',
+  ],
+  errors: {
+    badKey: 'The provider rejected that key. Check that you copied the whole key and that it belongs to the provider you chose.',
+    noCredit: 'The provider says this key has no credit or quota left. Add credit on the provider\'s site, or try Gemini, which has a free tier.',
+    rateLimit: 'The provider asked us to slow down. Wait a minute and try again.',
+    network: 'The request never reached the provider. Check your connection; some campus networks block these addresses.',
+    refusal: 'The model declined to answer this prompt. Try rewording the question.',
+    empty: 'The provider replied but sent no text. Try again.',
+    badRequest: 'The provider rejected the request. The model name in js/constants.js may be out of date.',
+    server: 'The provider is having trouble right now. Try again in a few minutes.',
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -262,7 +311,8 @@ export const UI = {
   optionalTag: 'optional',
   lockedPrefix: 'Locked: ',
   notBuilt: 'Not built yet',
-  notBuiltParenthetical: '(Arrives in a later phase.)',
+  busy: 'Working…',
+  dismiss: 'Dismiss',
   staleStep: 'Re-run to update',
   footer: 'Nothing you type leaves this browser tab unless you choose the optional answer step. No account, no cookies, no tracking.',
 };

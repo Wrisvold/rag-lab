@@ -4,7 +4,7 @@ A browser-based teaching simulator of the retrieval-augmented generation (RAG) p
 
 Students paste or upload a document and watch it move through chunking, embedding, retrieval, and prompt assembly, with every intermediate artifact visible and three dials to turn: `CHUNK_SIZE`, `CHUNK_OVERLAP`, `TOP_K`. It runs entirely in the browser with no account or API key.
 
-**Status:** Phase 4 (prompt assembly and export). See [STATUS.md](STATUS.md).
+**Status:** Phase 5 (Black Box mode and the optional answer step). See [STATUS.md](STATUS.md).
 
 ## Run it locally
 
@@ -16,7 +16,21 @@ node serve.js
 
 Then open http://localhost:5173. Opening `index.html` directly from the file system will not work because the app uses ES modules.
 
-Uploading a `.docx` file fetches the mammoth library from jsdelivr the first time, so that path needs internet access. Everything else works offline once the page has loaded.
+Uploading a `.docx` file fetches the mammoth library from jsdelivr the first time, and Black Box mode fetches Transformers.js from jsdelivr and the model from huggingface.co (about 23 MB, once per browser). Glass Box mode works offline once the page has loaded. The optional answer step sends the prompt to the provider the student chose, with the student's own key.
+
+## Check the synonym probe after editing the handbook
+
+The centrepiece demonstration (the PTO question fails in Glass Box and succeeds in Black Box) depends on the exact wording of `data/sample.txt` and holds by a small margin. After any edit, run:
+
+```bash
+npm install --no-save @xenova/transformers@2.17.2
+```
+
+```bash
+node tools/probe.mjs
+```
+
+It prints the ranks in both modes and ends with PASS or FAIL.
 
 ## Run the tests
 
@@ -39,6 +53,8 @@ js/tfidf.js     pure module: TF-IDF vectors and top terms
 js/cosine.js    pure module: cosine similarity, unit vectors
 js/pca.js       pure module: PCA for the 2D map
 js/glassBox.js  the Glass Box embedding mode (ties the four above together)
+js/blackBox.js  the Black Box embedding mode (Transformers.js, loaded on demand)
+js/answer.js    the optional answer step: request shapes for Gemini, OpenAI, Anthropic
 js/retrieval.js pure module: rank every chunk, cut at TOP_K
 js/prompt.js    pure module: the three-block prompt and a token estimate
 js/summary.js   pure module: the "Copy run summary" text
@@ -48,6 +64,7 @@ js/fileReader.js  .txt/.md/.docx reading (mammoth loaded on demand)
 js/session.js   keeps the document and dials across a reload
 js/dom.js, js/text.js  small helpers
 serve.js        optional local server: node serve.js
+tools/probe.mjs re-checks the synonym probe with the real model (see above)
 data/sample.txt the built-in sample document
 tests/          node --test files, one per pure module
 ```

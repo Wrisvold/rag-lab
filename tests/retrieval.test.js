@@ -52,12 +52,12 @@ test('synonym probe: "PTO" is not in the vocabulary and the vacation chunk is ou
   const query = embedding.embedQuery(question('synonym'));
   assert.ok(query.unknown.includes('pto'), 'pto should be an unknown word');
   const ranked = rankChunks(query.vector, embedding.vectors);
-  const vacationChunk = chunks.find((c) => /accrue vacation at a rate/.test(c.text));
+  const vacationChunk = chunks.find((c) => /ten vacation days a year/.test(c.text));
   assert.ok(vacationChunk, 'the accrual sentence must sit in one chunk');
   const rank = rankOf(ranked, vacationChunk.index);
   assert.ok(rank > TOP_K_DEFAULT, `vacation chunk ranked ${rank}; it must be outside the top ${TOP_K_DEFAULT} in Glass Box`);
   const top = selectTopK(ranked, TOP_K_DEFAULT);
-  assert.ok(top.every((r) => !/vacation/i.test(chunks[r.index].text)), 'no top-k chunk should mention vacation');
+  assert.ok(top.every((r) => !/ten vacation days a year/.test(chunks[r.index].text)), 'no top-k chunk should carry the vacation allowance');
 });
 
 test('direct match: the expense chunk is rank 1 in Glass Box', async () => {

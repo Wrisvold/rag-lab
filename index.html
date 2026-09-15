@@ -22,6 +22,18 @@
     <ol id="stepper" class="stepper__list"></ol>
   </nav>
 
+  <!-- Progress and fallback notices that must stay visible whichever station is open -->
+  <div id="global-status" class="global-status" hidden>
+    <div id="global-progress" class="progress" hidden>
+      <p id="global-progress-label" class="progress__label" role="status" aria-live="polite"></p>
+      <div class="progress__track" aria-hidden="true"><div id="global-progress-fill" class="progress__fill"></div></div>
+    </div>
+    <div id="global-notice" class="notice" role="alert" hidden>
+      <p id="global-notice-text"></p>
+      <button type="button" id="global-notice-dismiss" class="button"></button>
+    </div>
+  </div>
+
   <div class="layout">
     <!-- Sidebar: the three dials. Built by js/main.js from js/constants.js -->
     <aside class="sidebar" aria-labelledby="dials-heading">

@@ -22,6 +22,9 @@ import { renderAssembleStation } from './stations/assemble.js';
 import { buildPrompt } from './prompt.js';
 import { formatRunSummary } from './summary.js';
 import { padNumber } from './text.js';
+import { loadBlackBoxModel, embedChunksBlackBox } from './blackBox.js';
+import { renderAnswerStation } from './stations/answer.js';
+import { askModel } from './answer.js';
 
 // ---------------------------------------------------------------------------
 // State
@@ -36,8 +39,12 @@ const state = {
   // false while a dial holds a value the app refused (out of range, overlap too large)
   dialsValid: true,
   document: { text: '', name: '', words: 0, chars: 0, version: 0 },
-  // 'glass' (TF-IDF) or 'black' (neural model, Phase 5)
+  // 'glass' (TF-IDF) or 'black' (neural model)
   embeddingMode: 'glass',
+  // Black Box availability: flips to false if the model cannot be loaded
+  blackBox: { available: true },
+  // True while a long-running step (model download, API call) is in flight
+  busy: false,
   // The student's question (Station 3). Kept across a reload.
   question: '',
   // The instruction block of the prompt (Station 4). Editable; kept across a reload.
@@ -49,9 +56,11 @@ const state = {
     embeddings: null, // { embedding, projection: { fit, points }, mode, chunksVersion, version }
     retrieval: null,  // { question, query, ranked, topK, topKValue, questionPoint, questionHasDirection, embeddingsVersion, version }
     prompt: null,     // { text, passages: [{ chunkIndex, text, score }], question, retrievalVersion }
+    answer: null,     // { provider, model, text, promptText, passages, question }
   },
-  // Per-visit interface state that is not an artifact
-  ui: { selectedChunk: null },
+  // Per-visit interface state that is not an artifact. The API key lives
+  // here and nowhere else: never persisted, never logged.
+  ui: { selectedChunk: null, provider: 'gemini', apiKey: '' },
   // Counts every successful chunking run, so later artifacts can tell which run they came from
   chunkRuns: 0,
   embedRuns: 0,
@@ -65,6 +74,7 @@ const STATION_RENDERERS = {
   embed: renderEmbedStation,
   retrieve: renderRetrieveStation,
   assemble: renderAssembleStation,
+  answer: renderAnswerStation,
 };
 
 // ---------------------------------------------------------------------------
@@ -118,7 +128,7 @@ const app = {
   },
 
   /** Embeds every chunk in the current mode and projects the vectors to 2D. */
-  runEmbedding({ goToStation = false, render = true } = {}) {
+  async runEmbedding({ goToStation = false, render = true } = {}) {
     // Re-running an upstream step is cheap and deterministic, so a stale
     // chunking is redone here rather than sending the student back a step.
     if (state.artifacts.chunks && app.isStale('chunks')) {
@@ -134,8 +144,43 @@ const app = {
         topTermCount: constants.GLASS_BOX_TOP_TERMS,
       });
     } else {
-      // Phase 5: Black Box. Until then the toggle is disabled in the UI.
-      return false;
+      if (state.busy) return false;
+      state.busy = true;
+      try {
+        showProgress(copy.CALLOUTS.modelDownload, null);
+        await loadBlackBoxModel({
+          transformersUrl: constants.TRANSFORMERS_JS_URL,
+          modelName: constants.BLACK_BOX_MODEL,
+          onProgress: (p) => showProgress(
+            p.percent === null
+              ? copy.CALLOUTS.modelDownload
+              : copy.CALLOUTS.modelDownload + ' ' + fill(copy.STATION_EMBED.progressDownload, { percent: p.percent }),
+            p.percent,
+          ),
+        });
+        showProgress(copy.STATION_EMBED.progressPreparing, null);
+        embedding = await embedChunksBlackBox(chunksArtifact.chunks, {
+          batchSize: constants.BLACK_BOX_BATCH_SIZE,
+          previewCount: constants.BLACK_BOX_PREVIEW_COUNT,
+          onProgress: ({ done, total }) => showProgress(
+            fill(copy.STATION_EMBED.progressEmbedding, { done: Math.min(done + 1, total), total }),
+            Math.round((done / total) * 100),
+          ),
+        });
+      } catch (error) {
+        // Degrade to Glass Box with a plain message. One warning line for the
+        // instructor's console; no stack trace on the page.
+        console.warn('RAG Lab: Black Box mode unavailable:', error && error.message ? error.message : error);
+        state.blackBox.available = false;
+        state.embeddingMode = 'glass';
+        showNotice(copy.CALLOUTS.modelFailed);
+        state.busy = false;
+        hideProgress();
+        return app.runEmbedding({ goToStation, render });
+      } finally {
+        state.busy = false;
+        hideProgress();
+      }
     }
     // The map shows directions (what cosine similarity compares), so project unit vectors.
     const projection = projectTo2D(embedding.vectors.map(unitVector));
@@ -153,14 +198,20 @@ const app = {
   },
 
   /** Embeds the question, scores every chunk, and cuts the list at TOP_K. */
-  runRetrieval({ goToStation = false, render = true } = {}) {
+  async runRetrieval({ goToStation = false, render = true } = {}) {
     const question = state.question.trim();
     if (!question) return false;
     if (!state.artifacts.embeddings || app.isStale('embeddings')) {
-      if (!app.runEmbedding({ render: false })) return false;
+      if (!(await app.runEmbedding({ render: false }))) return false;
     }
     const { embedding, projection } = state.artifacts.embeddings;
-    const query = embedding.embedQuery(question);
+    let query;
+    if (embedding.mode === 'black') showProgress(copy.STATION_EMBED.progressQuestion, null);
+    try {
+      query = await embedding.embedQuery(question);
+    } finally {
+      if (embedding.mode === 'black') hideProgress();
+    }
     const ranked = rankChunks(query.vector, embedding.vectors);
     const topKValue = state.dials.topK;
     const topK = selectTopK(ranked, topKValue);
@@ -184,9 +235,9 @@ const app = {
   },
 
   /** Builds the three-block prompt from the current retrieval. */
-  runAssembly({ goToStation = false } = {}) {
+  async runAssembly({ goToStation = false } = {}) {
     if (!state.artifacts.retrieval || app.isStale('retrieval')) {
-      if (!app.runRetrieval({ render: false })) return false;
+      if (!(await app.runRetrieval({ render: false }))) return false;
     }
     const retrieval = state.artifacts.retrieval;
     const chunks = state.artifacts.chunks.chunks;
@@ -196,6 +247,39 @@ const app = {
     if (goToStation) showStep('assemble');
     else { renderStepper(); renderStation(); }
     return true;
+  },
+
+  /** Station 5: send the current prompt with the student's key. Never throws. */
+  async askModel() {
+    const prompt = state.artifacts.prompt;
+    if (!prompt || !state.ui.apiKey.trim()) return { ok: false, code: 'badKey' };
+    if (state.busy) return { ok: false, code: 'rateLimit' };
+    const providerKey = state.ui.provider;
+    const provider = constants.ANSWER_PROVIDERS[providerKey];
+    state.busy = true;
+    try {
+      const text = await askModel(providerKey, {
+        apiKey: state.ui.apiKey.trim(),
+        model: provider.model,
+        prompt: prompt.text,
+        maxTokens: constants.ANSWER_MAX_OUTPUT_TOKENS,
+        providers: constants.ANSWER_PROVIDERS,
+      });
+      state.artifacts.answer = {
+        provider: providerKey,
+        model: provider.model,
+        text,
+        promptText: prompt.text,
+        passages: prompt.passages,
+        question: prompt.question,
+      };
+      renderStepper();
+      return { ok: true, text };
+    } catch (error) {
+      return { ok: false, code: error && error.code ? error.code : 'badRequest' };
+    } finally {
+      state.busy = false;
+    }
   },
 
   /** The plain-text block for "Copy run summary". */
@@ -224,11 +308,11 @@ const app = {
     });
   },
 
-  /** Switching mode re-embeds straight away (Glass Box is instant). */
-  setEmbeddingMode(mode) {
+  /** Switching mode re-embeds straight away (Glass Box is instant, Black Box shows progress). */
+  async setEmbeddingMode(mode) {
     if (mode === state.embeddingMode) return;
     state.embeddingMode = mode;
-    if (state.artifacts.embeddings) app.runEmbedding();
+    if (state.artifacts.embeddings) await app.runEmbedding();
     else { renderStepper(); renderStation(); }
   },
 
@@ -265,11 +349,48 @@ const app = {
         || !state.artifacts.retrieval
         || artifact.retrievalVersion !== state.artifacts.retrieval.version;
     }
+    if (artifactId === 'answer') {
+      const artifact = state.artifacts.answer;
+      if (!artifact) return false;
+      return app.isStale('prompt')
+        || !state.artifacts.prompt
+        || artifact.promptText !== state.artifacts.prompt.text;
+    }
     return false;
   },
 
   showStep,
 };
+
+// ---------------------------------------------------------------------------
+// Global progress bar and notices (visible whichever station is open)
+// ---------------------------------------------------------------------------
+function showProgress(label, percent) {
+  const wrap = document.getElementById('global-status');
+  const box = document.getElementById('global-progress');
+  const bar = document.getElementById('global-progress-fill');
+  document.getElementById('global-progress-label').textContent = label;
+  bar.classList.toggle('is-indeterminate', percent === null);
+  bar.style.width = percent === null ? '' : percent + '%';
+  box.hidden = false;
+  wrap.hidden = false;
+}
+
+function hideProgress() {
+  document.getElementById('global-progress').hidden = true;
+  syncGlobalStatus();
+}
+
+function showNotice(text) {
+  document.getElementById('global-notice-text').textContent = text;
+  document.getElementById('global-notice').hidden = false;
+  document.getElementById('global-status').hidden = false;
+}
+
+function syncGlobalStatus() {
+  const wrap = document.getElementById('global-status');
+  wrap.hidden = document.getElementById('global-progress').hidden && document.getElementById('global-notice').hidden;
+}
 
 function rebuildPromptText() {
   const prompt = state.artifacts.prompt;
@@ -340,6 +461,7 @@ function stepIsStale(stepId) {
   if (stepId === 'embed') return app.isStale('embeddings');
   if (stepId === 'retrieve') return app.isStale('retrieval');
   if (stepId === 'assemble') return app.isStale('prompt');
+  if (stepId === 'answer') return app.isStale('answer');
   return false;
 }
 
@@ -477,6 +599,7 @@ function stationHeading(step) {
   if (step.id === 'embed') return copy.STATION_EMBED.heading;
   if (step.id === 'retrieve') return copy.STATION_RETRIEVE.heading;
   if (step.id === 'assemble') return copy.STATION_ASSEMBLE.heading;
+  if (step.id === 'answer') return copy.STATION_ANSWER.heading;
   return step.label;
 }
 
@@ -501,6 +624,11 @@ function renderStation() {
 // ---------------------------------------------------------------------------
 restore();
 renderChrome();
+document.getElementById('global-notice-dismiss').textContent = copy.UI.dismiss;
+document.getElementById('global-notice-dismiss').addEventListener('click', () => {
+  document.getElementById('global-notice').hidden = true;
+  syncGlobalStatus();
+});
 renderStepper();
 renderDials();
 renderStation();

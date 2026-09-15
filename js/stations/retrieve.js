@@ -139,6 +139,11 @@ function renderResults(container, app, runButton) {
       section.append(el('p', { class: 'hint' }, [text.droppedWords + ' ', wordChips(query.dropped, 'word--dropped')]));
     }
     body.append(section);
+  } else {
+    body.append(el('section', { class: 'question-words' }, [
+      el('h3', { text: text.wordsHeading }),
+      el('p', { text: fill(text.blackBoxNote, { dimensions: embedding.dimensions }) }),
+    ]));
   }
 
   // ---- The map with the question on it ----
