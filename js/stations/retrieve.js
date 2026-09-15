@@ -118,7 +118,7 @@ function renderResults(container, app, runButton) {
       el('span', { class: 'hint mono block', text: `${copy.DIALS.topK.label}=${topKValue}  ·  ${embedding.mode === 'glass' ? copy.STATION_EMBED.modeGlass : copy.STATION_EMBED.modeBlack}` }),
     ]),
     el('span', { class: 'toolbar__spacer' }),
-    el('button', { type: 'button', class: 'button button--primary', text: text.continueButton, disabled: true, title: copy.UI.notBuilt }),
+    el('button', { type: 'button', class: 'button button--primary', text: text.continueButton, disabled: stale, onclick: () => app.runAssembly({ goToStation: true }) }),
   ]));
 
   // ---- How the question was read (Glass Box only: words are visible) ----

@@ -547,3 +547,45 @@ mark.overlap {
 .badge--rank { background: var(--gold); color: var(--ink); }
 .badge--score { background: var(--green); color: var(--paper); font-family: var(--font-mono); margin-left: auto; }
 .rank-table td:last-child { white-space: nowrap; }
+
+/* ---------- Station 4: prompt assembly ---------- */
+.prompt-block {
+  border: 1px solid var(--line);
+  border-left: 5px solid var(--amber);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  padding: 0.8rem 1rem;
+  margin: 0 0 1rem;
+}
+.prompt-block__title { margin: 0 0 0.2rem; }
+.instruction-input {
+  width: 100%;
+  font: inherit;
+  font-size: 0.95rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  resize: vertical;
+}
+.passage-list { list-style: none; margin: 0; padding: 0; }
+.passage { margin: 0 0 0.75rem; }
+.passage__label { font-weight: 700; color: var(--green); }
+.passage__text { margin: 0.2rem 0 0; white-space: pre-wrap; font-size: 0.92rem; }
+.question-display { font-size: 1.05rem; font-weight: 600; margin: 0; }
+.prompt-full { margin-top: 1.5rem; }
+.prompt-box {
+  font-family: var(--font-mono);
+  font-size: 0.88rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: var(--green-dark);
+  color: var(--ice);
+  padding: 1rem 1.1rem;
+  border-radius: var(--radius);
+  margin: 0 0 0.6rem;
+  max-height: 32rem;
+  overflow: auto;
+}
+.prompt-box--summary { background: var(--ice); color: var(--ink); border: 1px solid var(--line); }
+.copy-status { font-size: 0.9rem; color: var(--teal); font-weight: 600; }
+.summary-section { margin-top: 1.5rem; }

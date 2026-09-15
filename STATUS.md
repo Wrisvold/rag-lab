@@ -2,7 +2,29 @@
 
 Updated at the end of each phase. Newest phase first.
 
-## Phase 3 — Retrieval (done, awaiting Ward's review)
+## Phase 4 — Prompt assembly and export (done, awaiting Ward's review)
+
+**Done**
+- `js/prompt.js` (pure): `buildPrompt` joins the three blocks (instruction, `[Passage n]` passages, `Question: …`) with blank lines; `estimateTokens` at ~4 characters per token (the constant is in `constants.js`).
+- `js/summary.js` (pure): `formatRunSummary` produces the brief's format character for character, including the em dash and arrow, two-decimal scores, and thousands separators. `tests/summary.test.js` pins the exact example from the brief.
+- `js/clipboard.js`: modern clipboard API with the old `execCommand` fallback; every failure becomes a plain message.
+- Station 4 (`js/stations/assemble.js`): three labelled blocks with amber run-time edges. Block 1 is an editable instruction with "Reset to the default instruction"; edits update the full prompt live and survive a reload. Block 2 lists each passage with its chunk number and score. Block 3 is the question. Then the full prompt in a dark monospace box with Copy prompt and "{chars} characters · about {tokens} tokens", the gold "paste it into Gemini, ChatGPT, or Claude" callout, and the run summary shown in full with Copy run summary (the summary is regenerated at copy time so the timestamp is current).
+- Wiring: "Assemble the prompt" on Station 3 builds the prompt and moves on; the prompt remembers which retrieval run it came from and goes stale with it; Re-assemble re-runs the whole chain (retrieve, embed, chunk) if needed. The Answer step unlocks once a prompt exists but is "Not built yet" until Phase 5.
+- `DEFAULT_INSTRUCTION` in `constants.js` is the course wording; a test checks the three phrases.
+- Test suite: 64 passing.
+
+**Verified in the browser**
+- Full chain from a fresh load: chunk, embed, retrieve (grounding probe), assemble. Passages 1–3 are chunks 10, 11, 12 with scores 0.34, 0.21, 0.06. Prompt: 1,483 characters, about 371 tokens. The run summary reads exactly as the brief's example with this run's numbers.
+- Editing the instruction to one sentence changed the full prompt and the length line at once, and the new instruction was in sessionStorage.
+
+**Decisions made without asking**
+- The prompt text has no headings of its own beyond `[Passage n]` and `Question:`. The three labels are on screen, not in the prompt, so what the student copies is exactly what a model would receive.
+- The run summary is shown on the page as well as copied, so a student can check it before pasting.
+- Chunk numbers in the summary are the same 1-based, zero-padded numbers shown on the cards.
+
+**Next: Phase 5** — Black Box mode: lazy Transformers.js load with progress and a plain fallback message, 384-dim inspector with heat strip, same map re-projected, manual synonym-probe check; and the optional Station 5 answer step with a student-supplied Gemini, OpenAI, or Anthropic key held in memory only.
+
+## Phase 3 — Retrieval (done, reviewed)
 
 **Done**
 - `js/retrieval.js` (pure): `rankChunks` scores every chunk with exact cosine similarity and sorts (ties keep chunk order), `selectTopK` cuts the list (k larger than the list is tolerated), `rankOf` for tests and the run summary.

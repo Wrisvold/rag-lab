@@ -227,6 +227,35 @@ export const STATION_RETRIEVE = {
 };
 
 // ---------------------------------------------------------------------------
+// Station 4 — Assemble
+// ---------------------------------------------------------------------------
+export const STATION_ASSEMBLE = {
+  heading: 'The assembled prompt',
+  notYet: 'Retrieve some passages first, then assemble the prompt.',
+  runButton: 'Assemble the prompt',
+  rerunButton: 'Re-assemble',
+  block1: '1 · Instruction',
+  block1Help: 'Tells the model how to behave. Edit it and watch the full prompt below change.',
+  resetButton: 'Reset to the default instruction',
+  block2: '2 · Retrieved passages',
+  block2Help: 'The top {topK} chunks from Station 3, in rank order, each labelled [Passage n]. The model never sees the rest of your document.',
+  block3: '3 · Question',
+  block3Help: 'Your question, exactly as you typed it.',
+  passageTag: '= chunk {chunk}, score {score}',
+  fullHeading: 'The full prompt, exactly as it would be sent',
+  length: '{chars} characters · about {tokens} tokens',
+  copyPrompt: 'Copy prompt',
+  copySummary: 'Copy run summary',
+  copied: 'Copied to the clipboard.',
+  copyFailed: 'Copying did not work in this browser. Select the text and copy it yourself.',
+  summaryHeading: 'Run summary',
+  summaryIntro: 'Paste this block into an assignment submission. It records every setting and result of this run, so nobody has to grade screenshots.',
+  continueButton: 'Try the optional answer step',
+  modeGlassSummary: 'Glass Box (TF-IDF, {dims} dims)',
+  modeBlackSummary: 'Black Box ({model}, {dims} dims)',
+};
+
+// ---------------------------------------------------------------------------
 // Shared bits
 // ---------------------------------------------------------------------------
 export const UI = {

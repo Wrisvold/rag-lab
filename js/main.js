@@ -18,6 +18,10 @@ import { unitVector } from './cosine.js';
 import { applyPca } from './pca.js';
 import { rankChunks, selectTopK } from './retrieval.js';
 import { renderRetrieveStation } from './stations/retrieve.js';
+import { renderAssembleStation } from './stations/assemble.js';
+import { buildPrompt } from './prompt.js';
+import { formatRunSummary } from './summary.js';
+import { padNumber } from './text.js';
 
 // ---------------------------------------------------------------------------
 // State
@@ -36,19 +40,22 @@ const state = {
   embeddingMode: 'glass',
   // The student's question (Station 3). Kept across a reload.
   question: '',
+  // The instruction block of the prompt (Station 4). Editable; kept across a reload.
+  instruction: constants.DEFAULT_INSTRUCTION,
   // Artifacts remember the settings and document version they were made
   // from, so "stale" is computed, never guessed.
   artifacts: {
     chunks: null,     // { chunks, summary, settings: { chunkSize, chunkOverlap }, documentVersion, version }
     embeddings: null, // { embedding, projection: { fit, points }, mode, chunksVersion, version }
-    retrieval: null,  // { question, query, ranked, topK, topKValue, questionPoint, questionHasDirection, embeddingsVersion }
-    // Phase 4+: prompt
+    retrieval: null,  // { question, query, ranked, topK, topKValue, questionPoint, questionHasDirection, embeddingsVersion, version }
+    prompt: null,     // { text, passages: [{ chunkIndex, text, score }], question, retrievalVersion }
   },
   // Per-visit interface state that is not an artifact
   ui: { selectedChunk: null },
   // Counts every successful chunking run, so later artifacts can tell which run they came from
   chunkRuns: 0,
   embedRuns: 0,
+  retrievalRuns: 0,
 };
 
 // Which stations exist in code so far. Others are shown as locked.
@@ -57,6 +64,7 @@ const STATION_RENDERERS = {
   chunk: renderChunkStation,
   embed: renderEmbedStation,
   retrieve: renderRetrieveStation,
+  assemble: renderAssembleStation,
 };
 
 // ---------------------------------------------------------------------------
@@ -145,7 +153,7 @@ const app = {
   },
 
   /** Embeds the question, scores every chunk, and cuts the list at TOP_K. */
-  runRetrieval({ goToStation = false } = {}) {
+  runRetrieval({ goToStation = false, render = true } = {}) {
     const question = state.question.trim();
     if (!question) return false;
     if (!state.artifacts.embeddings || app.isStale('embeddings')) {
@@ -159,13 +167,61 @@ const app = {
     const questionHasDirection = Array.from(query.vector).some((value) => value !== 0);
     // A question with no direction has nothing to project; it sits at the mean (the origin).
     const questionPoint = questionHasDirection ? applyPca(projection.fit, unitVector(query.vector)) : [0, 0];
+    state.retrievalRuns += 1;
     state.artifacts.retrieval = {
       question, query, ranked, topK, topKValue, questionPoint, questionHasDirection,
-      embeddingsVersion: state.artifacts.embeddings.version,
+      embeddingsVersion: state.artifacts.embeddings.version, version: state.retrievalRuns,
     };
     if (goToStation) showStep('retrieve');
+    else if (render) { renderStepper(); renderStation(); }
+    return true;
+  },
+
+  setInstruction(text) {
+    state.instruction = text;
+    persist();
+    if (state.artifacts.prompt) rebuildPromptText();
+  },
+
+  /** Builds the three-block prompt from the current retrieval. */
+  runAssembly({ goToStation = false } = {}) {
+    if (!state.artifacts.retrieval || app.isStale('retrieval')) {
+      if (!app.runRetrieval({ render: false })) return false;
+    }
+    const retrieval = state.artifacts.retrieval;
+    const chunks = state.artifacts.chunks.chunks;
+    const passages = retrieval.topK.map((entry) => ({ chunkIndex: entry.index, text: chunks[entry.index].text, score: entry.score }));
+    state.artifacts.prompt = { text: '', passages, question: retrieval.question, retrievalVersion: retrieval.version };
+    rebuildPromptText();
+    if (goToStation) showStep('assemble');
     else { renderStepper(); renderStation(); }
     return true;
+  },
+
+  /** The plain-text block for "Copy run summary". */
+  buildRunSummary() {
+    const chunksArtifact = state.artifacts.chunks;
+    const embeddings = state.artifacts.embeddings;
+    const retrieval = state.artifacts.retrieval;
+    const prompt = state.artifacts.prompt;
+    const total = chunksArtifact.chunks.length;
+    const modeLabel = embeddings.mode === 'glass'
+      ? fill(copy.STATION_ASSEMBLE.modeGlassSummary, { dims: embeddings.embedding.dimensions.toLocaleString('en-US') })
+      : fill(copy.STATION_ASSEMBLE.modeBlackSummary, { model: constants.BLACK_BOX_MODEL.split('/').pop(), dims: embeddings.embedding.dimensions.toLocaleString('en-US') });
+    return formatRunSummary({
+      date: new Date(),
+      documentName: state.document.name,
+      words: state.document.words,
+      chunkSize: chunksArtifact.settings.chunkSize,
+      chunkOverlap: chunksArtifact.settings.chunkOverlap,
+      chunkCount: total,
+      midSentenceCuts: chunksArtifact.summary.midSentenceCuts,
+      modeLabel,
+      question: retrieval.question,
+      topK: retrieval.topKValue,
+      results: retrieval.topK.map((entry) => ({ rank: entry.rank, chunkLabel: padNumber(chunksArtifact.chunks[entry.index].number, total), score: entry.score })),
+      promptLength: prompt.text.length,
+    });
   },
 
   /** Switching mode re-embeds straight away (Glass Box is instant). */
@@ -202,11 +258,23 @@ const app = {
         || artifact.question !== state.question.trim()
         || artifact.topKValue !== state.dials.topK;
     }
+    if (artifactId === 'prompt') {
+      const artifact = state.artifacts.prompt;
+      if (!artifact) return false;
+      return app.isStale('retrieval')
+        || !state.artifacts.retrieval
+        || artifact.retrievalVersion !== state.artifacts.retrieval.version;
+    }
     return false;
   },
 
   showStep,
 };
+
+function rebuildPromptText() {
+  const prompt = state.artifacts.prompt;
+  prompt.text = buildPrompt({ instruction: state.instruction, passages: prompt.passages, question: prompt.question });
+}
 
 // ---------------------------------------------------------------------------
 // Session persistence (document text and dials survive a reload)
@@ -216,6 +284,7 @@ function persist() {
     document: { text: state.document.text, name: state.document.name },
     dials: state.dials,
     question: state.question,
+    instruction: state.instruction,
   });
 }
 
@@ -234,6 +303,7 @@ function restore() {
     state.document = { text, name: saved.document.name || copy.STATION_DOCUMENT.pastedName, words: countWords(text), chars: text.length, version: 1 };
   }
   if (typeof saved.question === 'string') state.question = saved.question;
+  if (typeof saved.instruction === 'string' && saved.instruction.trim()) state.instruction = saved.instruction;
   if (state.document.name === constants.SAMPLE_DOCUMENT_NAME && !state.question.trim()) {
     state.question = copy.SAMPLE_QUESTIONS[0].text;
   }
@@ -260,7 +330,7 @@ function isUnlocked(stepId) {
     case 'embed': return Boolean(state.artifacts.chunks);
     case 'retrieve': return Boolean(state.artifacts.embeddings);
     case 'assemble': return Boolean(state.artifacts.retrieval);
-    // Phase 4+: answer needs a prompt.
+    case 'answer': return Boolean(state.artifacts.prompt);
     default: return false;
   }
 }
@@ -269,6 +339,7 @@ function stepIsStale(stepId) {
   if (stepId === 'chunk') return app.isStale('chunks');
   if (stepId === 'embed') return app.isStale('embeddings');
   if (stepId === 'retrieve') return app.isStale('retrieval');
+  if (stepId === 'assemble') return app.isStale('prompt');
   return false;
 }
 
@@ -405,6 +476,7 @@ function stationHeading(step) {
   if (step.id === 'chunk') return copy.STATION_CHUNK.heading;
   if (step.id === 'embed') return copy.STATION_EMBED.heading;
   if (step.id === 'retrieve') return copy.STATION_RETRIEVE.heading;
+  if (step.id === 'assemble') return copy.STATION_ASSEMBLE.heading;
   return step.label;
 }
 
