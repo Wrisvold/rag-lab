@@ -454,6 +454,7 @@ export const FLOW = {
     fit: 'Fit to screen',
     inspector: 'Inspector',
     zoomLevel: 'Zoom {percent}%',
+    exportMenu: 'Export and load',
     copySummary: 'Copy flow summary',
     copyJson: 'Copy graph as JSON',
     download: 'Download graph',

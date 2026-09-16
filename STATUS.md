@@ -2,7 +2,7 @@
 
 Updated at the end of each phase. Newest phase first.
 
-## Flow mode — phase plan (in progress: Phases 7 to 10 done)
+## Flow mode — phase plan (done: Phases 7 to 11, on the flow-mode branch)
 
 A second way to use RAG Lab: a node canvas in the style of Langflow or Flowise, where the student places the stages and wires them together, but built to teach rather than to ship. Nothing in the existing walkthrough changes. Flow mode is added beside it and shares every compute module.
 
@@ -106,6 +106,52 @@ Port types are `text`, `chunks`, `vectors`, `question`, `passages`, `prompt`, `a
 - Reusing the station renderers through an adapter may surface assumptions about the single global `state`. The plan allows one round of small edits to `stations/*.js`, kept compatible with the walkthrough and covered by the existing tests.
 - Two Black Box nodes double the embedding time, not the download. Acceptable, and the progress bar makes it visible.
 
+
+## Phase 11 — Flow mode polish, README, review (done)
+
+The last phase of the Flow mode plan. Contrast and focus over every new element, the toolbar regrouped, narrow screens, the README section, and this entry.
+
+**Contrast pass.** Every text and control colour pair Flow mode introduces, measured the same way as Phase 6 (WCAG relative luminance, rounded to two places):
+
+| Pair | Ratio | Result |
+|---|---|---|
+| port label, summary line, palette hint, zoom level, help line: ink-soft on paper | 7.44 | pass |
+| card title: green on ice | 6.74 | pass |
+| setting label, wire handle ×: green on paper | 7.72 | pass |
+| remove ×: ink-soft on ice | 6.49 | pass |
+| summary line on a stale card: ink-soft on gold-soft | 6.63 | pass (was 2.23 at 50% opacity; the opacity is gone) |
+| stale badge: amber-ink on gold-soft | 6.11 | pass |
+| error line: danger on paper, and on a stale card's gold-soft | 6.69, 5.96 | pass |
+| readout: ink on paper | 14.80 | pass |
+| wire: green on the page | 7.24 | pass |
+| stale wire: amber-ink dashed on the page | 6.42 | pass (was 1.35 in the line colour) |
+| candidate port fill: teal on the page | 3.89 | pass for a control (3:1) |
+| refused port fill: danger on the page | 6.27 | pass |
+| focus ring: gold on the page, gold on paper | 2.08, 2.22 | the walkthrough's ring alone; on the canvas it now sits inside a green ring (7.24 on the page) |
+
+**Done**
+- `flow.css`: stale summaries use colour rather than opacity; stale wires are amber-ink dashed, matching the badge; focus on a card, a port, or a wire handle is a gold ring inside a green one, so it reads on the dotted page, on a card, and on a port.
+- Toolbar regrouped so it never re-wraps: Run all and an "Export and load" menu (`<details>`: Copy flow summary, Copy graph as JSON, Download graph, Load graph; closes after a choice, on Escape with focus back on the button, and when focus leaves it) on the left; − 55% + Fit Inspector on the right. Beside an open inspector at 1400 px the toolbar is 58 px tall before and after, and the canvas does not move.
+- Narrow screens (under 1100 px): the three columns stack, the palette and inspector each scroll inside about a third of the height, the palette becomes a row of compact buttons with its intro and hints hidden, and the canvas keeps at least 280 px.
+- README: a Flow mode section (what it is for and what it is not; the canvas; a keyboard reference; the five exercises and what to notice in each; the export format with the notebook mapping and the open decision about the notebook; the flow summary; the `FLOW_` constants; where the copy lives; adding a kind of card), plus additions to the intro, contents, tests, folder layout, browser support, known limitations, and extension points.
+- Suite: 124 passing. No console errors on either page.
+
+**Verified in the browser (Chrome engine in the desktop app)**
+- 1400 × 900: toolbar on one line; click a card, the inspector opens, the toolbar is still one line and the canvas top is unchanged; the export menu opens with its four items and Escape closes it with focus on the button.
+- 900 × 700: columns stacked, the palette a row of buttons above the canvas, the canvas readable at the restored zoom, the readout and help under it, the footer below everything.
+- The walkthrough page unchanged apart from the header switch and the notice fix.
+
+**Not verified here, on the manual list with the Phase 6 items**
+- Firefox and Safari. Flow mode adds pointer events with pointer capture, `elementFromPoint` during a drag, `<details>` as a menu, and `offsetLeft` for wire endpoints, all long supported; a pass through the five exercises in each is the remaining check.
+- A real mouse wheel and Ctrl+wheel, the clipboard buttons, and the download and load dialogs, all of which the desktop app's automation cannot drive.
+- A phone. The stacked layout was checked at 900 px; the README says Flow mode is meant for a laptop.
+
+**Decisions made without asking**
+- The toolbar's zoom buttons show − and + with the full names as accessible labels and tooltips, and the zoom level is a plain "55%" with the full sentence as its label. Words on all nine buttons did not fit beside an open inspector.
+- The focus ring change applies to the canvas only. The walkthrough keeps its single gold ring, which Phase 6 accepted, and this phase did not touch it.
+- A Compare card stays held back (decision 2), and the notebook question stays open (decision 3); both are stated in the README so a reader knows where the design stopped and why.
+
+**Where this leaves the branch.** Phases 7 to 11 are on `flow-mode`, one commit per phase, with `main` untouched. Merging is Ward's call after a look at the live pages: `index.html` should feel exactly as before with one extra button in the header; `flow.html` is the new thing.
 
 ## Phase 10 — Flow mode teaching layer (done)
 

@@ -103,7 +103,10 @@ const app = {
 
   onViewChange(view) {
     const zoom = document.getElementById('flow-zoom-level');
-    if (zoom) zoom.textContent = fill(F.toolbar.zoomLevel, { percent: Math.round(view.zoom * 100) });
+    if (zoom) {
+      zoom.textContent = `${Math.round(view.zoom * 100)}%`;
+      zoom.setAttribute('aria-label', fill(F.toolbar.zoomLevel, { percent: Math.round(view.zoom * 100) }));
+    }
     persistView(view);
   },
 };
@@ -293,18 +296,35 @@ function renderToolbar() {
     fileInput.value = '';
     if (file) await loadGraphFile(file);
   });
+  // Export and load live in a small menu, so the toolbar fits on one line
+  // beside an open inspector and never re-wraps (which would shift the canvas).
+  const menu = el('details', { class: 'flow-menu' }, [
+    el('summary', { class: 'button', text: F.toolbar.exportMenu }),
+    el('div', { class: 'flow-menu__list' }, [
+      el('button', { type: 'button', class: 'button', text: F.toolbar.copySummary, onclick: () => copyToClipboard(flowGraphSummary(state.graph)) }),
+      el('button', { type: 'button', class: 'button', text: F.toolbar.copyJson, onclick: () => copyToClipboard(exportJson()) }),
+      el('button', { type: 'button', class: 'button', text: F.toolbar.download, onclick: () => downloadGraph() }),
+      el('label', { class: 'button button--file', title: F.toolbar.loadHint }, [F.toolbar.load, fileInput]),
+    ]),
+  ]);
+  // Close the menu after a choice, on Escape, and when focus leaves it.
+  menu.addEventListener('click', (event) => { if (event.target.closest('button')) menu.open = false; });
+  menu.addEventListener('keydown', (event) => { if (event.key === 'Escape' && menu.open) { menu.open = false; menu.querySelector('summary').focus(); } });
+  menu.addEventListener('focusout', (event) => { if (!menu.contains(event.relatedTarget)) menu.open = false; });
+
   toolbar.replaceChildren(
-    el('button', { type: 'button', class: 'button button--primary', text: F.toolbar.runAll, onclick: () => app.runAll() }),
-    el('button', { type: 'button', class: 'button', text: F.toolbar.copySummary, onclick: () => copyToClipboard(flowGraphSummary(state.graph)) }),
-    el('button', { type: 'button', class: 'button', text: F.toolbar.copyJson, onclick: () => copyToClipboard(exportJson()) }),
-    el('button', { type: 'button', class: 'button', text: F.toolbar.download, onclick: () => downloadGraph() }),
-    el('label', { class: 'button button--file', title: F.toolbar.loadHint }, [F.toolbar.load, fileInput]),
+    el('div', { class: 'flow-toolbar__group' }, [
+      el('button', { type: 'button', class: 'button button--primary', text: F.toolbar.runAll, onclick: () => app.runAll() }),
+      menu,
+    ]),
     el('span', { class: 'flow-toolbar__spacer' }),
-    el('button', { type: 'button', class: 'button', text: F.toolbar.zoomOut, onclick: () => canvas.zoomBy(1 / constants.FLOW_ZOOM_STEP) }),
-    el('button', { type: 'button', class: 'button', text: F.toolbar.zoomIn, onclick: () => canvas.zoomBy(constants.FLOW_ZOOM_STEP) }),
-    el('button', { type: 'button', class: 'button', text: F.toolbar.fit, onclick: () => canvas.fit() }),
-    el('span', { class: 'flow-toolbar__zoom', id: 'flow-zoom-level' }),
-    el('button', { type: 'button', class: 'button', id: 'inspector-show', text: F.toolbar.inspector, onclick: () => showInspector(true) }),
+    el('div', { class: 'flow-toolbar__group', role: 'group', 'aria-label': F.toolbar.zoomLevel.replace(' {percent}%', '') }, [
+      el('button', { type: 'button', class: 'button', text: '−', 'aria-label': F.toolbar.zoomOut, title: F.toolbar.zoomOut, onclick: () => canvas.zoomBy(1 / constants.FLOW_ZOOM_STEP) }),
+      el('span', { class: 'flow-toolbar__zoom', id: 'flow-zoom-level' }),
+      el('button', { type: 'button', class: 'button', text: '+', 'aria-label': F.toolbar.zoomIn, title: F.toolbar.zoomIn, onclick: () => canvas.zoomBy(constants.FLOW_ZOOM_STEP) }),
+      el('button', { type: 'button', class: 'button', text: F.toolbar.fit, onclick: () => canvas.fit() }),
+      el('button', { type: 'button', class: 'button', id: 'inspector-show', text: F.toolbar.inspector, onclick: () => showInspector(true) }),
+    ]),
   );
 }
 

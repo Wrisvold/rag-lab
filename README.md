@@ -24,6 +24,8 @@ Two embedding modes sit behind a toggle on Station 2, and the toggle is the argu
 
 The app runs entirely in the browser. No account, no API key, no payment, no server, no build step. It is one folder of plain HTML, CSS, and JavaScript.
 
+A second page, **Flow mode** (`flow.html`, the "Flow" button in the header), turns the same pipeline into a canvas: the student places the steps as cards, wires them together, and reads why a wrong wire is refused. It comes with five exercises. See [Flow mode](#flow-mode).
+
 ---
 
 ## Contents
@@ -40,11 +42,19 @@ The app runs entirely in the browser. No account, no API key, no payment, no ser
 5. [Editing the explainer copy and other text](#editing-the-explainer-copy-and-other-text)
 6. [The optional answer step and API keys](#the-optional-answer-step-and-api-keys)
 7. [The run summary for assignments](#the-run-summary-for-assignments)
-8. [Tests](#tests)
-9. [Folder layout](#folder-layout)
-10. [Browser support](#browser-support)
-11. [Known limitations](#known-limitations)
-12. [Extension points](#extension-points)
+8. [Flow mode](#flow-mode)
+   - [The canvas](#the-canvas)
+   - [Keyboard](#keyboard)
+   - [The exercises](#the-exercises)
+   - [Exporting a graph, and the notebook](#exporting-a-graph-and-the-notebook)
+   - [The flow summary](#the-flow-summary)
+   - [Flow mode constants](#flow-mode-constants)
+   - [Adding a kind of card](#adding-a-kind-of-card)
+9. [Tests](#tests)
+10. [Folder layout](#folder-layout)
+11. [Browser support](#browser-support)
+12. [Known limitations](#known-limitations)
+13. [Extension points](#extension-points)
 
 ---
 
@@ -254,13 +264,138 @@ Chunk numbers are the same 1-based, zero-padded numbers shown on the cards. (The
 
 ---
 
+## Flow mode
+
+The walkthrough shows the pipeline one station at a time. **Flow mode** (`flow.html`, the "Flow" button in the header) hands the student a canvas and the six steps as cards, and asks them to build the pipeline. It is the same compute code behind a different question: not "what happens at each step?" but "what has to connect to what, and why?"
+
+It is deliberately not a general node editor. There are eight kinds of card and no others; every wire is type-checked; and every refusal is a sentence a student can learn from rather than a silent failure. The three dials sit on the cards that own them. Nothing in the walkthrough changed to make room for it: Flow mode is a second page over the same modules, and a first-week class need never see it.
+
+### The canvas
+
+- **Palette** (left): one button per kind of card, with a one-line hint. A new card lands near the middle of the view, clear of the others, and takes focus.
+- **Cards**: title, lane tag (build time teal, run time amber, as on the stepper), input ports on the left, output port on the right, the card's own settings, then a footer with a summary line ("20 chunks · 19 mid-sentence cuts"), a gold "Re-run to update" badge when the card is stale, any error, and Run.
+- **Wires**: drag from an output port to an input port. Matching inputs glow teal while you drag; a refused drop prints why in the line under the canvas and makes no wire. A click on an output port (no drag) starts a wire that finishes on the next click. The small × at a wire's midpoint removes it.
+- **Run** on a card runs it and anything stale upstream, exactly as "Retrieve" in the walkthrough re-chunks and re-embeds if it must. **Run all** on the toolbar runs whatever is missing or stale, in order. Changing a setting greys the card and every card and wire downstream; nothing is re-run until you ask.
+- **Inspector** (right): click a card and its artifact appears, drawn by the walkthrough's own station for that step: the chunk cards, the vector map and inspector, the ranked table with the question on the map, the three-block prompt with Copy prompt and Copy run summary, the answer form. Hide it with the button in its header.
+- **Export and load** (toolbar menu): the flow summary, the graph as JSON, a download, and a file picker. See below.
+- **Readout**: the line under the canvas announces every action (aria-live), so screen-reader users hear what happened.
+
+The canvas, its zoom, and every setting survive a reload in the same tab, like the walkthrough. Artifacts do not; press Run all.
+
+### Keyboard
+
+| Where | Keys | What happens |
+|---|---|---|
+| anywhere | Tab / Shift+Tab | moves through cards, ports, settings, and buttons in reading order |
+| a card | ← ↑ → ↓ | moves it one grid step (20 px); Shift moves five |
+| a card | Delete | removes it; focus moves to a neighbour |
+| an output port | Enter or Space | starts a wire and moves focus to the first matching input |
+| while wiring | Tab | reaches every input port; matching ones are highlighted |
+| an input port, while wiring | Enter | makes the wire, or reads out why it is refused |
+| while wiring | Escape | cancels and returns focus to the port you started from |
+| a wired input port | Delete | removes that wire |
+| a wire's × handle | Enter | removes that wire |
+| the export menu | Escape | closes it |
+
+Tab reaches every input while wiring, not only the matching ones, on purpose: a keyboard user should be able to try Chunk into Retrieve and hear "Retrieve compares numbers, not words…" just as a mouse user can.
+
+### The exercises
+
+The palette's "Exercises" section loads a canvas with a sticky note carrying the task. Each is built from the sample handbook.
+
+| Exercise | What loads | What to notice |
+|---|---|---|
+| 1 · Build it | Document and Answer, nothing between | Every refused wire names the missing step. The order of the steps is the lesson. |
+| 2 · Something is missing | The pipeline with no Chunk card | Document into Embed is refused: "Embed works on chunks, not on the whole document…". Add Chunk, wire it, run. |
+| 3 · Starved retrieval | TOP_K = 1 and the parental-leave question | The one passage the model receives is about holidays and sick leave. Retrieval always returns something; the instruction is what keeps the model honest. |
+| 4 · Two boxes | Glass Box and Black Box branches fed by one Chunk and one Question | The two Retrieve footers name different chunks for the same question. The Black Box one has the vacation chunk at rank 1; the Glass Box one does not have it at all. |
+| 5 · The lost sentence | CHUNK_OVERLAP = 0, CHUNK_SIZE = 500 | The cut lands inside "vacation": one chunk ends "…gets ten vacat", the next begins "ion days a year…". No chunk says what a new hire gets. Raise the overlap and run again. |
+
+The chunk size for exercise 5 is `FLOW_EXERCISE_OVERLAP_SIZE` in `js/constants.js`. If you swap the sample document, `tests/flow/exercises.test.js` will tell you whether the cut still lands where the note says.
+
+A new exercise is one entry in `js/flow/exercises.js` (a graph built with the same calls the canvas uses) plus a label and task in `js/copy.js` under `FLOW.exercises.items`.
+
+### Exporting a graph, and the notebook
+
+**Copy graph as JSON** and **Download graph** write the canvas in a shape meant to be read by a person or by the course notebook:
+
+```json
+{
+  "format": "rag-lab-flow",
+  "version": 1,
+  "pipeline": [
+    { "id": "document-1", "type": "document", "params": { "name": "sample.txt", "sample": true }, "inputs": {} },
+    { "id": "chunk-2",    "type": "chunk",    "params": { "CHUNK_SIZE": 400, "CHUNK_OVERLAP": 50 }, "inputs": { "text": "document-1" } },
+    { "id": "embed-3",    "type": "embed",    "params": { "mode": "glass" }, "inputs": { "chunks": "chunk-2" } },
+    { "id": "question-4", "type": "question", "params": { "text": "How many days of PTO do new employees get?" }, "inputs": {} },
+    { "id": "retrieve-5", "type": "retrieve", "params": { "TOP_K": 3 }, "inputs": { "vectors": "embed-3", "question": "question-4" } },
+    { "id": "assemble-6", "type": "assemble", "params": { "instruction": "Answer the question using only…" }, "inputs": { "passages": "retrieve-5", "question": "question-4" } },
+    { "id": "answer-7",   "type": "answer",   "params": { "provider": "gemini" }, "inputs": { "prompt": "assemble-6" } }
+  ],
+  "layout": { "document-1": { "x": 40, "y": 40 }, "chunk-2": { "x": 360, "y": 40 } }
+}
+```
+
+- `pipeline` is in execution order. Each entry names what feeds it by node id; a node has one output, so the port is implied.
+- The three dials use the notebook's names (`CHUNK_SIZE`, `CHUNK_OVERLAP`, `TOP_K`); the mapping is `FLOW_NOTEBOOK_NAMES` in `js/constants.js`. Other settings keep their own names.
+- The sample document is written by reference (`"sample": true`) and fetched back on load; a pasted document is written in full.
+- Artifacts are never written; a loaded graph is re-run. The API key is never a setting, so it cannot appear here.
+- `layout` is card positions. The notebook ignores it.
+
+**Load graph** takes such a file back. Anything else gets one plain sentence ("That file is not a RAG Lab graph.").
+
+Whether the Colab notebook reads this file or the `pipeline` block is simply a reference for students to compare against is an open decision (see STATUS.md); the names are already the notebook's, so nothing in the format needs to change either way.
+
+`node tools/flow-run.mjs path/to/graph.json` runs an exported graph outside the browser (Glass Box) and prints its run summary, which is how the Phase 7 exit check was made.
+
+### The flow summary
+
+**Copy flow summary** (in the export menu) is the Flow counterpart of the walkthrough's run summary: every card in execution order, what feeds it, its settings, and what it produced, with notes at the end.
+
+```
+RAG Lab flow — 2026-09-16 14:02
+1. Document · sample.txt · 1,105 words
+2. Chunk (from 1) · CHUNK_SIZE=400  CHUNK_OVERLAP=50 · 20 chunks, 19 mid-sentence cuts
+3. Embed (from 2) · Glass Box (TF-IDF) · 392 dims
+4. Question · How many days of PTO do new employees get?
+5. Retrieve (from 3, 4) · TOP_K=3 · chunks 02, 03, 07 · scores 0.19, 0.10, 0.08
+6. Assemble (from 5, 4) · 1,467 chars
+7. Answer (from 6) · Google Gemini · not run
+Note · Build the path from the Document to the Answer…
+```
+
+For a single chain the walkthrough's own run summary is also available: click the Assemble card and use Copy run summary in the inspector.
+
+### Flow mode constants
+
+| Constant | Default | What it is |
+|---|---|---|
+| `FLOW_NODE_WIDTH` | 250 | width of every card, in pixels at 100% |
+| `FLOW_COLUMN_GAP`, `FLOW_ROW_GAP` | 70, 300 | spacing the presets and exercises use |
+| `FLOW_CANVAS_PADDING` | 40 | margin around a preset and around Fit |
+| `FLOW_GRID_STEP`, `FLOW_KEYBOARD_STEP_LARGE` | 20, 5 | cards snap to the grid; arrows move one step, Shift+arrow five |
+| `FLOW_ZOOM_MIN`, `FLOW_ZOOM_MAX`, `FLOW_ZOOM_STEP` | 0.4, 1.6, 1.2 | zoom range and the factor per button press |
+| `FLOW_EXPORT_VERSION` | 1 | stamp in every exported graph; bump only if the format changes |
+| `FLOW_NOTEBOOK_NAMES` | the three dials | how settings are named in the export |
+| `FLOW_EXPORT_FILENAME` | `rag-lab-flow.json` | the download's file name |
+| `FLOW_EXERCISE_OVERLAP_SIZE` | 500 | the chunk size in exercise 5 |
+| `FLOW_SESSION_STORAGE_KEY` | `rag-lab-flow` | where the canvas is kept across a reload |
+
+All Flow mode text is the `FLOW` block at the end of `js/copy.js`: port names, card labels and hints, the refusal sentences (`refusals` for the general cases and `pairs` for the taught ones, keyed "what the wire carries->what the input needs"), the exercises, the toolbar, and the readout lines. The same rules apply as to the explainers, and `tests/flow/explain.test.js` checks every string.
+
+### Adding a kind of card
+
+A new node type is one entry in `NODE_TYPES` in `js/flow/registry.js` (its ports, its settings' defaults, and a `run` that calls the compute module) plus a label and hint in `FLOW.nodes`. The graph, the runner, the serializer, and the canvas need no change. A refusal sentence for a new port type goes in `FLOW.portNames` and, if it deserves its own lesson, `FLOW.pairs`. A Compare card (two inputs of one kind shown side by side) was designed and deliberately held back; STATUS.md has the reasoning.
+
+---
+
 ## Tests
 
 ```bash
 npm test
 ```
 
-runs `node --test` over `tests/`: one file per pure module (chunker, tokenizer, TF-IDF, cosine, PCA, Glass Box, retrieval, prompt, summary, answer request shapes, Black Box progress) plus the copy rules and the Glass Box half of the synonym probe on the real sample document. No packages are installed for the tests.
+runs `node --test` over `tests/`: one file per pure module (chunker, tokenizer, TF-IDF, cosine, PCA, Glass Box, retrieval, prompt, summary, answer request shapes, Black Box progress) plus the copy rules and the Glass Box half of the synonym probe on the real sample document. `tests/flow/` covers Flow mode's graph (every refusal, ordering, staleness), runner (the canonical graph reproduces the walkthrough's numbers exactly), serializer, explainer, adapter, exercises, and flow summary. No packages are installed for the tests.
 
 ---
 
@@ -268,7 +403,9 @@ runs `node --test` over `tests/`: one file per pure module (chunker, tokenizer, 
 
 ```
 index.html          page shell (header, stepper, sidebar, station panel, global progress/notice)
+flow.html           Flow mode: palette, canvas, inspector
 styles.css          GCSU Evergreen palette as CSS variables, layout, every component
+flow.css            Flow mode's layout, cards, ports, wires (loaded after styles.css)
 serve.js            optional local server: node serve.js
 data/sample.txt     the built-in sample document
 js/constants.js     every default and range, each with a comment
@@ -291,8 +428,21 @@ js/fileReader.js    .txt/.md/.docx reading (mammoth loaded on demand)
 js/session.js       keeps the document, dials, question, and instruction across a reload
 js/clipboard.js     copy to clipboard with a fallback
 js/dom.js, js/text.js   small helpers
-tests/              node --test files
+js/flow/registry.js the node table: ports, settings, and which compute module each card runs
+js/flow/graph.js    pure: nodes, wires, refusals, execution order, staleness
+js/flow/runner.js   runs a graph or one node and its stale ancestors
+js/flow/serialize.js  the graph as JSON and back
+js/flow/explain.js  refusal, skip, error, and load codes -> sentences from copy.js
+js/flow/summary.js  the walkthrough's run summary for a chain, and the flow summary
+js/flow/presets.js, js/flow/exercises.js   the standard pipeline and the five exercises
+js/flow/adapter.js  presents a card's upstream chain as the walkthrough's app, so stations render in the inspector
+js/flow/canvas.js   the canvas: pan, zoom, drag, wiring by pointer and keyboard
+js/flow/nodes.js    one card: chrome, ports, inline settings
+js/flow/inspector.js  the inspector panel
+js/flow/main.js     Flow mode's entry point: palette, toolbar, running, export, persistence
+tests/              node --test files (tests/flow/ for Flow mode)
 tools/probe.mjs     re-checks the synonym probe with the real model
+tools/flow-run.mjs  runs a Flow mode graph outside the browser and prints its summary
 deploy/aws/         CloudFormation template and deploy scripts for S3 + CloudFront
 .github/workflows/  optional automatic AWS deploy (off until configured)
 STATUS.md           what was built in each phase and every decision made along the way
@@ -306,6 +456,8 @@ Built and checked on the Chrome engine (Chrome and Edge). The code uses only fea
 
 Keyboard: every control is reachable with Tab, the map points are buttons (Enter or Space selects one), and a skip link at the top jumps to the current station. Progress and status changes are announced to screen readers through live regions. All text colours meet the 4.5:1 contrast ratio on their backgrounds; gold is used only as a background or border, never as small text.
 
+Flow mode adds pointer events (mouse, pen, and touch drag all move cards and wires), a wheel for panning and Ctrl+wheel for zoom, and the keyboard reference above. Focus on the canvas is a gold ring inside a green one, so it reads on the dotted background, on a card, and on a port. Under 1100 px the three columns stack, with the palette and inspector scrolling inside a third of the screen each. There is no pinch-to-zoom; use the toolbar's − and +.
+
 ---
 
 ## Known limitations
@@ -318,7 +470,9 @@ Keyboard: every control is reachable with Tab, the map points are buttons (Enter
 - **Large documents slow the map.** PCA is a plain implementation; a few hundred chunks are fine, thousands are not. Tens of pages of text is a sensible upper limit for a lesson.
 - **The token estimate is a rule of thumb** (four characters per token). Real tokenizers differ by model.
 - **The answer step depends on three companies' APIs.** Model names go stale; each is one line in `js/constants.js`.
-- **Nothing is saved between sessions.** The document, dials, question, and instruction survive a reload within a tab, nothing more. That is intentional: there are no accounts and no tracking.
+- **Nothing is saved between sessions.** The document, dials, question, and instruction survive a reload within a tab, nothing more. That is intentional: there are no accounts and no tracking. Flow mode keeps its canvas the same way, and offers Download graph for anything worth keeping.
+- **Flow mode has one inspector.** Two branches are compared by their cards' summary lines and by selecting each in turn. A Compare card that shows two artifacts side by side was designed and held back until students have done the comparison by hand once.
+- **Flow mode on a phone** works for reading and for tapping Run, but building a pipeline by touch on a small screen is slow. It is meant for a laptop.
 
 ---
 
@@ -330,6 +484,8 @@ Each is marked with a comment in the code where it would attach.
 - `js/fileReader.js`: PDF text extraction (would need a PDF library from the CDN).
 - `js/main.js`, the `STATION_RENDERERS` table and the artifact list: multiple documents, or a document library.
 - `js/answer.js`: a fourth provider, or a departmental proxy so students never handle keys.
+- `js/flow/registry.js`, `NODE_TYPES`: a new kind of card (see [Adding a kind of card](#adding-a-kind-of-card)).
+- `js/flow/exercises.js`, `EXERCISES`: a new exercise.
 
 ---
 

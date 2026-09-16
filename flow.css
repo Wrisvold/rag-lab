@@ -72,7 +72,30 @@
   border-bottom: 1px solid var(--line);
 }
 .flow-toolbar__spacer { flex: 1; }
-.flow-toolbar__zoom { font-size: 0.85rem; color: var(--ink-soft); min-width: 6.5em; text-align: right; }
+.flow-toolbar__group { display: flex; gap: 0.4rem; align-items: center; }
+.flow-toolbar .button { font-size: 0.9rem; padding: 0.35rem 0.7rem; }
+.flow-toolbar__zoom { font-size: 0.85rem; color: var(--ink-soft); min-width: 3.5em; text-align: center; }
+.flow-menu { position: relative; }
+.flow-menu summary { list-style: none; cursor: pointer; }
+.flow-menu summary::-webkit-details-marker { display: none; }
+.flow-menu summary::after { content: ' ▾'; }
+.flow-menu__list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 14rem;
+  padding: 0.5rem;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 6px 16px rgba(22, 54, 47, 0.2);
+}
+.flow-menu__list .button { text-align: left; }
+.flow-menu__list .button--file { display: block; }
 
 /* ---------- The canvas ---------- */
 .flow-canvas {
@@ -101,7 +124,7 @@
 }
 .flow-edges { position: absolute; left: 0; top: 0; width: 1px; height: 1px; overflow: visible; }
 .flow-edge { fill: none; stroke: var(--green); stroke-width: 2.5; stroke-linecap: round; }
-.flow-edge.is-stale { stroke: var(--line); stroke-dasharray: 6 5; }
+.flow-edge.is-stale { stroke: var(--amber-ink); stroke-dasharray: 6 5; }
 .flow-edge--temp { stroke: var(--gold); stroke-width: 2.5; stroke-dasharray: 6 5; }
 
 .flow-handle {
@@ -132,7 +155,8 @@
   user-select: text;
 }
 .flow-node:focus { outline: none; }
-.flow-node:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+.flow-node:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; box-shadow: 0 0 0 7px var(--green); }
+.flow-port:focus-visible, .flow-handle:focus-visible { outline: 3px solid var(--gold); outline-offset: 1px; box-shadow: 0 0 0 6px var(--green); }
 .flow-node.is-selected { border-color: var(--green); box-shadow: 0 0 0 1px var(--green), var(--shadow); }
 .flow-node.is-dragging { box-shadow: 0 6px 16px rgba(22, 54, 47, 0.2); }
 .flow-node.is-running .flow-node__head { background: var(--gold-soft); }
@@ -233,7 +257,7 @@
 .flow-node__error { grid-column: 1 / -1; margin: 0; font-size: 0.8rem; color: var(--danger); }
 .flow-node__error:empty { display: none; }
 .flow-node__run { font-size: 0.85rem; padding: 0.3rem 0.7rem; }
-.is-stale .flow-node__summary { opacity: 0.5; }
+.is-stale .flow-node__summary { color: var(--ink-soft); }
 .is-stale .flow-node__foot { background: var(--gold-soft); }
 
 /* ---------- Readout and help under the canvas ---------- */
@@ -254,10 +278,16 @@
 /* ---------- Narrow screens: stack the columns ---------- */
 @media (max-width: 1100px) {
   .flow-layout, .flow-layout.inspector-hidden { grid-template-columns: 1fr; }
-  .flow-side { max-height: 30vh; }
+  .flow-layout { grid-template-rows: auto minmax(280px, 1fr) auto; }
+  .flow-side { max-height: 34vh; padding: 0.6rem 1rem; }
+  .flow-side h2 { font-size: 1rem; margin: 0 0 0.3rem; }
+  .flow-side h3 { font-size: 0.9rem; display: inline-block; margin: 0.5rem 0.8rem 0.3rem 0; }
+  .flow-palette .flow-side__intro { display: none; }
+  .palette__button { padding: 0.3rem 0.6rem; font-size: 0.9rem; }
   .flow-palette { border-right: 0; border-bottom: 1px solid var(--line); }
   .flow-inspector { border-left: 0; border-top: 1px solid var(--line); }
-  .palette { flex-direction: row; flex-wrap: wrap; }
+  .palette, .presets { flex-direction: row; flex-wrap: wrap; }
+  .flow-side h3 { margin-top: 0.75rem; }
   .palette__hint { display: none; }
 }
 
