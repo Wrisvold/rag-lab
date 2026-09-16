@@ -155,3 +155,22 @@ export const BANNED_COPY_WORDS = ['leverage', 'seamless', 'robust', 'delve', 'po
 
 // Longest paragraph allowed in an explainer panel, in words.
 export const MAX_EXPLAINER_WORDS = 70;
+
+// ---------------------------------------------------------------------------
+// Flow mode (flow.html): the node canvas
+// ---------------------------------------------------------------------------
+
+// Version stamp written into every exported graph. Bump it only when the
+// export format changes in a way an older loader could not read.
+export const FLOW_EXPORT_VERSION = 1;
+
+// How node parameters are named in an exported graph, so the JSON reads like
+// the course notebook. Parameters not listed here keep their own names.
+export const FLOW_NOTEBOOK_NAMES = {
+  chunkSize: 'CHUNK_SIZE',
+  chunkOverlap: 'CHUNK_OVERLAP',
+  topK: 'TOP_K',
+};
+
+// Key used to keep a Flow mode canvas alive across a page reload.
+export const FLOW_SESSION_STORAGE_KEY = 'rag-lab-flow';

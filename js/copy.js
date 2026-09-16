@@ -316,3 +316,81 @@ export const UI = {
   staleStep: 'Re-run to update',
   footer: 'Nothing you type leaves this browser tab unless you choose the optional answer step. No account, no cookies, no tracking.',
 };
+
+// ---------------------------------------------------------------------------
+// Flow mode (flow.html): the node canvas. Same rules as the explainers:
+// under 70 words each, none of the banned words (tests/copy.test.js).
+// ---------------------------------------------------------------------------
+export const FLOW = {
+  // What each kind of wire carries, in words a student would use.
+  portNames: {
+    text: 'the document text',
+    chunks: 'chunks',
+    vectors: 'vectors',
+    question: 'a question',
+    passages: 'retrieved passages',
+    prompt: 'an assembled prompt',
+    answer: "a model's answer",
+  },
+
+  // One entry per node type. `label` is the title on the node; `hint` is the
+  // one-line description in the palette.
+  nodes: {
+    document: { label: 'Document', hint: 'The raw text everything else is built from.' },
+    chunk: { label: 'Chunk', hint: 'Cuts the text into fixed-size pieces.' },
+    embed: { label: 'Embed', hint: 'Turns every chunk into a vector of numbers.' },
+    question: { label: 'Question', hint: 'What the student asks.' },
+    retrieve: { label: 'Retrieve', hint: 'Scores every chunk against the question and keeps the top few.' },
+    assemble: { label: 'Assemble', hint: 'Builds the prompt: instruction, passages, question.' },
+    answer: { label: 'Answer', hint: 'Sends the prompt to a model with your own key. Optional.' },
+    note: { label: 'Note', hint: 'A sticky note. It does nothing; it is for you and your instructor.' },
+  },
+
+  // Why a wire was refused. Shown in the readout line under the canvas.
+  refusals: {
+    selfLoop: 'A step cannot feed itself. Its output has to go to a later step.',
+    inputTaken: 'That input already has a wire. Each input takes one source, so remove the wire that is there first.',
+    cycle: 'That wire would send the pipeline round in a circle, so no step could ever finish. Data flows one way, from the document towards the answer.',
+    typeMismatch: 'This input needs {needs}, but the wire carries {got}.',
+  },
+
+  // Refusals with a lesson in them, keyed "what the wire carries->what the
+  // input needs". Anything not listed here falls back to `refusals.typeMismatch`.
+  pairs: {
+    'text->chunks': 'Embed works on chunks, not on the whole document. Cut the text into pieces first, so each piece can get a vector of its own.',
+    'text->vectors': 'Retrieve compares numbers, not words. The document has to be chunked and then embedded before anything can be scored.',
+    'chunks->vectors': 'Retrieve compares numbers, not words. Something has to turn these chunks into vectors first.',
+    'chunks->passages': 'Assemble needs the passages that retrieval chose, not every chunk. Without a Retrieve step the model would be handed the whole document.',
+    'vectors->passages': 'Assemble needs text a model can read. Vectors are for scoring. Retrieve turns the highest-scoring vectors back into their chunks.',
+    'passages->prompt': 'Answer needs one assembled prompt: instruction, passages, and question in a single block. Assemble is the step that builds it.',
+    'question->text': 'Chunk works on the document, not on the question. The question is a few words; it gets its own vector later, at Retrieve.',
+    'text->question': 'This input wants the question, not the document. The document is what gets scored; the question is what it is scored against.',
+  },
+
+  // Why a node did not run. `port` is filled from portNames.
+  skipped: {
+    missingInput: 'Nothing is wired into this step yet. It needs {port}.',
+    upstreamMissing: 'A step before this one has not run, or failed. Fix that step first.',
+    notRunnable: 'Notes do not run.',
+  },
+
+  // What went wrong inside a node. Codes from the compute modules reuse the
+  // walkthrough's wording where it exists (see errorsFrom in js/flow/explain.js).
+  errors: {
+    EMPTY_DOCUMENT: 'The Document node has no text yet. Paste some, upload a file, or load the sample.',
+    EMPTY_QUESTION: 'The Question node is empty. Type a question first.',
+    INVALID_SIZE: 'CHUNK_SIZE must be a whole number of 1 or more.',
+    INVALID_OVERLAP: 'CHUNK_OVERLAP must be a whole number of 0 or more.',
+    UNKNOWN_MODE: 'That embedding mode does not exist. Choose Glass Box or Black Box.',
+    UNKNOWN_PROVIDER: 'That provider is not in the list. Choose one from the dropdown.',
+    FAILED: 'This step stopped with an error it could not explain. Run it again; if it keeps happening, tell your instructor.',
+  },
+
+  // Errors when loading an exported graph.
+  load: {
+    badFormat: 'That file is not a RAG Lab graph.',
+    badVersion: 'That graph was saved by a newer version of RAG Lab and cannot be opened here.',
+    badNode: 'The graph names a node type this version does not have: {type}.',
+    badEdge: 'The graph has a wire that cannot be made: {reason}',
+  },
+};

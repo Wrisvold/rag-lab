@@ -32,7 +32,7 @@ The compute modules (`chunker`, `glassBox`, `blackBox`, `retrieval`, `prompt`, `
 | Retrieve | `vectors`, `question` | `passages` | TOP_K |
 | Assemble | `passages`, `question` | `prompt` | instruction block |
 | Answer | `prompt` | `answer` | provider, key (memory only, as today) |
-| Compare | two of the same type (`passages` or `answer`) | — | none; shows both inputs side by side |
+| Compare (deferred) | two of the same type (`passages` or `answer`) | — | none; shows both inputs side by side |
 | Note | — | — | free text; a sticky note for exercises |
 
 Port types are `text`, `chunks`, `vectors`, `question`, `passages`, `prompt`, `answer`. A wire is accepted only when the output type equals the input type. Each refused pairing has its own sentence in `copy.js` (for example, Retrieve fed from Chunk: "Retrieve compares numbers, not words. Something has to turn these chunks into vectors first."). Nodes that share a parameter with the sidebar dials (Chunk, Retrieve) carry it on the node itself in Flow mode; the sidebar is not shown there.
@@ -98,7 +98,7 @@ Port types are `text`, `chunks`, `vectors`, `question`, `passages`, `prompt`, `a
 
 **Decisions**
 1. **Decided (Ward, 2026-09-16):** separate page, `flow.html`. All Flow mode work happens on the `flow-mode` branch so `main` stays as the live site until Ward decides whether it is an improvement worth keeping.
-2. **Open:** whether the Compare and Note nodes are in scope for the first release or held for a later phase.
+2. **Decided (Ward, 2026-09-16):** the Note node ships in the first release. The Compare node is held for a later phase, after students have done the side-by-side lesson by hand once.
 3. **Deferred (Ward, 2026-09-16):** whether the Colab notebook will read the exported JSON. Until decided, the export is a reference only, but the `pipeline` block uses the notebook's variable names so it can become the notebook's input later without a format change.
 
 **Risks**
@@ -106,6 +106,39 @@ Port types are `text`, `chunks`, `vectors`, `question`, `passages`, `prompt`, `a
 - Reusing the station renderers through an adapter may surface assumptions about the single global `state`. The plan allows one round of small edits to `stations/*.js`, kept compatible with the walkthrough and covered by the existing tests.
 - Two Black Box nodes double the embedding time, not the download. Acceptable, and the progress bar makes it visible.
 
+
+## Phase 7 — Flow mode graph core (done)
+
+Everything in this phase is pure and lives in `js/flow/`. No page uses it yet; `flow.html` arrives in Phase 8. The walkthrough is untouched apart from two appended blocks (`FLOW` in `copy.js`, three `FLOW_` constants in `constants.js`).
+
+**Done**
+- `js/flow/registry.js`: the node table as data. Eight node types (Document, Chunk, Embed, Question, Retrieve, Assemble, Answer, Note), seven port types, parameter defaults taken from `constants.js`, and one `run` per node that calls the same compute module the walkthrough calls. The file's header documents what travels down each kind of wire. Black Box goes through `context.blackBox` (a `{ load, embed }` pair defaulting to the real Transformers.js loader) so tests can stand in a fake model; the real loader is already a module-level singleton, so two Embed nodes share one download. The Answer node reads the key from `context.apiKey`, never from a parameter, so a key can never be exported or saved.
+- `js/flow/graph.js`: `createGraph`, `addNode`, `removeNode`, `connect`, `disconnect`, `setParam`, `moveNode`, plus `order` (Kahn's algorithm, insertion order breaks ties), `dependents`, `ancestors`, `missingInputs`, `isStale`, and `blocker`. `connect` refuses with a code: `UNKNOWN_NODE`, `UNKNOWN_PORT`, `SELF_LOOP`, `TYPE_MISMATCH` (with `needs` and `got`), `INPUT_TAKEN`, `CYCLE`. An artifact records the parameter values and the upstream artifact versions it was made from, so staleness is computed by comparison, as in the walkthrough, and setting a dial back to its old value clears the mark.
+- `js/flow/runner.js`: `runGraph` runs whatever is missing or stale, in order, and `runNode` runs a node's stale ancestors and then the node itself. A failure clears the node's artifact, stores `{ code, message }` on the node, and blocks everything downstream with `upstreamMissing`. The report says what happened to every node: `ran`, `fresh`, `skipped` (with the reason), `failed` (with the code).
+- `js/flow/serialize.js`: `toJSON` / `fromJSON`. The export has a `pipeline` array in execution order with the notebook's names (`CHUNK_SIZE`, `CHUNK_OVERLAP`, `TOP_K`), inputs given as the source node's id, and a `layout` block the notebook ignores. The sample document is exported by reference (`sample: true`), a pasted one with its text. Artifacts are never exported. Loading refuses with `BAD_FORMAT`, `BAD_VERSION`, `BAD_NODE`, or `BAD_EDGE`.
+- `js/flow/explain.js`: the only Flow module that reads copy. Turns refusal, skip, error, and load codes into sentences. Codes the walkthrough already explains (`OVERLAP_TOO_LARGE`, the Black Box failure, the eight provider errors) reuse its exact wording.
+- `js/flow/summary.js`: `flowRunSummary` walks upstream from an Assemble node and prints the walkthrough's run summary, character for character.
+- `js/flow/presets.js`: `canonicalGraph`, the six-node chain plus Question. The exercises are added here in Phase 10.
+- `copy.js`: `FLOW` block with port names, node labels and hints, four refusal sentences, eight taught pairs (Embed fed the document, Retrieve fed chunks, Assemble fed vectors, and so on), skip reasons, node error messages, and load errors. All under the explainer rules, checked by `tests/flow/explain.test.js`.
+- `tools/flow-run.mjs`: the exit check. Builds the canonical graph (or loads an exported one), runs it, prints the run summary and the export.
+- Tests: `tests/flow/graph.test.js` (every refusal code, cycle guard on a hand-edited graph, ordering, removal, staleness through a diamond, the blocker reasons), `runner.test.js` (the canonical graph reproduces the walkthrough's ranking, prompt, and run summary exactly; a second run re-runs nothing; a dial change re-runs only its dependents; `runNode` re-runs stale ancestors; a failure blocks downstream; two Embed nodes on one chunking give two rankings for one Question; a Black Box load failure lands on the Embed node; the Answer node's key stays out of the artifact), `serialize.test.js` (pinned export fixture, round trip, a loaded graph runs, every load error), `explain.test.js` (copy rules over every Flow string, every code has a sentence). Suite: 108 passing, up from 75.
+
+**Verified**
+- `node tools/flow-run.mjs` on the sample with the synonym probe: 20 chunks, 19 mid-sentence cuts, 392 dims, top 3 are chunks 02, 03, 07, the vacation chunk absent, prompt 1,467 characters. Same numbers as the walkthrough at the defaults.
+- The exported JSON fed back through the same script prints the same summary.
+- The walkthrough at `index.html` still loads with no console errors.
+
+**Decisions made without asking**
+- Assemble has its own `question` input rather than reading the question off the passages. That is the real architecture (the question goes to the retriever and into the prompt), and it makes a teachable mismatch possible: passages retrieved for one question, a prompt built around another.
+- The `vectors` payload carries the chunk list along with the embedding, so Retrieve can hand Assemble passage text without a third input port.
+- Node ids are `type-N` and wire ids `edge-N` from one counter, so an exported graph reads as `chunk-2`, not as a hash. A loaded graph keeps minting above every id it contains.
+- A node with an artifact whose input wire has been removed counts as stale, not as "not run", so the canvas can grey it rather than showing an artifact it could no longer make.
+- Every taught refusal is keyed by what the wire carries and what the input needs, not by node names, so a future node type gets the right sentence for free.
+
+**Not done here**
+- The Black Box branch was exercised only through the fake in the runner tests. `tools/flow-run.mjs` on a Black Box graph needs Transformers.js installed as `tools/probe.mjs` does; that check is on the list for Phase 9, when the browser path exists.
+
+**Next: Phase 8** — `flow.html`, the hand-rolled canvas (HTML nodes over an SVG edge layer), pointer and keyboard wiring, port highlighting with refusal sentences in a readout line, node chrome with lane tags and stale badges, `FLOW_` layout constants.
 
 ## Phase 6 — Polish, README, AWS hosting kit (done)
 
