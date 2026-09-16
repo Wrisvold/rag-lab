@@ -2,7 +2,7 @@
 
 Updated at the end of each phase. Newest phase first.
 
-## Flow mode — phase plan (draft, not started)
+## Flow mode — phase plan (in progress: Phase 7 done)
 
 A second way to use RAG Lab: a node canvas in the style of Langflow or Flowise, where the student places the stages and wires them together, but built to teach rather than to ship. Nothing in the existing walkthrough changes. Flow mode is added beside it and shares every compute module.
 
