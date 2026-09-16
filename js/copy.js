@@ -417,6 +417,36 @@ export const FLOW = {
     blank: 'An empty canvas',
   },
 
+  // Each exercise loads a canvas with a Note on it carrying the task.
+  exercises: {
+    heading: 'Exercises',
+    intro: 'Each one loads a canvas with a note on it. Read the note, then do what it asks.',
+    items: {
+      blank: {
+        label: '1 · Build it',
+        task: 'Build the path from the Document to the Answer. Add steps from the palette and wire them together. Every wire the canvas refuses tells you what is still missing.',
+      },
+      missing: {
+        label: '2 · Something is missing',
+        task: 'This pipeline has no Chunk step. Try wiring the Document straight into Embed and read what the canvas says. Then add what is missing and run it.',
+      },
+      starved: {
+        label: '3 · Starved retrieval',
+        task: 'TOP_K is 1 and the question asks about parental leave, which the handbook never mentions. Run it, open Assemble, and read what the model would receive. Was it enough to answer honestly?',
+      },
+      twoBoxes: {
+        label: '4 · Two boxes',
+        task: 'The same chunks and the same question go through Glass Box and Black Box. Run all and compare the two Retrieve cards. Explain in one paragraph why they name different chunks.',
+      },
+      overlap: {
+        label: '5 · The lost sentence',
+        task: 'CHUNK_OVERLAP is 0 and CHUNK_SIZE is 500. Run it, open Chunk, and find the sentence a cut broke in half. Read the two halves: what does the pipeline now believe a newly hired employee gets? Then raise the overlap and run again.',
+        question: 'How many vacation days does a newly hired employee get?',
+      },
+    },
+    loaded: 'Loaded exercise {label}. The note on the canvas says what to do.',
+  },
+
   toolbar: {
     runAll: 'Run all',
     zoomIn: 'Zoom in',
@@ -424,6 +454,14 @@ export const FLOW = {
     fit: 'Fit to screen',
     inspector: 'Inspector',
     zoomLevel: 'Zoom {percent}%',
+    copySummary: 'Copy flow summary',
+    copyJson: 'Copy graph as JSON',
+    download: 'Download graph',
+    load: 'Load graph',
+    loadHint: 'A .json file saved with Download graph',
+    copied: 'Copied.',
+    copyFailed: 'Could not copy. Select the text and copy it by hand.',
+    loadedFile: 'Loaded {name}.',
     clear: 'Clear the canvas',
     clearConfirm: 'Remove every node and wire from the canvas?',
   },
@@ -477,6 +515,7 @@ export const FLOW = {
 
   // One line under each node once it has run.
   summaries: {
+    notRun: 'not run',
     document: '{name} · {words} words',
     chunk: '{count} chunks · {cuts} mid-sentence cuts',
     embed: '{count} vectors · {dims} dimensions',

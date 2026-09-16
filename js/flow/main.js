@@ -14,6 +14,10 @@ import { createGraph, setParam, dependents } from './graph.js';
 import { runGraph, runNode } from './runner.js';
 import { toJSON, fromJSON } from './serialize.js';
 import { canonicalGraph } from './presets.js';
+import { EXERCISES } from './exercises.js';
+import { flowGraphSummary } from './summary.js';
+import { explainLoadError } from './explain.js';
+import { copyText } from '../clipboard.js';
 import { mountCanvas } from './canvas.js';
 import { renderInspector } from './inspector.js';
 
@@ -273,12 +277,28 @@ function renderPalette() {
     el('button', { type: 'button', class: 'button', text: F.presets.standard, onclick: () => loadStandard() }),
     el('button', { type: 'button', class: 'button', text: F.presets.blank, onclick: () => clearCanvas() }),
   );
+
+  document.getElementById('exercises-heading').textContent = F.exercises.heading;
+  document.getElementById('exercises-intro').textContent = F.exercises.intro;
+  document.getElementById('exercises').replaceChildren(...EXERCISES.map((entry) => el('button', {
+    type: 'button', class: 'button', text: F.exercises.items[entry.key].label, onclick: () => loadExercise(entry),
+  })));
 }
 
 function renderToolbar() {
   const toolbar = document.getElementById('flow-toolbar');
+  const fileInput = el('input', { type: 'file', accept: '.json,application/json', 'aria-label': F.toolbar.load });
+  fileInput.addEventListener('change', async () => {
+    const file = fileInput.files && fileInput.files[0];
+    fileInput.value = '';
+    if (file) await loadGraphFile(file);
+  });
   toolbar.replaceChildren(
     el('button', { type: 'button', class: 'button button--primary', text: F.toolbar.runAll, onclick: () => app.runAll() }),
+    el('button', { type: 'button', class: 'button', text: F.toolbar.copySummary, onclick: () => copyToClipboard(flowGraphSummary(state.graph)) }),
+    el('button', { type: 'button', class: 'button', text: F.toolbar.copyJson, onclick: () => copyToClipboard(exportJson()) }),
+    el('button', { type: 'button', class: 'button', text: F.toolbar.download, onclick: () => downloadGraph() }),
+    el('label', { class: 'button button--file', title: F.toolbar.loadHint }, [F.toolbar.load, fileInput]),
     el('span', { class: 'flow-toolbar__spacer' }),
     el('button', { type: 'button', class: 'button', text: F.toolbar.zoomOut, onclick: () => canvas.zoomBy(1 / constants.FLOW_ZOOM_STEP) }),
     el('button', { type: 'button', class: 'button', text: F.toolbar.zoomIn, onclick: () => canvas.zoomBy(constants.FLOW_ZOOM_STEP) }),
@@ -324,6 +344,60 @@ async function loadStandard() {
   fitWhenLaidOut();
   persist();
   readout(F.readout.presetLoaded);
+}
+
+async function loadExercise(entry) {
+  const text = (await fetchSample()) || '';
+  state.graph = entry.build({ text }).graph;
+  app.select(null);
+  canvas.renderAll();
+  fitWhenLaidOut();
+  persist();
+  readout(fill(F.exercises.loaded, { label: F.exercises.items[entry.key].label }));
+}
+
+// ---------------------------------------------------------------------------
+// Export and load
+// ---------------------------------------------------------------------------
+function exportJson() {
+  return JSON.stringify(toJSON(state.graph), null, 2);
+}
+
+async function copyToClipboard(text) {
+  readout((await copyText(text)) ? F.toolbar.copied : F.toolbar.copyFailed);
+}
+
+function downloadGraph() {
+  const blob = new Blob([exportJson()], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = el('a', { href: url, download: constants.FLOW_EXPORT_FILENAME });
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/** Replace the canvas with a graph from a file. Every failure becomes one plain sentence. */
+async function loadGraphFile(file) {
+  let graph;
+  try {
+    graph = fromJSON(JSON.parse(await file.text()));
+  } catch (error) {
+    readout(explainLoadError(error && error.code ? error : { code: 'BAD_FORMAT' }));
+    return;
+  }
+  for (const node of graph.nodes.values()) {
+    if (node.type === 'document' && node.params.name === constants.SAMPLE_DOCUMENT_NAME && !node.params.text) {
+      const text = await fetchSample();
+      if (text !== null) node.params.text = text;
+    }
+  }
+  state.graph = graph;
+  app.select(null);
+  canvas.renderAll();
+  fitWhenLaidOut();
+  persist();
+  readout(fill(F.toolbar.loadedFile, { name: file.name }));
 }
 
 function clearCanvas() {

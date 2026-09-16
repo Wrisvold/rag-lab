@@ -9,6 +9,9 @@
   min-height: 0;
   display: grid;
   grid-template-columns: 200px 1fr 460px;
+  /* One row exactly as tall as the space left under the header, so the side
+     columns scroll inside it instead of stretching the page. */
+  grid-template-rows: minmax(0, 1fr);
   gap: 0;
 }
 .flow-layout.inspector-hidden { grid-template-columns: 200px 1fr; }
@@ -75,7 +78,7 @@
 .flow-canvas {
   position: relative;
   flex: 1;
-  min-height: 420px;
+  min-height: 280px;
   overflow: hidden;
   background-color: var(--page);
   background-image: radial-gradient(var(--line) 1px, transparent 1px);

@@ -2,7 +2,7 @@
 
 Updated at the end of each phase. Newest phase first.
 
-## Flow mode — phase plan (in progress: Phases 7 to 9 done)
+## Flow mode — phase plan (in progress: Phases 7 to 10 done)
 
 A second way to use RAG Lab: a node canvas in the style of Langflow or Flowise, where the student places the stages and wires them together, but built to teach rather than to ship. Nothing in the existing walkthrough changes. Flow mode is added beside it and shares every compute module.
 
@@ -106,6 +106,43 @@ Port types are `text`, `chunks`, `vectors`, `question`, `passages`, `prompt`, `a
 - Reusing the station renderers through an adapter may surface assumptions about the single global `state`. The plan allows one round of small edits to `stations/*.js`, kept compatible with the walkthrough and covered by the existing tests.
 - Two Black Box nodes double the embedding time, not the download. Acceptable, and the progress bar makes it visible.
 
+
+## Phase 10 — Flow mode teaching layer (done)
+
+Five exercises, each a canvas with a Note on it saying what to do; the graph as JSON in and out; the Flow variant of the run summary.
+
+**Done**
+- `js/flow/exercises.js`: `EXERCISES`, five entries built with the same graph calls the canvas uses, so every wire in them is one the canvas would accept. Each adds a Note carrying its task from `copy.js` (`FLOW.exercises.items`). The palette lists them under "Exercises".
+  1. **Build it.** Document (sample loaded) and Answer, nothing between. "Every wire the canvas refuses tells you what is still missing."
+  2. **Something is missing.** The standard pipeline with the Chunk node removed. Wiring the Document into Embed is refused with "Embed works on chunks, not on the whole document…".
+  3. **Starved retrieval.** TOP_K = 1 and the grounding probe. The one passage the model receives is about holidays and sick leave; nothing mentions parental leave.
+  4. **Two boxes.** The Phase 9 side-by-side graph, pre-built: one Chunk and one Question feeding a Glass Box branch and a Black Box branch.
+  5. **The lost sentence.** CHUNK_OVERLAP = 0 and CHUNK_SIZE = `FLOW_EXERCISE_OVERLAP_SIZE` (500), which cuts the handbook's vacation sentence inside the word: one chunk ends "…employee gets ten vacat", the next opens "ion days a year…" and goes on to the fifteen-day policy, so no chunk says what a newly hired employee gets. The question is "How many vacation days does a newly hired employee get?".
+- `flowGraphSummary` in `js/flow/summary.js`: every node in execution order with what feeds it, its parameters, and what it produced; notes at the end without a number. Fixed format, pinned by a test.
+- Toolbar: Copy flow summary, Copy graph as JSON, Download graph (`FLOW_EXPORT_FILENAME`), Load graph (a file picker; the sample document comes back by reference; every failure is one sentence from `FLOW.load`).
+- Copy pass: every refusal, exercise task, and node hint reread against the explainer rules; the lost-sentence task reworded after the test showed "vacation days" survives in the second half through the fifteen-day policy.
+- Layout: the three-column grid now has one row exactly as tall as the space under the header, so the palette (longer now) and the inspector scroll inside it instead of stretching the page under the footer. Canvas minimum height 280 px.
+- Tests: `tests/flow/exercises.test.js` (every exercise has copy, builds, carries its task, round-trips; the shape and behaviour of each of the five), `tests/flow/flowSummary.test.js` (the pinned format on the canonical graph after a run, and on an unrun graph). Suite: 124 passing.
+
+**Verified in the browser**
+- Exercise 5 loads with CHUNK_SIZE 500 and CHUNK_OVERLAP 0 on the card, the note on the canvas, readout "Loaded exercise 5 · The lost sentence…". Run all: "14 chunks · 13 mid-sentence cuts", "Top 3 of 14: chunks 06, 05, 02".
+- Exercise 4 loads with two Embed cards (one Black Box), two Retrieve cards, ten wires.
+- Exercise 2 loads with no Chunk card. Click the Document output, click the Embed input: "Embed works on chunks, not on the whole document. Cut the text into pieces first, so each piece can get a vector of its own." No wire made.
+- The toolbar shows the four new buttons; no console errors.
+
+**Not verified here**
+- Copying to the clipboard reported "Could not copy…" because the automated pane has no window focus, which the clipboard API requires. The same `copyText` serves the walkthrough's Copy prompt. Download and Load open native file dialogs the automation cannot drive; the load path is the tested `fromJSON` plus the sample fetch. All three are a quick manual check.
+
+**Decisions made without asking**
+- Exercise 2 is "no Chunk node" rather than the plan's "Embed wired straight from Document", which the graph refuses to build. The refusal is the exercise.
+- Exercise 5 uses size 500 rather than a size that splits between "ten" and "vacation", because 500 splits the word itself and neither half can carry the sentence; the test pins both halves.
+- Exercise tasks live on a Note node on the canvas rather than in a side panel, so the question sits next to the fault, and the note is exported with the graph.
+- The README section for the export format waits for Phase 11 with the rest of the README.
+
+**Seen, for Phase 11**
+- With the inspector open the canvas is narrower and the toolbar (now nine buttons) wraps to a third line, so opening the inspector shifts the canvas down. Group the toolbar (run, export, view) so it never re-wraps.
+
+**Next: Phase 11** — contrast and focus pass over every new element, the toolbar grouping above, narrow screens, README section for Flow mode (exercises, JSON export and its notebook mapping, keyboard reference, constants), Firefox and Safari check, final STATUS.
 
 ## Phase 9 — Flow mode inspectors, running, staleness (done)
 
