@@ -5,6 +5,6 @@
   "description": "RAG Lab: a browser-based teaching simulator of the retrieval-augmented generation pipeline (CBIS 5530, GCSU).",
   "type": "module",
   "scripts": {
-    "test": "node --test"
+    "test": "node --test \"tests/*.test.js\" \"tests/flow/*.test.js\""
   }
 }
