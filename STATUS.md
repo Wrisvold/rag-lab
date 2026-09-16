@@ -2,6 +2,111 @@
 
 Updated at the end of each phase. Newest phase first.
 
+## Flow mode — phase plan (draft, not started)
+
+A second way to use RAG Lab: a node canvas in the style of Langflow or Flowise, where the student places the stages and wires them together, but built to teach rather than to ship. Nothing in the existing walkthrough changes. Flow mode is added beside it and shares every compute module.
+
+**Goals**
+- The student builds the pipeline rather than walking through it. An empty canvas with a Document node and an Answer node is the first exercise; the gap between them is the lesson.
+- Every wire is type-checked and every refusal is a sentence a student can learn from, never a silent failure or a stack trace.
+- Two pipelines can run side by side on one canvas (Glass Box and Black Box feeding two Retrieve nodes), which the walkthrough's toggle cannot do.
+- Sabotage exercises: a working graph with one deliberate fault, and a question the student must answer by reading the artifacts.
+- The graph exports as JSON whose shape mirrors the Colab notebook, so the picture and the code line up.
+
+**Non-goals**
+- No general-purpose node editor. The node types are the six stations plus a few teaching nodes, and the list is fixed in code.
+- No new dependencies and no build step. The canvas is hand-rolled SVG and HTML.
+- No change to the walkthrough, its copy, its tests, or its URL. First-week students should not notice Flow mode exists unless they are sent to it.
+
+**Architecture in one paragraph**
+The compute modules (`chunker`, `glassBox`, `blackBox`, `retrieval`, `prompt`, `answer`) already take plain data and return plain data with version stamps. Flow mode adds three pure layers over them: a **registry** (one entry per node type: ports, parameters, and which function to call), a **graph** (nodes, edges, port type checks, topological order, stale propagation), and a **runner** (walks the order, awaits each node, writes artifacts back to the nodes). The **canvas** is a view over the graph and never computes anything. The existing station renderers are reused as node inspectors in a side panel. Flow mode lives at `flow.html` with its own `js/flow/main.js`, so `js/main.js` is untouched.
+
+**Node types and port types**
+
+| Node | Inputs | Outputs | Parameters |
+|---|---|---|---|
+| Document | — | `text` | paste, upload, sample (same as Station 0) |
+| Chunk | `text` | `chunks` | CHUNK_SIZE, CHUNK_OVERLAP |
+| Embed | `chunks` | `vectors` | mode: Glass Box or Black Box |
+| Question | — | `question` | the question text, sample dropdown |
+| Retrieve | `vectors`, `question` | `passages` | TOP_K |
+| Assemble | `passages`, `question` | `prompt` | instruction block |
+| Answer | `prompt` | `answer` | provider, key (memory only, as today) |
+| Compare | two of the same type (`passages` or `answer`) | — | none; shows both inputs side by side |
+| Note | — | — | free text; a sticky note for exercises |
+
+Port types are `text`, `chunks`, `vectors`, `question`, `passages`, `prompt`, `answer`. A wire is accepted only when the output type equals the input type. Each refused pairing has its own sentence in `copy.js` (for example, Retrieve fed from Chunk: "Retrieve compares numbers, not words. Something has to turn these chunks into vectors first."). Nodes that share a parameter with the sidebar dials (Chunk, Retrieve) carry it on the node itself in Flow mode; the sidebar is not shown there.
+
+### Phase 7 — Graph core (pure, no UI)
+
+**Deliverables**
+- `js/flow/registry.js`: the node table above as data. Each entry names its ports, its parameter defaults (taken from `constants.js`), and an async `run(inputs, params, context)` that calls the existing module. Embed in Black Box mode shares one model load across every Embed node through `context`.
+- `js/flow/graph.js` (pure): `createGraph`, `addNode`, `removeNode`, `connect`, `disconnect`, `setParam`, `moveNode`. `connect` returns `{ ok: false, code }` for a type mismatch, an input port already wired, a cycle, or a self-loop. `order(graph)` gives a topological order; `dependents(graph, nodeId)` gives everything downstream. Every node artifact is stamped with the versions of its inputs and parameters, so `isStale(graph, nodeId)` is computed the same way the walkthrough computes it today.
+- `js/flow/runner.js`: `runGraph(graph, context, { onStart, onDone, onError })` runs nodes in order, skips nodes whose inputs are missing, awaits each `run`, and marks dependents stale before running them. `runNode` runs one node and its stale ancestors, the way "Retrieve" re-chunks and re-embeds today.
+- `js/flow/serialize.js`: `toJSON(graph)` and `fromJSON(json)`. The JSON has a `pipeline` array in execution order with the notebook's parameter names, plus a `layout` block with node positions that the notebook ignores.
+- Tests: `tests/flow/graph.test.js` (every refusal code, ordering, cycle detection, stale propagation through a diamond), `tests/flow/runner.test.js` (a full Glass Box graph on the sample document reproduces the walkthrough's synonym-probe ranking exactly), `tests/flow/serialize.test.js` (round trip, and the export matches a pinned fixture).
+- `copy.js`: `FLOW.refusals`, one sentence per refusal code, under the same word limit and banned-word rules as the explainers. `tests/copy.test.js` extended to cover them.
+
+**Exit check:** `npm test` green; a Node script can build the canonical graph from JSON, run it, and print the same run summary the walkthrough prints.
+
+### Phase 8 — The canvas
+
+**Deliverables**
+- `flow.html`: same head, header, and footer as `index.html`; a mode link in the header of both pages ("Walkthrough · Flow"); a node palette on the left, the canvas in the middle, an inspector panel on the right that is empty until a node is selected.
+- `js/flow/canvas.js`: a scrolling, zoomable surface. Nodes are HTML `<article>` elements absolutely positioned in a transformed layer; edges are one SVG layer underneath drawn as cubic curves between port centres. Pan with drag on empty space or the scroll wheel; zoom with Ctrl+wheel and two buttons; a "Fit" button. Node drag with the pointer. Wire by dragging from an output port to an input port; the target port highlights green when the types match and red when they do not, and a refused drop shows the refusal sentence in a readout line under the canvas (no floating tooltip, same rule as the map).
+- Keyboard: every node and every port is focusable in reading order. Arrow keys move a focused node by a grid step; Shift+arrow by a larger one. Enter on an output port starts a connection, Tab moves between candidate input ports (only compatible ones are in the tab order while connecting), Enter completes it, Escape cancels. Delete removes the focused node or edge. Every action is announced through one `aria-live` readout.
+- `prefers-reduced-motion` turns off edge redraw easing and the zoom transition.
+- Node chrome: title, a lane tag (build time in teal, run time in amber, matching the stepper), an artifact summary line ("20 chunks", "20 vectors · 392 dimensions", "3 passages"), a stale badge with the gold dot, a Run button, and the node's parameters as inline controls.
+- Constants: grid step, zoom bounds, default node size, canvas padding, all in `constants.js` under a `FLOW_` prefix.
+
+**Exit check (in the browser):** build the six-node chain from the palette by mouse, then again by keyboard only, run it, and get the synonym-probe result. Wire Chunk to Retrieve and read the refusal. No console errors. Focus never trapped.
+
+### Phase 9 — Inspectors, running, and staleness on screen
+
+**Deliverables**
+- Selecting a node renders its station in the inspector panel. The station renderers take an `app` object today; a thin adapter in `js/flow/adapter.js` gives them the same interface backed by the graph, so `stations/*.js` are reused without edits. Anything that turns out to need a change is made once and kept compatible with the walkthrough.
+- Run controls: Run on a node runs it and its stale ancestors; "Run all" on the toolbar runs the whole graph in order. The global progress bar and notice area move into the shared layout so the Black Box download and the Black Box fallback behave exactly as in the walkthrough.
+- Changing a parameter or an upstream artifact greys every dependent node and edge on the canvas at once, using the same stale rule and the same visual language as the stepper.
+- Two Embed nodes in Black Box mode share one model download; two Retrieve nodes on different vectors show different rankings for the same Question node.
+- The canvas and every parameter survive a reload through `sessionStorage`, using the Phase 7 serializer; artifacts are not stored, so the student re-runs.
+- Tests: adapter unit tests; a stale-propagation test through a shared Question node feeding two branches.
+
+**Exit check:** the side-by-side lesson. One Document, one Chunk, two Embed nodes (Glass and Black), one Question, two Retrieve nodes, two inspectors open. Vacation chunk rank 6 or worse on the left, rank 1 on the right, on one screen.
+
+### Phase 10 — The teaching layer
+
+**Deliverables**
+- Exercise presets in `js/flow/exercises.js`, each a graph JSON plus a prompt and a teaching note in `copy.js`:
+  1. **Blank.** Document and Answer only. "Build the path between them."
+  2. **Wrong input.** Embed wired straight from Document. The student must discover that Embed refuses text, and why.
+  3. **Starved retrieval.** TOP_K = 1 with the grounding-probe question. "What did the model receive, and was it enough?"
+  4. **Two boxes.** The Phase 9 side-by-side graph, pre-built. "Explain the difference in one paragraph."
+  5. **Broken overlap.** CHUNK_OVERLAP = 0 and CHUNK_SIZE chosen so the vacation policy splits mid-number. "Find the sentence the pipeline lost."
+- A Compare node renderer: two inputs of the same type in two columns, with differences highlighted (ranks that moved, passages present in one and not the other).
+- Export: "Copy graph as JSON" and "Download graph" on the toolbar; "Load graph" accepts a file. The notebook's section of the README documents the mapping. The run summary gains a Flow variant that lists every node in order with its parameters.
+- Refusal copy pass: every refusal, exercise note, and node description reviewed against the explainer rules; tests updated.
+
+**Exit check:** each exercise loads, runs, and reaches the state its note describes. A graph exported from one browser loads in another.
+
+### Phase 11 — Polish, docs, review
+
+- Contrast and focus pass over every new element, same 4.5:1 rule and the same measured table as Phase 6.
+- Narrow-screen behaviour: the palette and inspector collapse into drawers; the canvas keeps working with touch drag.
+- README: a Flow mode section (what it is for, the exercises, the JSON export, keyboard reference) and a second table of constants.
+- STATUS entry in the usual format with what was verified in the browser and the decisions made without asking.
+- Firefox and Safari check of the canvas, which stays on the manual list as it did for Phase 6.
+
+**Decisions**
+1. **Decided (Ward, 2026-09-16):** separate page, `flow.html`. All Flow mode work happens on the `flow-mode` branch so `main` stays as the live site until Ward decides whether it is an improvement worth keeping.
+2. **Open:** whether the Compare and Note nodes are in scope for the first release or held for a later phase.
+3. **Deferred (Ward, 2026-09-16):** whether the Colab notebook will read the exported JSON. Until decided, the export is a reference only, but the `pipeline` block uses the notebook's variable names so it can become the notebook's input later without a format change.
+
+**Risks**
+- The canvas is the quality bar. A node editor that is fiddly to drag or unusable from a keyboard undoes the Phase 6 accessibility work. Phase 8 is budgeted as a full phase for that reason, and the keyboard path is built alongside the pointer path, not after it.
+- Reusing the station renderers through an adapter may surface assumptions about the single global `state`. The plan allows one round of small edits to `stations/*.js`, kept compatible with the walkthrough and covered by the existing tests.
+- Two Black Box nodes double the embedding time, not the download. Acceptable, and the progress bar makes it visible.
+
+
 ## Phase 6 — Polish, README, AWS hosting kit (done)
 
 **Done**
