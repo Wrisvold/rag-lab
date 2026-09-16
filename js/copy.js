@@ -13,6 +13,13 @@ export const APP = {
   course: 'CBIS 5530 · Introduction to RAG · Georgia College & State University',
 };
 
+// The two ways to use the lab. Links in the header of both pages.
+export const MODES = {
+  label: 'Mode',
+  walkthrough: 'Walkthrough',
+  flow: 'Flow',
+};
+
 // ---------------------------------------------------------------------------
 // The stepper across the top. Order matters; ids are used in code.
 // ---------------------------------------------------------------------------
@@ -40,6 +47,9 @@ export const STEPS = [
 // Explainer panels: one per station, two short paragraphs each.
 // ---------------------------------------------------------------------------
 export const EXPLAINER_TITLE = 'What is happening here';
+
+// The bold lead-ins of the explainer paragraphs, as Flow mode prints them.
+export const EXPLAINER_LABELS = { what: 'What this step does. ', why: 'Why it matters. ', cosine: 'About the score. ' };
 
 export const EXPLAINERS = {
   document: {
@@ -315,4 +325,230 @@ export const UI = {
   dismiss: 'Dismiss',
   staleStep: 'Re-run to update',
   footer: 'Nothing you type leaves this browser tab unless you choose the optional answer step. No account, no cookies, no tracking.',
+};
+
+// ---------------------------------------------------------------------------
+// Flow mode (flow.html): the node canvas. Same rules as the explainers:
+// under 70 words each, none of the banned words (tests/copy.test.js).
+// ---------------------------------------------------------------------------
+export const FLOW = {
+  // What each kind of wire carries, in words a student would use.
+  portNames: {
+    text: 'the document text',
+    chunks: 'chunks',
+    vectors: 'vectors',
+    question: 'a question',
+    passages: 'retrieved passages',
+    prompt: 'an assembled prompt',
+    answer: "a model's answer",
+  },
+
+  // One entry per node type. `label` is the title on the node; `hint` is the
+  // one-line description in the palette.
+  nodes: {
+    document: { label: 'Document', hint: 'The raw text everything else is built from.' },
+    chunk: { label: 'Chunk', hint: 'Cuts the text into fixed-size pieces.' },
+    embed: { label: 'Embed', hint: 'Turns every chunk into a vector of numbers.' },
+    question: { label: 'Question', hint: 'What the student asks.' },
+    retrieve: { label: 'Retrieve', hint: 'Scores every chunk against the question and keeps the top few.' },
+    assemble: { label: 'Assemble', hint: 'Builds the prompt: instruction, passages, question.' },
+    answer: { label: 'Answer', hint: 'Sends the prompt to a model with your own key. Optional.' },
+    note: { label: 'Note', hint: 'A sticky note. It does nothing; it is for you and your instructor.' },
+  },
+
+  // Why a wire was refused. Shown in the readout line under the canvas.
+  refusals: {
+    selfLoop: 'A step cannot feed itself. Its output has to go to a later step.',
+    inputTaken: 'That input already has a wire. Each input takes one source, so remove the wire that is there first.',
+    cycle: 'That wire would send the pipeline round in a circle, so no step could ever finish. Data flows one way, from the document towards the answer.',
+    typeMismatch: 'This input needs {needs}, but the wire carries {got}.',
+  },
+
+  // Refusals with a lesson in them, keyed "what the wire carries->what the
+  // input needs". Anything not listed here falls back to `refusals.typeMismatch`.
+  pairs: {
+    'text->chunks': 'Embed works on chunks, not on the whole document. Cut the text into pieces first, so each piece can get a vector of its own.',
+    'text->vectors': 'Retrieve compares numbers, not words. The document has to be chunked and then embedded before anything can be scored.',
+    'chunks->vectors': 'Retrieve compares numbers, not words. Something has to turn these chunks into vectors first.',
+    'chunks->passages': 'Assemble needs the passages that retrieval chose, not every chunk. Without a Retrieve step the model would be handed the whole document.',
+    'vectors->passages': 'Assemble needs text a model can read. Vectors are for scoring. Retrieve turns the highest-scoring vectors back into their chunks.',
+    'passages->prompt': 'Answer needs one assembled prompt: instruction, passages, and question in a single block. Assemble is the step that builds it.',
+    'question->text': 'Chunk works on the document, not on the question. The question is a few words; it gets its own vector later, at Retrieve.',
+    'text->question': 'This input wants the question, not the document. The document is what gets scored; the question is what it is scored against.',
+  },
+
+  // Why a node did not run. `port` is filled from portNames.
+  skipped: {
+    missingInput: 'Nothing is wired into this step yet. It needs {port}.',
+    upstreamMissing: 'A step before this one has not run, or failed. Fix that step first.',
+    notRunnable: 'Notes do not run.',
+  },
+
+  // What went wrong inside a node. Codes from the compute modules reuse the
+  // walkthrough's wording where it exists (see errorsFrom in js/flow/explain.js).
+  errors: {
+    EMPTY_DOCUMENT: 'The Document node has no text yet. Paste some, upload a file, or load the sample.',
+    EMPTY_QUESTION: 'The Question node is empty. Type a question first.',
+    INVALID_SIZE: 'CHUNK_SIZE must be a whole number of 1 or more.',
+    INVALID_OVERLAP: 'CHUNK_OVERLAP must be a whole number of 0 or more.',
+    UNKNOWN_MODE: 'That embedding mode does not exist. Choose Glass Box or Black Box.',
+    UNKNOWN_PROVIDER: 'That provider is not in the list. Choose one from the dropdown.',
+    FAILED: 'This step stopped with an error it could not explain. Run it again; if it keeps happening, tell your instructor.',
+  },
+
+  // The page itself.
+  page: {
+    title: 'RAG Lab · Flow',
+    subtitle: 'Build the pipeline yourself, one node at a time.',
+    skip: 'Skip to the canvas',
+    canvasLabel: 'Pipeline canvas',
+    canvasHelp: 'Drag a node by its title. Drag from an output on the right to an input on the left to wire them. Scroll to pan, hold Ctrl and scroll to zoom.',
+  },
+
+  palette: {
+    heading: 'Nodes',
+    intro: 'Add a step, then wire its output (right side) into the next step\'s input (left side).',
+    add: 'Add {node}',
+  },
+
+  presets: {
+    heading: 'Start from',
+    standard: 'The standard pipeline',
+    blank: 'An empty canvas',
+  },
+
+  // Each exercise loads a canvas with a Note on it carrying the task.
+  exercises: {
+    heading: 'Exercises',
+    intro: 'Each one loads a canvas with a note on it. Read the note, then do what it asks.',
+    items: {
+      blank: {
+        label: '1 · Build it',
+        task: 'Build the path from the Document to the Answer. Add steps from the palette and wire them together. Every wire the canvas refuses tells you what is still missing.',
+      },
+      missing: {
+        label: '2 · Something is missing',
+        task: 'This pipeline has no Chunk step. Try wiring the Document straight into Embed and read what the canvas says. Then add what is missing and run it.',
+      },
+      starved: {
+        label: '3 · Starved retrieval',
+        task: 'TOP_K is 1 and the question asks about parental leave, which the handbook never mentions. Run it, open Assemble, and read what the model would receive. Was it enough to answer honestly?',
+      },
+      twoBoxes: {
+        label: '4 · Two boxes',
+        task: 'The same chunks and the same question go through Glass Box and Black Box. Run all and compare the two Retrieve cards. Explain in one paragraph why they name different chunks.',
+      },
+      overlap: {
+        label: '5 · The lost sentence',
+        task: 'CHUNK_OVERLAP is 0 and CHUNK_SIZE is 500. Run it, open Chunk, and find the sentence a cut broke in half. Read the two halves: what does the pipeline now believe a newly hired employee gets? Then raise the overlap and run again.',
+        question: 'How many vacation days does a newly hired employee get?',
+      },
+    },
+    loaded: 'Loaded exercise {label}. The note on the canvas says what to do.',
+  },
+
+  toolbar: {
+    runAll: 'Run all',
+    zoomIn: 'Zoom in',
+    zoomOut: 'Zoom out',
+    fit: 'Fit to screen',
+    inspector: 'Inspector',
+    zoomLevel: 'Zoom {percent}%',
+    exportMenu: 'Export and load',
+    copySummary: 'Copy flow summary',
+    copyJson: 'Copy graph as JSON',
+    download: 'Download graph',
+    load: 'Load graph',
+    loadHint: 'A .json file saved with Download graph',
+    copied: 'Copied.',
+    copyFailed: 'Could not copy. Select the text and copy it by hand.',
+    loadedFile: 'Loaded {name}.',
+    clear: 'Clear the canvas',
+    clearConfirm: 'Remove every node and wire from the canvas?',
+  },
+
+  inspector: {
+    heading: 'Inspector',
+    empty: 'Select a node to see its artifact here.',
+    close: 'Hide',
+    show: 'Inspector',
+    noNext: 'Nothing of that kind is wired after this step yet. Add a {node} node and wire it in.',
+    feeds: 'This question feeds: {nodes}.',
+    feedsNone: 'This question is not wired into anything yet. Drag from its output to a Retrieve node.',
+  },
+
+  // Short port labels printed beside each port on a node.
+  portLabels: {
+    text: 'text',
+    chunks: 'chunks',
+    vectors: 'vectors',
+    question: 'question',
+    passages: 'passages',
+    prompt: 'prompt',
+    answer: 'answer',
+  },
+
+  // Inline parameter controls. Dials reuse the sidebar's labels (DIALS).
+  params: {
+    documentText: 'Document text',
+    questionText: 'Question',
+    sampleQuestions: 'Sample questions',
+    chooseQuestion: 'Choose a sample question…',
+    mode: 'Embedding mode',
+    instruction: 'Instruction',
+    provider: 'Provider',
+    noteText: 'Note',
+    notePlaceholder: 'Write a note for yourself or your instructor.',
+  },
+
+  // Node chrome.
+  node: {
+    run: 'Run',
+    remove: 'Remove the {node} node',
+    removeWire: 'Remove the wire from {from} to {to}',
+    notRun: 'Not run yet',
+    stale: 'Re-run to update',
+    running: 'Running…',
+    inputWired: '{node}: input for {port}. Wired from {source}.',
+    inputFree: '{node}: input for {port}. Not wired.',
+    output: '{node}: output, {port}. Press Enter to start a wire.',
+  },
+
+  // One line under each node once it has run.
+  summaries: {
+    notRun: 'not run',
+    document: '{name} · {words} words',
+    chunk: '{count} chunks · {cuts} mid-sentence cuts',
+    embed: '{count} vectors · {dims} dimensions',
+    question: 'Ready',
+    retrieve: 'Top {k} of {total}: chunks {numbers}',
+    assemble: '{chars} characters · about {tokens} tokens',
+    answer: '{provider} replied · {chars} characters',
+  },
+
+  // The readout line under the canvas (aria-live).
+  readout: {
+    added: 'Added a {node} node. Arrow keys move it; Delete removes it.',
+    removed: 'Removed the {node} node.',
+    wiringKeyboard: 'Wiring from {node}. Tab to a matching input and press Enter. Escape cancels.',
+    wiringPointer: 'Wiring from {node}. Click a matching input, or click anywhere else to cancel.',
+    wiringNoTargets: 'Nothing on the canvas can take {port} yet. Add the step that comes next.',
+    wired: 'Wired {from} to {to}.',
+    wireCancelled: 'Wire cancelled.',
+    wireRemoved: 'Removed the wire from {from} to {to}.',
+    running: 'Running {node}…',
+    ran: '{ran} ran, {fresh} already up to date, {skipped} waiting on another step, {failed} failed.',
+    nothingToRun: 'Nothing to run yet. Add a Document node and wire it up.',
+    cleared: 'Canvas cleared.',
+    presetLoaded: 'Loaded the standard pipeline.',
+    blankLoaded: 'Started with an empty canvas.',
+  },
+
+  // Errors when loading an exported graph.
+  load: {
+    badFormat: 'That file is not a RAG Lab graph.',
+    badVersion: 'That graph was saved by a newer version of RAG Lab and cannot be opened here.',
+    badNode: 'The graph names a node type this version does not have: {type}.',
+    badEdge: 'The graph has a wire that cannot be made: {reason}',
+  },
 };

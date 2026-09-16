@@ -155,3 +155,41 @@ export const BANNED_COPY_WORDS = ['leverage', 'seamless', 'robust', 'delve', 'po
 
 // Longest paragraph allowed in an explainer panel, in words.
 export const MAX_EXPLAINER_WORDS = 70;
+
+// ---------------------------------------------------------------------------
+// Flow mode (flow.html): the node canvas
+// ---------------------------------------------------------------------------
+
+// Version stamp written into every exported graph. Bump it only when the
+// export format changes in a way an older loader could not read.
+export const FLOW_EXPORT_VERSION = 1;
+
+// How node parameters are named in an exported graph, so the JSON reads like
+// the course notebook. Parameters not listed here keep their own names.
+export const FLOW_NOTEBOOK_NAMES = {
+  chunkSize: 'CHUNK_SIZE',
+  chunkOverlap: 'CHUNK_OVERLAP',
+  topK: 'TOP_K',
+};
+
+// Key used to keep a Flow mode canvas alive across a page reload.
+export const FLOW_SESSION_STORAGE_KEY = 'rag-lab-flow';
+
+// Canvas layout. Pixels at 100% zoom.
+export const FLOW_NODE_WIDTH = 250;      // every node card is this wide
+export const FLOW_COLUMN_GAP = 70;       // space between columns in a preset
+export const FLOW_ROW_GAP = 300;         // space between rows in a preset
+export const FLOW_CANVAS_PADDING = 40;   // margin around a preset, and around "Fit"
+export const FLOW_GRID_STEP = 20;        // nodes snap to this grid; arrow keys move by it
+export const FLOW_KEYBOARD_STEP_LARGE = 5; // Shift+arrow moves this many grid steps
+export const FLOW_ZOOM_MIN = 0.4;
+export const FLOW_ZOOM_MAX = 1.6;
+export const FLOW_ZOOM_STEP = 1.2;       // one click of the zoom buttons multiplies by this
+
+// Exercise 5 ("The lost sentence"): with no overlap, this chunk size cuts the
+// handbook's vacation sentence inside the word "vacation". Re-check with
+// tests/flow/exercises.test.js after editing data/sample.txt.
+export const FLOW_EXERCISE_OVERLAP_SIZE = 500;
+
+// File name offered by "Download graph".
+export const FLOW_EXPORT_FILENAME = 'rag-lab-flow.json';
