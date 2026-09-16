@@ -438,6 +438,8 @@ function renderChrome() {
   document.getElementById('app-subtitle').textContent = copy.APP.subtitle;
   document.getElementById('app-course').textContent = copy.APP.course;
   document.getElementById('app-footer').textContent = copy.UI.footer;
+  document.getElementById('mode-walkthrough').textContent = copy.MODES.walkthrough;
+  document.getElementById('mode-flow').textContent = copy.MODES.flow;
 }
 
 // ---------------------------------------------------------------------------

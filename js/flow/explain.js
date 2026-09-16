@@ -38,6 +38,7 @@ export function explainError(error, flow = FLOW) {
   const code = error && error.code;
   if (code === 'OVERLAP_TOO_LARGE') return DIALS.overlapTooLarge;
   if (code === 'BLACK_BOX_UNAVAILABLE') return CALLOUTS.modelFailed;
+  if (code === 'noKey') return STATION_ANSWER.noKey;
   if (STATION_ANSWER.errors[code]) return STATION_ANSWER.errors[code];
   return flow.errors[code] || flow.errors.FAILED;
 }

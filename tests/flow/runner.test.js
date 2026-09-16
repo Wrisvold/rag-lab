@@ -26,7 +26,7 @@ test('the canonical Glass Box graph reproduces the walkthrough exactly', async (
   const { graph, ids } = canonicalGraph({ text, question: question('synonym') });
   const report = await runGraph(graph);
 
-  assert.deepEqual(report.failed.map((f) => [f.id, f.code]), [[ids.answer, 'badKey']], 'only the answer node fails, for want of a key');
+  assert.deepEqual(report.failed.map((f) => [f.id, f.code]), [[ids.answer, 'noKey']], 'only the answer node fails, for want of a key');
   assert.deepEqual(report.ran, [ids.document, ids.chunk, ids.embed, ids.question, ids.retrieve, ids.assemble]);
   assert.deepEqual(report.skipped, []);
 

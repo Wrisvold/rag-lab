@@ -24,8 +24,8 @@ test('the canonical graph exports in the pinned shape with notebook names', () =
       { id: 'answer-7', type: 'answer', params: { provider: 'gemini' }, inputs: { prompt: 'assemble-6' } },
     ],
     layout: {
-      'document-1': { x: 40, y: 120 }, 'chunk-2': { x: 300, y: 120 }, 'embed-3': { x: 560, y: 120 },
-      'question-4': { x: 560, y: 360 }, 'retrieve-5': { x: 820, y: 120 }, 'assemble-6': { x: 1080, y: 120 }, 'answer-7': { x: 1340, y: 120 },
+      'document-1': { x: 40, y: 40 }, 'chunk-2': { x: 360, y: 40 }, 'embed-3': { x: 680, y: 40 },
+      'question-4': { x: 680, y: 340 }, 'retrieve-5': { x: 1000, y: 40 }, 'assemble-6': { x: 1320, y: 40 }, 'answer-7': { x: 1640, y: 40 },
     },
   });
   assert.equal(JSON.stringify(json).includes('the sample text'), false, 'the sample is exported by reference');

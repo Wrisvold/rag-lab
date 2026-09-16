@@ -13,6 +13,13 @@ export const APP = {
   course: 'CBIS 5530 · Introduction to RAG · Georgia College & State University',
 };
 
+// The two ways to use the lab. Links in the header of both pages.
+export const MODES = {
+  label: 'Mode',
+  walkthrough: 'Walkthrough',
+  flow: 'Flow',
+};
+
 // ---------------------------------------------------------------------------
 // The stepper across the top. Order matters; ids are used in code.
 // ---------------------------------------------------------------------------
@@ -384,6 +391,111 @@ export const FLOW = {
     UNKNOWN_MODE: 'That embedding mode does not exist. Choose Glass Box or Black Box.',
     UNKNOWN_PROVIDER: 'That provider is not in the list. Choose one from the dropdown.',
     FAILED: 'This step stopped with an error it could not explain. Run it again; if it keeps happening, tell your instructor.',
+  },
+
+  // The page itself.
+  page: {
+    title: 'RAG Lab · Flow',
+    subtitle: 'Build the pipeline yourself, one node at a time.',
+    skip: 'Skip to the canvas',
+    canvasLabel: 'Pipeline canvas',
+    canvasHelp: 'Drag a node by its title. Drag from an output on the right to an input on the left to wire them. Scroll to pan, hold Ctrl and scroll to zoom.',
+  },
+
+  palette: {
+    heading: 'Nodes',
+    intro: 'Add a step, then wire its output (right side) into the next step\'s input (left side).',
+    add: 'Add {node}',
+  },
+
+  presets: {
+    heading: 'Start from',
+    standard: 'The standard pipeline',
+    blank: 'An empty canvas',
+  },
+
+  toolbar: {
+    runAll: 'Run all',
+    zoomIn: 'Zoom in',
+    zoomOut: 'Zoom out',
+    fit: 'Fit to screen',
+    zoomLevel: 'Zoom {percent}%',
+    clear: 'Clear the canvas',
+    clearConfirm: 'Remove every node and wire from the canvas?',
+  },
+
+  inspector: {
+    heading: 'Inspector',
+    empty: 'Select a node to see it here.',
+    notYet: 'The artifact view for this node arrives in the next phase.',
+  },
+
+  // Short port labels printed beside each port on a node.
+  portLabels: {
+    text: 'text',
+    chunks: 'chunks',
+    vectors: 'vectors',
+    question: 'question',
+    passages: 'passages',
+    prompt: 'prompt',
+    answer: 'answer',
+  },
+
+  // Inline parameter controls. Dials reuse the sidebar's labels (DIALS).
+  params: {
+    documentText: 'Document text',
+    questionText: 'Question',
+    sampleQuestions: 'Sample questions',
+    chooseQuestion: 'Choose a sample question…',
+    mode: 'Embedding mode',
+    instruction: 'Instruction',
+    provider: 'Provider',
+    noteText: 'Note',
+    notePlaceholder: 'Write a note for yourself or your instructor.',
+  },
+
+  // Node chrome.
+  node: {
+    run: 'Run',
+    remove: 'Remove the {node} node',
+    removeWire: 'Remove the wire from {from} to {to}',
+    notRun: 'Not run yet',
+    stale: 'Re-run to update',
+    running: 'Running…',
+    inputWired: '{node}: input for {port}. Wired from {source}.',
+    inputFree: '{node}: input for {port}. Not wired.',
+    output: '{node}: output, {port}. Press Enter to start a wire.',
+  },
+
+  // One line under each node once it has run.
+  summaries: {
+    document: '{name} · {words} words',
+    chunk: '{count} chunks · {cuts} mid-sentence cuts',
+    embed: '{count} vectors · {dims} dimensions',
+    question: 'Ready',
+    retrieve: 'Top {k} of {total} chunks',
+    assemble: '{chars} characters · about {tokens} tokens',
+    answer: '{provider} replied · {chars} characters',
+  },
+
+  // The readout line under the canvas (aria-live).
+  readout: {
+    added: 'Added a {node} node. Arrow keys move it; Delete removes it.',
+    removed: 'Removed the {node} node.',
+    wiringKeyboard: 'Wiring from {node}. Tab to a matching input and press Enter. Escape cancels.',
+    wiringPointer: 'Wiring from {node}. Click a matching input, or click anywhere else to cancel.',
+    wiringNoTargets: 'Nothing on the canvas can take {port} yet. Add the step that comes next.',
+    wired: 'Wired {from} to {to}.',
+    wireCancelled: 'Wire cancelled.',
+    wireRemoved: 'Removed the wire from {from} to {to}.',
+    running: 'Running {node}…',
+    ran: '{ran} ran, {fresh} already up to date, {skipped} waiting on another step, {failed} failed.',
+    nothingToRun: 'Nothing to run yet. Add a Document node and wire it up.',
+    downloading: 'Downloading the model… {percent}%',
+    embedding: 'Embedding chunks… {percent}%',
+    cleared: 'Canvas cleared.',
+    presetLoaded: 'Loaded the standard pipeline.',
+    blankLoaded: 'Started with an empty canvas.',
   },
 
   // Errors when loading an exported graph.

@@ -67,12 +67,11 @@ export function removeNode(graph, nodeId) {
 }
 
 /**
- * Wire an output port to an input port.
- * @param {{ node: string, port: string }} from   an output port
- * @param {{ node: string, port: string }} to     an input port
- * @returns {{ ok: true, edge } | { ok: false, code, needs?, got? }}
+ * Would this wire be accepted? Same answer as `connect`, without adding it.
+ * The canvas uses it to colour a port before the student lets go.
+ * @returns {{ ok: true } | { ok: false, code, needs?, got? }}
  */
-export function connect(graph, from, to) {
+export function canConnect(graph, from, to) {
   const source = graph.nodes.get(from.node);
   const target = graph.nodes.get(to.node);
   if (!source || !target) return { ok: false, code: REFUSALS.UNKNOWN_NODE };
@@ -85,6 +84,18 @@ export function connect(graph, from, to) {
   }
   if (inputEdge(graph, to.node, to.port)) return { ok: false, code: REFUSALS.INPUT_TAKEN };
   if (reaches(graph, to.node, from.node)) return { ok: false, code: REFUSALS.CYCLE };
+  return { ok: true };
+}
+
+/**
+ * Wire an output port to an input port.
+ * @param {{ node: string, port: string }} from   an output port
+ * @param {{ node: string, port: string }} to     an input port
+ * @returns {{ ok: true, edge } | { ok: false, code, needs?, got? }}
+ */
+export function connect(graph, from, to) {
+  const check = canConnect(graph, from, to);
+  if (!check.ok) return check;
 
   const edge = { id: `edge-${graph.nextId}`, from: { ...from }, to: { ...to } };
   claimId(graph, edge.id);

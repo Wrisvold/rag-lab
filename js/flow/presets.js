@@ -14,11 +14,12 @@ import { createGraph, addNode, connect } from './graph.js';
  */
 export function canonicalGraph({ text = '', name = C.SAMPLE_DOCUMENT_NAME, question = '', mode = 'glass' } = {}) {
   const graph = createGraph();
-  const column = (index) => ({ x: 40 + index * 260, y: 120 });
+  const step = C.FLOW_NODE_WIDTH + C.FLOW_COLUMN_GAP;
+  const column = (index) => ({ x: C.FLOW_CANVAS_PADDING + index * step, y: C.FLOW_CANVAS_PADDING });
   const document = addNode(graph, 'document', { params: { text, name }, position: column(0) });
   const chunk = addNode(graph, 'chunk', { position: column(1) });
   const embed = addNode(graph, 'embed', { params: { mode }, position: column(2) });
-  const questionNode = addNode(graph, 'question', { params: { text: question }, position: { x: 40 + 2 * 260, y: 360 } });
+  const questionNode = addNode(graph, 'question', { params: { text: question }, position: { x: column(2).x, y: C.FLOW_CANVAS_PADDING + C.FLOW_ROW_GAP } });
   const retrieve = addNode(graph, 'retrieve', { position: column(3) });
   const assemble = addNode(graph, 'assemble', { position: column(4) });
   const answer = addNode(graph, 'answer', { position: column(5) });

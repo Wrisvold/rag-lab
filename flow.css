@@ -1,0 +1,249 @@
+/* RAG Lab — Flow mode. Loaded after styles.css; uses its palette variables. */
+
+.flow-page { height: 100vh; display: flex; flex-direction: column; }
+.flow-page .app-footer { flex: none; }
+
+/* ---------- Three columns: palette, canvas, inspector ---------- */
+.flow-layout {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 220px 1fr 320px;
+  gap: 0;
+}
+.flow-side {
+  background: var(--paper);
+  padding: 1rem 1.25rem;
+  overflow-y: auto;
+}
+.flow-palette { border-right: 1px solid var(--line); }
+.flow-inspector { border-left: 1px solid var(--line); }
+.flow-side h2 { font-size: 1.15rem; }
+.flow-side h3 { font-size: 0.95rem; margin-top: 1.25rem; }
+.flow-side__intro { font-size: 0.9rem; color: var(--ink-soft); }
+
+.palette, .presets { display: flex; flex-direction: column; gap: 0.5rem; }
+.palette__item { display: flex; flex-direction: column; gap: 0.2rem; }
+.palette__button {
+  font: inherit;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-left-width: 5px;
+  border-radius: var(--radius);
+  background: var(--paper);
+  color: var(--ink);
+  padding: 0.45rem 0.7rem;
+  cursor: pointer;
+  font-weight: 600;
+}
+.palette__button:hover { background: var(--ice); border-color: var(--green); }
+.palette__button--build { border-left-color: var(--teal); }
+.palette__button--run { border-left-color: var(--amber); }
+.palette__button--none { border-left-color: var(--line); }
+.palette__hint { font-size: 0.8rem; color: var(--ink-soft); margin: 0 0 0.25rem; }
+
+.flow-main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.flow-toolbar {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 0.6rem 1rem;
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
+}
+.flow-toolbar__spacer { flex: 1; }
+.flow-toolbar__zoom { font-size: 0.85rem; color: var(--ink-soft); min-width: 6.5em; text-align: right; }
+
+/* ---------- The canvas ---------- */
+.flow-canvas {
+  position: relative;
+  flex: 1;
+  min-height: 420px;
+  overflow: hidden;
+  background-color: var(--page);
+  background-image: radial-gradient(var(--line) 1px, transparent 1px);
+  background-size: 20px 20px;
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+}
+.flow-canvas.is-panning { cursor: grabbing; }
+.flow-canvas.is-wiring { cursor: crosshair; }
+.flow-canvas:focus-visible { outline-offset: -3px; }
+
+.flow-world {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  transform-origin: 0 0;
+}
+.flow-edges { position: absolute; left: 0; top: 0; width: 1px; height: 1px; overflow: visible; }
+.flow-edge { fill: none; stroke: var(--green); stroke-width: 2.5; stroke-linecap: round; }
+.flow-edge.is-stale { stroke: var(--line); stroke-dasharray: 6 5; }
+.flow-edge--temp { stroke: var(--gold); stroke-width: 2.5; stroke-dasharray: 6 5; }
+
+.flow-handle {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  border-radius: 50%;
+  border: 1.5px solid var(--green);
+  background: var(--paper);
+  color: var(--green);
+  font: 700 13px/1 var(--font-body);
+  cursor: pointer;
+  padding: 0;
+  opacity: 0.75;
+}
+.flow-handle:hover, .flow-handle:focus-visible { opacity: 1; background: var(--danger-soft); border-color: var(--danger); color: var(--danger); }
+
+/* ---------- Nodes ---------- */
+.flow-node {
+  position: absolute;
+  width: 250px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  cursor: default;
+  user-select: text;
+}
+.flow-node:focus { outline: none; }
+.flow-node:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+.flow-node.is-selected { border-color: var(--green); box-shadow: 0 0 0 1px var(--green), var(--shadow); }
+.flow-node.is-dragging { box-shadow: 0 6px 16px rgba(22, 54, 47, 0.2); }
+.flow-node.is-running .flow-node__head { background: var(--gold-soft); }
+
+.flow-node__head {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.6rem;
+  border-bottom: 1px solid var(--line);
+  border-radius: var(--radius) var(--radius) 0 0;
+  background: var(--ice);
+  cursor: grab;
+}
+.flow-node--build .flow-node__head { border-top: 4px solid var(--teal); }
+.flow-node--run .flow-node__head { border-top: 4px solid var(--amber); }
+.flow-node--document .flow-node__head, .flow-node--note .flow-node__head { border-top: 4px solid var(--green); }
+.flow-node__title { margin: 0; font-size: 1rem; flex: 1; }
+.flow-node__head .lane-tag { font-size: 0.68rem; padding: 0.1rem 0.4rem; }
+.flow-node__remove {
+  font: 700 1rem/1 var(--font-body);
+  border: 0;
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+  padding: 0.1rem 0.3rem;
+  border-radius: 4px;
+}
+.flow-node__remove:hover { background: var(--danger-soft); color: var(--danger); }
+
+.flow-node__body {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0;
+}
+.flow-node__inputs, .flow-node__outputs { display: flex; flex-direction: column; gap: 0.6rem; }
+.flow-port-row { display: flex; align-items: center; gap: 0.3rem; }
+.flow-port-row--out { flex-direction: row-reverse; }
+.flow-port-label { font-family: var(--font-mono); font-size: 0.72rem; color: var(--ink-soft); }
+.flow-port {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--green);
+  background: var(--paper);
+  padding: 0;
+  cursor: pointer;
+  flex: none;
+}
+.flow-port--in { margin-left: -10px; }
+.flow-port--out { margin-right: -10px; background: var(--green); }
+.flow-port.is-wired { background: var(--green); }
+.flow-port--in.is-candidate { background: var(--teal-soft); border-color: var(--teal); box-shadow: 0 0 0 3px var(--teal-soft); }
+.flow-port--in.is-ok { background: var(--teal); border-color: var(--teal); box-shadow: 0 0 0 4px var(--gold); }
+.flow-port--in.is-refused { background: var(--danger); border-color: var(--danger); box-shadow: 0 0 0 4px var(--danger-soft); }
+.flow-port.is-origin { box-shadow: 0 0 0 4px var(--gold); }
+
+.flow-node__params { display: flex; flex-direction: column; gap: 0.45rem; min-width: 0; }
+.flow-node__params label { display: block; font-size: 0.8rem; font-weight: 700; color: var(--green); }
+.flow-node__params label .mono { font-family: var(--font-mono); }
+.flow-node__params input[type="number"], .flow-node__params input[type="text"], .flow-node__params select, .flow-node__params textarea {
+  font: inherit;
+  font-size: 0.9rem;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0.25rem 0.4rem;
+  background: var(--paper);
+  color: var(--ink);
+}
+.flow-node__params textarea { resize: vertical; min-height: 3.2em; font-size: 0.85rem; }
+.flow-node__params .hint { font-size: 0.75rem; }
+.flow-node__params .button { font-size: 0.85rem; padding: 0.3rem 0.6rem; }
+.flow-mode-option { display: flex; align-items: center; gap: 0.35rem; font-size: 0.88rem; font-weight: 400 !important; color: var(--ink) !important; }
+.flow-mode-option input { accent-color: var(--green); margin: 0; }
+.flow-node__message { font-size: 0.8rem; color: var(--danger); margin: 0; }
+.flow-node__message:empty { display: none; }
+
+.flow-node__foot {
+  border-top: 1px solid var(--line);
+  padding: 0.45rem 0.6rem;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.2rem 0.5rem;
+  align-items: center;
+}
+.flow-node__summary { margin: 0; font-size: 0.85rem; color: var(--ink-soft); }
+.has-artifact .flow-node__summary { color: var(--ink); }
+.flow-node__badge {
+  grid-column: 1 / -1;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--amber-ink);
+}
+.flow-node__badge::before { content: ''; display: inline-block; width: 0.55em; height: 0.55em; border-radius: 50%; background: var(--gold); margin-right: 0.35em; }
+.flow-node__error { grid-column: 1 / -1; margin: 0; font-size: 0.8rem; color: var(--danger); }
+.flow-node__error:empty { display: none; }
+.flow-node__run { font-size: 0.85rem; padding: 0.3rem 0.7rem; }
+.is-stale .flow-node__summary { opacity: 0.5; }
+.is-stale .flow-node__foot { background: var(--gold-soft); }
+
+/* ---------- Readout and help under the canvas ---------- */
+.flow-readout {
+  margin: 0;
+  padding: 0.5rem 1rem;
+  min-height: 2.4em;
+  font-size: 0.92rem;
+  background: var(--paper);
+  border-top: 1px solid var(--line);
+  color: var(--ink);
+}
+.flow-help { margin: 0; padding: 0.2rem 1rem 0.5rem; font-size: 0.8rem; color: var(--ink-soft); background: var(--paper); }
+
+/* ---------- Inspector ---------- */
+.inspector-placeholder { color: var(--ink-soft); font-size: 0.92rem; }
+
+/* ---------- Narrow screens: stack the columns ---------- */
+@media (max-width: 1100px) {
+  .flow-layout { grid-template-columns: 1fr; }
+  .flow-side { max-height: 30vh; }
+  .flow-palette { border-right: 0; border-bottom: 1px solid var(--line); }
+  .flow-inspector { border-left: 0; border-top: 1px solid var(--line); }
+  .palette { flex-direction: row; flex-wrap: wrap; }
+  .palette__hint { display: none; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .flow-world { transition: transform 0.15s ease-out; }
+  .flow-world.is-live { transition: none; }
+  .flow-port { transition: box-shadow 0.1s, background-color 0.1s; }
+}

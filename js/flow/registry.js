@@ -190,7 +190,7 @@ export const NODE_TYPES = {
       const provider = C.ANSWER_PROVIDERS[params.provider];
       if (!provider) throw coded('UNKNOWN_PROVIDER');
       const apiKey = (context.apiKey || '').trim();
-      if (!apiKey) throw coded('badKey');
+      if (!apiKey) throw coded('noKey');
       const ask = context.askModel || askModel;
       let text;
       try {

@@ -2,7 +2,7 @@
 
 Updated at the end of each phase. Newest phase first.
 
-## Flow mode — phase plan (in progress: Phase 7 done)
+## Flow mode — phase plan (in progress: Phases 7 and 8 done)
 
 A second way to use RAG Lab: a node canvas in the style of Langflow or Flowise, where the student places the stages and wires them together, but built to teach rather than to ship. Nothing in the existing walkthrough changes. Flow mode is added beside it and shares every compute module.
 
@@ -106,6 +106,50 @@ Port types are `text`, `chunks`, `vectors`, `question`, `passages`, `prompt`, `a
 - Reusing the station renderers through an adapter may surface assumptions about the single global `state`. The plan allows one round of small edits to `stations/*.js`, kept compatible with the walkthrough and covered by the existing tests.
 - Two Black Box nodes double the embedding time, not the download. Acceptable, and the progress bar makes it visible.
 
+
+## Phase 8 — Flow mode canvas (done)
+
+Flow mode is now a page: `flow.html`, served beside `index.html`. Both pages carry a Walkthrough · Flow switch in the header; that switch and its styles are the only change to the walkthrough.
+
+**Done**
+- `flow.html` and `flow.css`: three columns (palette, canvas, inspector), the walkthrough's header and footer, the shared progress and notice area, a readout line under the canvas (`role="status"`, `aria-live="polite"`), and a one-line pointer-and-wheel help text. Below 1100 px the columns stack. The canvas is a dotted grid.
+- `js/flow/canvas.js`: the hand-rolled surface. Nodes are `<article>` cards in an HTML layer positioned in world pixels; wires are cubic curves in one SVG layer underneath, recomputed from the ports' screen positions. Pan by dragging empty canvas or with the wheel; zoom with Ctrl+wheel around the cursor, with the toolbar buttons around the centre, and with Fit (never above 100%). Node drag by the title bar, snapped to the grid on release. Each wire has a small × handle at its midpoint.
+  - Wiring by pointer: drag from an output port to an input port. While dragging, matching inputs glow teal and the hovered input turns teal (accepted) or red (refused). Dropping on a refused input prints the refusal sentence in the readout and flashes the port. A click on an output port (no drag) starts a click-to-click wire that ends on the next click anywhere.
+  - Wiring by keyboard: Enter or Space on an output port starts a wire and moves focus to the first matching input; Tab reaches every input port; Enter on one wires it or reads out why not; Escape cancels and returns focus to the origin. Delete on a wired input, or Enter on a wire's handle, removes the wire.
+  - Nodes: Tab reaches every card, port, control, and Run button in reading order. On a focused card, arrow keys move it one grid step, Shift+arrow five, Delete removes it and moves focus to a neighbour. Focus on a card selects it for the inspector.
+  - The readout announces every action: node added or removed, wire made, refused, removed, or cancelled, a run starting and its result.
+- `js/flow/nodes.js`: the node card. Title, lane tag (build time teal, run time amber, matching the stepper), a remove button, input ports on the left and output ports on the right with mono labels, inline parameters, then a footer with the summary line ("20 chunks · 19 mid-sentence cuts"), the gold stale badge, the error sentence, and Run. Inline parameters: Document has a textarea and the sample button; Chunk has CHUNK_SIZE and CHUNK_OVERLAP with the sidebar's refusal rules and messages; Embed has the Glass Box and Black Box radios; Question has a text box (Enter runs the node) and the sample-question dropdown; Retrieve has TOP_K; Assemble has the instruction; Answer has the provider; Note has a textarea. Chrome updates in place so an edit never loses the cursor.
+- `js/flow/main.js`: the page. Palette (one button per registry entry, with its hint), Run all, zoom controls, the inspector placeholder (label and hint; the artifact view is Phase 9), the sample document fetched once and shared, and session persistence: the graph and the view survive a reload through the Phase 7 serializer. First visit loads the standard pipeline with the sample and the synonym probe and fits it to the screen.
+- `graph.js` gained `canConnect`, the dry run the canvas uses to colour ports before a drop; `connect` is now `canConnect` plus the insert. The Answer node reports a missing key as `noKey`, explained with the walkthrough's "Paste a key first." rather than "The provider rejected that key."
+- Constants: `FLOW_NODE_WIDTH`, `FLOW_COLUMN_GAP`, `FLOW_ROW_GAP`, `FLOW_CANVAS_PADDING`, `FLOW_GRID_STEP`, `FLOW_KEYBOARD_STEP_LARGE`, `FLOW_ZOOM_MIN`, `FLOW_ZOOM_MAX`, `FLOW_ZOOM_STEP`. The preset spacing reads them.
+- Copy: `FLOW.page`, `palette`, `presets`, `toolbar`, `inspector`, `portLabels`, `params`, `node`, `summaries`, `readout`, plus `MODES` for the header switch. All still under the explainer rules (the Flow copy test walks every string).
+- Suite: 108 passing; the pinned export fixture updated for the wider preset.
+
+**Verified in the browser (Chrome engine in the desktop app, 1400 × 900)**
+- First load: standard pipeline, fitted, readout "Loaded the standard pipeline.", no console errors. Reload restores the graph, positions, and zoom.
+- Run all: Document "sample.txt · 1,105 words", Chunk "20 chunks · 19 mid-sentence cuts", Embed "20 vectors · 392 dimensions", Retrieve "Top 3 of 20 chunks", Assemble "1,467 characters · about 367 tokens", Answer "Paste a key first." Readout "6 ran, 0 already up to date, 0 waiting on another step, 1 failed."
+- Removing the Embed → Retrieve wire by its handle greyed Retrieve as stale and moved focus to the freed input. Wiring it back by keyboard (Enter on Embed's output, focus landed on Retrieve's input, Enter) cleared the stale mark, because the artifact was made from that same input.
+- Dragging Question's output onto Assemble's passages input: "This input needs retrieved passages, but the wire carries a question." No wire made. Dragging Retrieve's output onto it: "Wired Retrieve to Assemble."
+- Click on an output port, click on an input: wired; click on empty canvas instead: "Wire cancelled."; Escape: cancelled with focus back on the origin.
+- Add Note from the palette: the new card received focus; Delete removed it and focus moved to a neighbouring card. ArrowRight and Shift+ArrowDown moved the Chunk card by 20 and 100 pixels and the positions were in sessionStorage.
+- Node drag by the title bar: snapped to the grid, wires followed, position saved.
+- The walkthrough still loads with no console errors and shows the mode switch.
+
+**Not verified here**
+- Wheel panning and Ctrl+wheel zoom respond to a synthetic wheel event; the desktop app's automated scroll did not reach the page, so a real mouse wheel is a manual check.
+- Tab traversal between input ports during a keyboard wire was checked by focusing the ports directly, not by pressing Tab through the whole canvas.
+- The stacked layout under 1100 px was seen once at 800 px wide and works, but has not been used in earnest. Phase 11.
+- Black Box on the canvas: the radio is wired and progress prints to the readout, but no model was downloaded in this session. Phase 9 owns the progress bar and the fallback.
+
+**Decisions made without asking**
+- During a keyboard wire, Tab reaches every input port, not only the matching ones as the plan said. Matching ports are highlighted; Enter on a wrong one reads the refusal sentence. Restricting Tab would have hidden the refusals from keyboard users, and the refusals are the lesson.
+- Session persistence came forward from Phase 9 because the serializer made it a few lines and it makes the page far less annoying to review.
+- Run buttons and Run all exist now rather than in Phase 9, so the exit check could be met; Phase 9 still owns the progress bar, the Black Box fallback, and the key field.
+- Two timing calls use `setTimeout` rather than `requestAnimationFrame`: the initial fit (the canvas has no size before first layout) and the readout (cleared then set, so the same sentence twice is announced twice). Animation frames do not fire while the desktop app's browser drives the page, and nothing here needs frame timing.
+- A click-started wire is ended by the next pointer click, not by focus leaving the canvas; only a keyboard wire ends on focus loss. Clicking an input port completes the wire; clicking anywhere else on a card cancels it.
+- Fit caps at 100% and can go down to 40%. On a 860 px canvas the standard pipeline fits at 42%, which is an overview, not a reading size; students zoom in. On a full-width monitor it fits at about 75%.
+
+**Next: Phase 9** — inspectors: the station renderers behind an adapter so a selected node shows its artifact; the global progress bar and the Black Box fallback on the canvas; the key field for Answer; stale greying of dependent wires and cards on every change; the side-by-side Glass Box and Black Box lesson as the exit check.
 
 ## Phase 7 — Flow mode graph core (done)
 

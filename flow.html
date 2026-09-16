@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RAG Lab · Flow</title>
+  <meta name="description" content="Build a retrieval-augmented generation pipeline yourself: place the steps on a canvas and wire them together.">
+  <meta name="color-scheme" content="light">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23245C4F'/%3E%3Ctext x='16' y='22' text-anchor='middle' font-family='Georgia,serif' font-size='18' font-weight='bold' fill='%23E0A32E'%3ER%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="flow.css">
+</head>
+<body class="flow-page">
+  <a class="skip-link" href="#flow-canvas" id="flow-skip"></a>
+
+  <header class="app-header">
+    <div class="app-header__text">
+      <h1 id="app-title"></h1>
+      <p id="app-subtitle" class="app-header__subtitle"></p>
+    </div>
+    <div class="app-header__side">
+      <p id="app-course" class="app-header__course"></p>
+      <nav class="mode-switch" aria-label="Mode">
+        <a id="mode-walkthrough" href="index.html"></a>
+        <a id="mode-flow" href="flow.html" aria-current="page"></a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Progress and fallback notices, shared with the walkthrough's layout -->
+  <div id="global-status" class="global-status" hidden>
+    <div id="global-progress" class="progress" hidden>
+      <p id="global-progress-label" class="progress__label" role="status" aria-live="polite"></p>
+      <div class="progress__track" aria-hidden="true"><div id="global-progress-fill" class="progress__fill"></div></div>
+    </div>
+    <div id="global-notice" class="notice" role="alert" hidden>
+      <p id="global-notice-text"></p>
+      <button type="button" id="global-notice-dismiss" class="button"></button>
+    </div>
+  </div>
+
+  <div class="flow-layout">
+    <!-- Palette: one button per node type. Built by js/flow/main.js from the registry. -->
+    <aside class="flow-side flow-palette" aria-labelledby="palette-heading">
+      <h2 id="palette-heading"></h2>
+      <p id="palette-intro" class="flow-side__intro"></p>
+      <div id="palette" class="palette"></div>
+      <h3 id="presets-heading"></h3>
+      <div id="presets" class="presets"></div>
+    </aside>
+
+    <main class="flow-main">
+      <div id="flow-toolbar" class="flow-toolbar" role="toolbar" aria-label="Canvas"></div>
+      <div id="flow-canvas" class="flow-canvas" tabindex="-1">
+        <div id="flow-world" class="flow-world">
+          <svg id="flow-edges" class="flow-edges" aria-hidden="true" focusable="false"></svg>
+          <div id="flow-nodes" class="flow-nodes"></div>
+          <div id="flow-handles" class="flow-handles"></div>
+        </div>
+      </div>
+      <p id="flow-readout" class="flow-readout" role="status" aria-live="polite"></p>
+      <p id="flow-help" class="flow-help"></p>
+    </main>
+
+    <!-- The inspector: the selected node's artifact (Phase 9). -->
+    <aside class="flow-side flow-inspector" aria-labelledby="inspector-heading">
+      <h2 id="inspector-heading"></h2>
+      <div id="inspector-body"></div>
+    </aside>
+  </div>
+
+  <footer class="app-footer">
+    <p id="app-footer"></p>
+  </footer>
+
+  <script type="module" src="js/flow/main.js"></script>
+</body>
+</html>

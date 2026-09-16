@@ -174,3 +174,14 @@ export const FLOW_NOTEBOOK_NAMES = {
 
 // Key used to keep a Flow mode canvas alive across a page reload.
 export const FLOW_SESSION_STORAGE_KEY = 'rag-lab-flow';
+
+// Canvas layout. Pixels at 100% zoom.
+export const FLOW_NODE_WIDTH = 250;      // every node card is this wide
+export const FLOW_COLUMN_GAP = 70;       // space between columns in a preset
+export const FLOW_ROW_GAP = 300;         // space between rows in a preset
+export const FLOW_CANVAS_PADDING = 40;   // margin around a preset, and around "Fit"
+export const FLOW_GRID_STEP = 20;        // nodes snap to this grid; arrow keys move by it
+export const FLOW_KEYBOARD_STEP_LARGE = 5; // Shift+arrow moves this many grid steps
+export const FLOW_ZOOM_MIN = 0.4;
+export const FLOW_ZOOM_MAX = 1.6;
+export const FLOW_ZOOM_STEP = 1.2;       // one click of the zoom buttons multiplies by this

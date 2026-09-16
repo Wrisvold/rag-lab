@@ -61,6 +61,7 @@ test('skips and errors become sentences, reusing the walkthrough wording where i
   assert.equal(explainError({ code: 'OVERLAP_TOO_LARGE' }), DIALS.overlapTooLarge);
   assert.equal(explainError({ code: 'BLACK_BOX_UNAVAILABLE' }), CALLOUTS.modelFailed);
   assert.equal(explainError({ code: 'badKey' }), STATION_ANSWER.errors.badKey);
+  assert.equal(explainError({ code: 'noKey' }), STATION_ANSWER.noKey);
   assert.equal(explainError({ code: 'EMPTY_QUESTION' }), FLOW.errors.EMPTY_QUESTION);
   assert.equal(explainError({ code: 'SOMETHING_NEW' }), FLOW.errors.FAILED);
   assert.equal(explainError(null), FLOW.errors.FAILED);
