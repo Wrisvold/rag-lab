@@ -107,6 +107,17 @@ Port types are `text`, `chunks`, `vectors`, `question`, `passages`, `prompt`, `a
 - Two Black Box nodes double the embedding time, not the download. Acceptable, and the progress bar makes it visible.
 
 
+## After the merge — deploy scripts and the IT guide (done)
+
+Flow mode is on `main` and live on GitHub Pages (both pages checked there: the standard pipeline loads, exercise 4 downloads the model from the CDN and ranks the vacation chunk first on the Black Box side).
+
+**Done**
+- `deploy/aws/deploy.sh`, `deploy/aws/deploy.ps1`, and `.github/workflows/deploy-aws.yml` now upload `flow.html` and `flow.css`. They listed only the Phase 6 files, so an AWS deploy would have served the walkthrough but a "not found" for Flow mode. `js/flow/` was already covered by `js/*`.
+- README: a step-by-step section for IT under Hosting ("For IT: moving RAG Lab into the department's AWS space"), written for someone who has not seen the project: what is being hosted and what it does not do, installing the AWS CLI, both ways of signing in (keys and IAM Identity Center), the permissions to request, getting the code with or without Git, choosing names, the one deploy command on Windows and on macOS, what to check afterwards including `flow.html` and the model download, alternatives if CloudFront is not allowed, updating, removing, and a table of the errors people actually hit.
+
+**Not done here**
+- The scripts have still not been run against an account (as in Phase 6). The first real run in the department's space will show whether CloudFront creation is permitted there; the README's step 8 covers the case where it is not.
+
 ## Phase 11 — Flow mode polish, README, review (done)
 
 The last phase of the Flow mode plan. Contrast and focus over every new element, the toolbar regrouped, narrow screens, the README section, and this entry.

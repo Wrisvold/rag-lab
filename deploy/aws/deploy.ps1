@@ -25,7 +25,7 @@ $SiteUrl = aws cloudformation describe-stacks --region $Region --stack-name $Sta
 
 Write-Host "2/4  Uploading the app folder to s3://$BucketName..."
 aws s3 sync "$Root" "s3://$BucketName" --region $Region --delete `
-  --exclude "*" --include "index.html" --include "styles.css" --include "js/*" --include "data/*" `
+  --exclude "*" --include "index.html" --include "flow.html" --include "styles.css" --include "flow.css" --include "js/*" --include "data/*" `
   --cache-control "public, max-age=300"
 if ($LASTEXITCODE -ne 0) { throw "S3 sync failed" }
 

@@ -32,7 +32,9 @@ aws s3 sync "$ROOT" "s3://$BUCKET" \
   --delete \
   --exclude "*" \
   --include "index.html" \
+  --include "flow.html" \
   --include "styles.css" \
+  --include "flow.css" \
   --include "js/*" \
   --include "data/*" \
   --cache-control "public, max-age=300"

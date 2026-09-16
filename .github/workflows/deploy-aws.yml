@@ -41,7 +41,7 @@ jobs:
       - name: Upload the site
         run: |
           aws s3 sync . "s3://${{ secrets.RAG_LAB_BUCKET }}" --delete \
-            --exclude "*" --include "index.html" --include "styles.css" --include "js/*" --include "data/*" \
+            --exclude "*" --include "index.html" --include "flow.html" --include "styles.css" --include "flow.css" --include "js/*" --include "data/*" \
             --cache-control "public, max-age=300"
           aws s3 cp "s3://${{ secrets.RAG_LAB_BUCKET }}/js" "s3://${{ secrets.RAG_LAB_BUCKET }}/js" --recursive \
             --exclude "*" --include "*.js" --content-type "text/javascript; charset=utf-8" \

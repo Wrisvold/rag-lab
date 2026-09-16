@@ -34,6 +34,7 @@ A second page, **Flow mode** (`flow.html`, the "Flow" button in the header), tur
 2. [Hosting](#hosting)
    - [GitHub Pages](#github-pages)
    - [AWS: S3 and CloudFront](#aws-s3-and-cloudfront)
+   - [For IT: moving RAG Lab into the department's AWS space, step by step](#for-it-moving-rag-lab-into-the-departments-aws-space-step-by-step)
    - [AWS: automatic deploys from GitHub](#aws-automatic-deploys-from-github)
    - [Any other static host](#any-other-static-host)
    - [What the browser needs to reach](#what-the-browser-needs-to-reach)
@@ -121,7 +122,7 @@ On Windows PowerShell:
 The script does four things and prints the address at the end:
 
 1. Creates or updates a CloudFormation stack named `rag-lab` from `deploy/aws/template.yaml`. The template creates the bucket (public access blocked, encrypted, versioned), a CloudFront distribution with Origin Access Control, and the bucket policy that lets only that distribution read the files.
-2. Uploads just the files the page needs: `index.html`, `styles.css`, `js/`, `data/`. Tests, tools, and git metadata stay out.
+2. Uploads just the files the two pages need: `index.html`, `flow.html`, `styles.css`, `flow.css`, `js/`, `data/`. Tests, tools, and git metadata stay out.
 3. Sets `Content-Type: text/javascript` on every module. Browsers refuse ES modules served with the wrong type, and S3 sometimes guesses.
 4. Creates a CloudFront invalidation so the new files show up within a couple of minutes.
 
@@ -133,6 +134,166 @@ The first run takes about ten minutes because CloudFront distributions are slow 
 
 **Alternatives on AWS.** [AWS Amplify Hosting](https://aws.amazon.com/amplify/hosting/) can connect straight to the GitHub repository and publish on every push with no scripts; choose "Deploy without a build" and the root folder. Plain "S3 static website hosting" also works but serves over HTTP only, so prefer the CloudFront setup above.
 
+### For IT: moving RAG Lab into the department's AWS space, step by step
+
+This section is written for someone who has not seen this project before. Everything you need to type is in a box; everything else is explanation. Budget about half an hour, most of it waiting for AWS.
+
+**What you are hosting.** A folder of static files: HTML, CSS, JavaScript, and one text file. There is no server-side code, no database, no user accounts, and nothing that stores student data. The page runs entirely in the student's browser. The only outbound connections are made by the student's browser to a public CDN (for an optional 23 MB model) and, only if a student chooses to, to an AI provider with the student's own key. Nothing on the AWS side ever calls out.
+
+**What it needs from AWS.** One S3 bucket (private) and one CloudFront distribution (HTTPS) in front of it, created by one CloudFormation template. Cost for a class is cents per month. If the department's space does not allow CloudFront, see step 8 for the alternatives.
+
+**Step 1. Install the AWS command-line tool.**
+
+Windows (PowerShell, run as yourself):
+
+```powershell
+winget install --id Amazon.AWSCLI -e
+```
+
+macOS:
+
+```bash
+brew install awscli
+```
+
+Close and reopen the terminal, then confirm:
+
+```bash
+aws --version
+```
+
+You should see `aws-cli/2.x`. Version 1 will not work with these scripts.
+
+**Step 2. Sign in to the department's AWS space.**
+
+How you sign in depends on how central IT set the space up. One of these two will apply.
+
+*If they gave you an access key and secret key* for a user or role in the department's account:
+
+```bash
+aws configure
+```
+
+It asks four questions: the access key, the secret key, a default region (`us-east-1` unless the department has a required region), and an output format (`json`).
+
+*If the university uses IAM Identity Center (single sign-on)*, central IT will have given you a profile name and a start URL:
+
+```bash
+aws configure sso
+```
+
+then, each day you deploy:
+
+```bash
+aws sso login --profile DEPARTMENT-PROFILE
+```
+
+and put that profile in front of every command below by setting, once per terminal session:
+
+```powershell
+$env:AWS_PROFILE = "DEPARTMENT-PROFILE"
+```
+
+(on macOS or Linux: `export AWS_PROFILE=DEPARTMENT-PROFILE`).
+
+Confirm you are signed in and in the right account:
+
+```bash
+aws sts get-caller-identity
+```
+
+The `Account` number should be the department's. If this command fails, nothing further will work; stop here and check the credentials with whoever issued them.
+
+**Step 3. Check permissions.** The identity from step 2 needs, once, to create a CloudFormation stack, an S3 bucket, and a CloudFront distribution. Later updates need only to write to the bucket and create a CloudFront invalidation. If central IT asks what to allow, the list is: `cloudformation:*` on the stack `rag-lab`, `s3:*` on the one bucket, `cloudfront:CreateDistribution`, `cloudfront:UpdateDistribution`, `cloudfront:GetDistribution`, `cloudfront:CreateOriginAccessControl`, `cloudfront:CreateInvalidation`, and `cloudfront:TagResource`. An administrator role covers all of it.
+
+**Step 4. Get the code.**
+
+If Git is installed:
+
+```bash
+git clone https://github.com/Wrisvold/rag-lab.git
+```
+
+If not, open https://github.com/Wrisvold/rag-lab in a browser, click the green **Code** button, choose **Download ZIP**, and unzip it. Either way you end up with a folder called `rag-lab` (the ZIP unzips as `rag-lab-main`; that is fine).
+
+Move into it:
+
+```bash
+cd rag-lab
+```
+
+**Step 5. Choose three names.**
+
+| Name | What it is | Suggestion |
+|---|---|---|
+| bucket name | must be unique across all of AWS, lowercase, no spaces | `gcsu-cbis5530-rag-lab` |
+| region | where the bucket lives; CloudFront is global regardless | `us-east-1`, or the department's required region |
+| stack name | the CloudFormation stack that owns everything | `rag-lab` (the default) |
+
+If the bucket name is taken, the script fails at step 1 with "bucket already exists"; pick another and run it again.
+
+**Step 6. Deploy.** One command. It creates everything the first time and updates it every later time.
+
+Windows PowerShell, from inside the `rag-lab` folder:
+
+```powershell
+.\deploy\aws\deploy.ps1 -BucketName gcsu-cbis5530-rag-lab -Region us-east-1
+```
+
+macOS or Linux:
+
+```bash
+chmod +x deploy/aws/deploy.sh
+./deploy/aws/deploy.sh gcsu-cbis5530-rag-lab us-east-1
+```
+
+You will see four numbered steps. The first one, creating the CloudFront distribution, takes five to ten minutes the first time and prints nothing while it waits; that is normal. The script ends with:
+
+```
+Done. RAG Lab is at: https://d1234abcd.cloudfront.net
+```
+
+Copy that address. It is the one students use, unless you add a custom domain (see the section above this one).
+
+If PowerShell refuses to run the script ("running scripts is disabled on this system"), run this once in that window and try again:
+
+```powershell
+Set-ExecutionPolicy -Scope Process Bypass
+```
+
+**Step 7. Check it.** Open the address in a browser. You should see the RAG Lab walkthrough with a green header. Then:
+
+1. Click **Load the sample document**, then **Chunk this document**. Cards with text appear. This proves the JavaScript modules and the sample file were served correctly.
+2. Add `/flow.html` to the address. The canvas with seven cards appears. This proves the Flow mode files were uploaded.
+3. On the canvas, click **Run all**, then on the Embed card choose **Black Box** and press its **Run**. A progress bar says a 23 MB model is downloading. If instead a notice says the model could not be loaded, the campus network is blocking `cdn.jsdelivr.net` or `huggingface.co` for that browser; the app still works in Glass Box mode, and the instructor should know.
+
+**Step 8. If the department's space does not allow CloudFront.** Two alternatives, in order of preference:
+
+- **AWS Amplify Hosting.** In the AWS console open Amplify, choose **Deploy without Git** (or connect the GitHub repository), upload the `rag-lab` folder as a ZIP, and Amplify serves it over HTTPS at an address it prints. No scripts, no template. Later updates are another upload.
+- **Any web server the university already runs.** Copy the folder to it. The requirements are in [Any other static host](#any-other-static-host); the only one that ever bites is that `.js` files must be served as `text/javascript`.
+
+Plain S3 "static website hosting" also works but is HTTP only and needs a public bucket, which most university policies forbid, so it is not recommended.
+
+**Updating later.** When the instructor changes the code, run step 6 again from an up-to-date copy of the folder (`git pull`, or a fresh ZIP). The script uploads only what changed and refreshes CloudFront. Students see the new version within a couple of minutes.
+
+**Removing it.** Empty the bucket, then delete the stack:
+
+```bash
+aws s3 rm s3://gcsu-cbis5530-rag-lab --recursive
+aws cloudformation delete-stack --stack-name rag-lab --region us-east-1
+```
+
+**If something goes wrong.**
+
+| What you see | What it means | What to do |
+|---|---|---|
+| `Unable to locate credentials` or `ExpiredToken` | not signed in, or the SSO session expired | step 2 again |
+| `AccessDenied` during step 1/4 | the identity cannot create one of the resources | step 3; ask central IT for the listed permissions |
+| `BucketAlreadyExists` | someone else in the world has that bucket name | pick another name; step 5 |
+| The page loads but is blank, and the browser console says a module was blocked because of its MIME type | `.js` files were served with the wrong content type | run step 6 again; its third step sets the type |
+| Everything works except Black Box | the student's network blocks the CDN | expected on some campus networks; the app says so and continues |
+| `flow.html` is "not found" | an older copy of the deploy script that did not know about Flow mode | update the folder (`git pull`) and run step 6 again |
+
 ### AWS: automatic deploys from GitHub
 
 `.github/workflows/deploy-aws.yml` is a GitHub Actions workflow that runs the tests and then uploads to S3 and refreshes CloudFront on every push to `main`. It is switched off until the one-time setup in its header comment is done (an IAM role that trusts the repository via OpenID Connect, and four repository secrets). No AWS access keys are stored anywhere.
@@ -141,7 +302,7 @@ The first run takes about ten minutes because CloudFront distributions are slow 
 
 Copy the folder. That is the whole procedure. The only requirements are:
 
-- `index.html` is served at the folder root (any path is fine: the page uses relative addresses).
+- `index.html` is served at the folder root (any path is fine: both pages use relative addresses), with `flow.html` beside it.
 - `.js` files are served as `text/javascript` or `application/javascript` (every common host does this).
 - HTTPS. Not required by the app, but the clipboard and the answer step behave better on secure pages, and campus networks increasingly block plain HTTP.
 
