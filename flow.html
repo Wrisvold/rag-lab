@@ -63,8 +63,11 @@
     </main>
 
     <!-- The inspector: the selected node's artifact (Phase 9). -->
-    <aside class="flow-side flow-inspector" aria-labelledby="inspector-heading">
-      <h2 id="inspector-heading"></h2>
+    <aside class="flow-side flow-inspector" id="flow-inspector" aria-labelledby="inspector-heading">
+      <div class="flow-inspector__head">
+        <h2 id="inspector-heading"></h2>
+        <button type="button" id="inspector-close" class="button"></button>
+      </div>
       <div id="inspector-body"></div>
     </aside>
   </div>

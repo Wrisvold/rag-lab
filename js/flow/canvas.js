@@ -144,10 +144,14 @@ export function mountCanvas(app, els) {
     return article ? article.querySelector(`.flow-port[data-side="${side}"][data-port="${portId}"]`) : null;
   }
 
+  // World coordinates of a port, from layout offsets. Offsets ignore CSS
+  // transforms, so this is right even while the world is mid-zoom.
   function portCentre(button) {
-    const rect = button.getBoundingClientRect();
-    const origin = world.getBoundingClientRect();
-    return { x: (rect.left + rect.width / 2 - origin.left) / view.zoom, y: (rect.top + rect.height / 2 - origin.top) / view.zoom };
+    const article = button.closest('.flow-node');
+    return {
+      x: article.offsetLeft + button.offsetLeft + button.offsetWidth / 2,
+      y: article.offsetTop + button.offsetTop + button.offsetHeight / 2,
+    };
   }
 
   function curve(a, b) {
@@ -178,6 +182,8 @@ export function mountCanvas(app, els) {
       edgeLayer.append(path);
 
       const mid = curveMidpoint(a, b);
+      // On a short wire the midpoint sits on top of a port; drop the handle below it.
+      if (Math.hypot(b.x - a.x, b.y - a.y) < 4 * C.FLOW_GRID_STEP) mid.y += 1.2 * C.FLOW_GRID_STEP;
       const fromLabel = F.nodes[app.graph.nodes.get(edge.from.node).type].label;
       const toLabel = F.nodes[target.type].label;
       const handle = el('button', {
@@ -200,8 +206,15 @@ export function mountCanvas(app, els) {
     const rect = canvas.getBoundingClientRect();
     const centre = toWorld(rect.left + rect.width / 2, rect.top + rect.height / 2);
     const spot = snap({ x: centre.x - C.FLOW_NODE_WIDTH / 2, y: centre.y - 80 });
-    const taken = (p) => [...app.graph.nodes.values()].some((n) => Math.abs(n.position.x - p.x) < C.FLOW_GRID_STEP && Math.abs(n.position.y - p.y) < C.FLOW_GRID_STEP);
-    while (taken(spot)) { spot.x += 2 * C.FLOW_GRID_STEP; spot.y += 2 * C.FLOW_GRID_STEP; }
+    // Step down until the new card overlaps nothing, so two additions in a
+    // row never land on top of each other.
+    const overlaps = (p) => [...app.graph.nodes.values()].some((n) => {
+      const article = articles.get(n.id);
+      const height = article ? article.offsetHeight : C.FLOW_NODE_WIDTH;
+      return p.x < n.position.x + C.FLOW_NODE_WIDTH && p.x + C.FLOW_NODE_WIDTH > n.position.x
+        && p.y < n.position.y + height && p.y + height > n.position.y;
+    });
+    while (overlaps(spot)) spot.y += C.FLOW_ROW_GAP;
     return spot;
   }
 
@@ -546,6 +559,7 @@ export function mountCanvas(app, els) {
       const article = articles.get(id);
       if (article) article.focus({ preventScroll: true });
     },
+    selectNode: select,
     cancelWiring,
   };
   return api;

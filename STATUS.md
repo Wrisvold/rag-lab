@@ -2,7 +2,7 @@
 
 Updated at the end of each phase. Newest phase first.
 
-## Flow mode — phase plan (in progress: Phases 7 and 8 done)
+## Flow mode — phase plan (in progress: Phases 7 to 9 done)
 
 A second way to use RAG Lab: a node canvas in the style of Langflow or Flowise, where the student places the stages and wires them together, but built to teach rather than to ship. Nothing in the existing walkthrough changes. Flow mode is added beside it and shares every compute module.
 
@@ -106,6 +106,45 @@ Port types are `text`, `chunks`, `vectors`, `question`, `passages`, `prompt`, `a
 - Reusing the station renderers through an adapter may surface assumptions about the single global `state`. The plan allows one round of small edits to `stations/*.js`, kept compatible with the walkthrough and covered by the existing tests.
 - Two Black Box nodes double the embedding time, not the download. Acceptable, and the progress bar makes it visible.
 
+
+## Phase 9 — Flow mode inspectors, running, staleness (done)
+
+Selecting a node now shows its artifact, drawn by the walkthrough's own station renderer. The Black Box download, its progress bar, and its fallback work on the canvas. The key field lives in the Answer node's inspector. The side-by-side lesson runs.
+
+**Done**
+- `js/flow/adapter.js` (pure): presents a node's upstream chain as the walkthrough's `app`. `chainFor` walks the primary inputs (Answer ← Assemble ← Retrieve ← Embed ← Chunk ← Document) and picks up the Question feeding the Retrieve. `artifactsFor` maps the chain's artifacts to `state.artifacts.{chunks, embeddings, retrieval, prompt, answer}`; each station is handed the chunk list its own artifact was built from, so a re-chunked upstream never leaves a station indexing chunks that no longer exist. `resolveStep` decides what a station's button means by "chunk", "embed", and so on: the node itself, else the nearest downstream node of that type (continue buttons), else the one upstream (stale notices). `createStationApp` wraps it all: live getters for `state`, `isStale` by artifact id, the run functions, `setQuestion`, `setInstruction`, `setEmbeddingMode`, `setDocument`, `buildRunSummary`, and `askModel`.
+- `js/flow/inspector.js`: label, lane tag, hint, the walkthrough's explainer (collapsed), then the station. Document, Chunk, Embed, Retrieve, Assemble, and Answer use `js/stations/*.js` unchanged. Question and Note get small views of their own: the question with the sample dropdown and a line naming what it feeds; the note as a larger textarea.
+- The inspector column is 460 px, can be hidden (Hide in its header, Inspector in the toolbar), and opens when a node is selected. Edits typed into the inspector update the node card without rebuilding the inspector, so the cursor stays put; edits typed into a card rebuild the inspector.
+- `nodes.js`: `syncParams` pushes parameters into a card's controls when they change elsewhere (inspector, preset), skipping a control the student is typing in; the Black Box radio is disabled once the model has failed to load. The Retrieve summary line now names the chunks: "Top 3 of 20: chunks 08, 03, 13", so two Retrieve nodes can be compared on the canvas without opening either.
+- `main.js`: the walkthrough's progress bar and notice area, driven by the same `CALLOUTS.modelDownload` and `STATION_EMBED.progressDownload` / `progressEmbedding` messages; the fallback when the model cannot load (one `console.warn`, every Black Box Embed node flipped to Glass Box, the `CALLOUTS.modelFailed` notice, then the run repeated); the key held in memory only, passed to the runner as context and never stored, exported, or logged.
+- Registry: the Retrieve output now carries the embedding and projection it scored against, and the Assemble output the chunk list, so the inspector can draw the map and number the passages from the artifact alone.
+- `styles.css`: `.notice[hidden] { display: none; }`. The notice's flex display had been overriding the `hidden` attribute, so an empty amber bar appeared whenever the progress bar did, in the walkthrough as well as here. One line, both pages.
+- Canvas fixes found while verifying: wire endpoints are now computed from layout offsets rather than rendered geometry, so they are right while the world is mid-zoom; on a short wire the × handle sits below the midpoint instead of on top of a port; a new card from the palette steps down until it overlaps nothing.
+- Tests: `tests/flow/adapter.test.js` (chain resolution, a shared Question feeding two branches, `resolveStep`, chunk-list mapping through a re-chunk, the station app's getters and setters, live instruction editing making the Answer stale, `askModel` with the page key and the code mapping Station 5 expects, mode switching). Suite: 116 passing.
+
+**Verified in the browser (Chrome engine in the desktop app, 1400 × 900)**
+- Click the Chunk card: the inspector shows the Chunk station with 20 cards, the summary "20 chunks · average 386 characters · 19 of 19 cuts fell mid-sentence", and the settings line.
+- Click Retrieve after a run: the question box carries the Question node's text, the ranked table has 20 rows, the map has the question marker and three neighbour lines.
+- Click Answer before a prompt exists: "Assemble a prompt first." After a run: provider dropdown, password-type key field with autocomplete off, the memory-only callout, "Ask the model". Pressing it with no key: "Paste a key first." and focus moves to the key field.
+- Switch Embed to Black Box from the inspector's toggle with nothing embedded: the mode changes on the card and nothing runs, as in the walkthrough. Press "Embed all chunks": the progress bar reads "Downloading a 23 MB embedding model to your browser. This happens once. Downloading the model… 6%" through "Embedding chunk 20 of 20…", the card reads "20 vectors · 384 dimensions", the inspector "20 vectors · 384 dimensions from the neural model".
+- Run all in Black Box: Retrieve reads "Top 3 of 20: chunks 08, 03, 13"; the table has chunk 08 at rank 1 with 0.55 and 03 at 0.48, the walkthrough's Phase 6 numbers.
+- The side-by-side lesson: a second Embed (Glass Box) and second Retrieve added from the palette, wired to the same Chunk and Question by click-to-click. One Run all: the Black Box branch "Top 3 of 20: chunks 08, 03, 13", the Glass Box branch "Top 3 of 20: chunks 02, 03, 07", on one canvas from one question. The model was not downloaded again.
+- Typing in the Assemble inspector's instruction updates the full prompt live, keeps the cursor, and updates the card's own textarea. (The Answer going stale from this is covered by the adapter test; in the browser the Answer had no artifact yet.)
+- No console errors at any point; one Transformers.js warning about a missing content-length header during the download.
+
+**Not verified here**
+- The fallback path was not triggered: the model downloaded. The runner test covers the error code; the page-level flip to Glass Box, the notice, and the disabled radio follow the same steps the walkthrough verified in Phase 5 by pointing the CDN constant at a dead address. Worth one manual run the same way.
+- The Document station's file upload inside the inspector was not exercised (the walkthrough's code, untouched).
+- A live provider call was not made, as in Phase 5.
+
+**Decisions made without asking**
+- One inspector rather than two. The plan's exit check said "two inspectors open"; instead the Retrieve card's summary line names its top chunks, so the comparison is visible on the canvas itself, and the inspector shows whichever branch is selected.
+- Assemble's instruction edits mirror the walkthrough's `rebuildPromptText`: the prompt text is rebuilt in the artifact without a run, the artifact's version is bumped so the Answer downstream goes stale. A run on every keystroke would have re-run stale ancestors too.
+- The mode switch in the Embed station re-embeds at once when an embedding exists, as the walkthrough does, even though that can start a 23 MB download from a radio button. The card's own radio only marks the node stale; the student presses Run.
+- Station continue buttons whose next step is not on the canvas read out "Nothing of that kind is wired after this step yet. Add a Retrieve node and wire it in." rather than being hidden, so the student learns what is missing.
+- `.notice[hidden]` is a change to the shared stylesheet and so to the walkthrough. It removes an empty amber bar that appeared during every model download; it adds nothing.
+
+**Next: Phase 10** — the teaching layer: five exercise presets (blank, wrong input, starved retrieval, two boxes, broken overlap) with their notes, export and load of graphs as JSON, the Flow variant of the run summary, and a copy pass over every refusal, exercise note, and node description.
 
 ## Phase 8 — Flow mode canvas (done)
 

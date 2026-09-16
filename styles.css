@@ -634,6 +634,7 @@ mark.overlap {
   border-radius: 0 var(--radius) var(--radius) 0;
   padding: 0.6rem 1rem;
 }
+.notice[hidden] { display: none; }
 .notice p { margin: 0; flex: 1; }
 
 /* ---------- Black Box inspector ---------- */

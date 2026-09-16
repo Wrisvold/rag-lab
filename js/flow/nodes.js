@@ -7,7 +7,7 @@
 // canvas.js; this file only builds and updates DOM.
 
 import { el, fill } from '../dom.js';
-import { formatNumber } from '../text.js';
+import { formatNumber, padNumber } from '../text.js';
 import { estimateTokens } from '../prompt.js';
 import { nodeType } from './registry.js';
 import { setParam, isStale, inputEdge } from './graph.js';
@@ -105,7 +105,33 @@ export function updateChrome(article, node, app) {
   const run = article.querySelector('.flow-node__run');
   if (run) run.disabled = Boolean(app.busy);
 
+  syncParams(article, node, app);
   updatePortNames(article, node, app);
+}
+
+/**
+ * Push the node's parameters into its controls, for changes made elsewhere
+ * (the inspector, a preset). A control the student is typing in is left alone.
+ */
+export function syncParams(article, node, app) {
+  for (const control of article.querySelectorAll('[data-param]')) {
+    const key = control.dataset.param;
+    if (control.type === 'radio') {
+      control.checked = node.params[key] === control.value;
+      if (key === 'mode' && control.value === 'black') control.disabled = app.blackBoxAvailable === false;
+      continue;
+    }
+    if (control === document.activeElement) continue;
+    const value = String(node.params[key] ?? '');
+    if (control.value !== value) control.value = value;
+  }
+  const count = article.querySelector('[data-role="count"]');
+  if (count && node.type === 'document') {
+    const text = node.params.text;
+    count.textContent = text
+      ? fill(app.copy.STATION_DOCUMENT.wordCount, { name: node.params.name, words: formatNumber(text.trim().split(/\s+/).length), chars: formatNumber(text.length) })
+      : app.copy.STATION_DOCUMENT.emptyCount;
+  }
 }
 
 /** Accessible names for the ports, which change as wires come and go. */
@@ -140,7 +166,11 @@ function summarize(node, app) {
     case 'question':
       return F.summaries.question;
     case 'retrieve':
-      return fill(F.summaries.retrieve, { k: output.topK.length, total: formatNumber(output.ranked.length) });
+      return fill(F.summaries.retrieve, {
+        k: output.topK.length,
+        total: formatNumber(output.ranked.length),
+        numbers: output.passages.map((p) => padNumber(p.number, output.ranked.length)).join(', '),
+      });
     case 'assemble':
       return fill(F.summaries.assemble, {
         chars: formatNumber(output.text.length),
@@ -167,10 +197,10 @@ function buildParams(node, app, hooks, message) {
     case 'document': {
       const textarea = el('textarea', {
         rows: '3', placeholder: copy.STATION_DOCUMENT.placeholder, spellcheck: 'false',
-        'aria-label': F.params.documentText,
+        'aria-label': F.params.documentText, 'data-param': 'text',
       });
       textarea.value = node.params.text;
-      const count = el('span', { class: 'hint' });
+      const count = el('span', { class: 'hint', 'data-role': 'count' });
       const refreshCount = () => {
         const text = node.params.text;
         count.textContent = text
@@ -203,7 +233,7 @@ function buildParams(node, app, hooks, message) {
     case 'embed': {
       const name = `${node.id}-mode`;
       const option = (value, text) => {
-        const input = el('input', { type: 'radio', name, value });
+        const input = el('input', { type: 'radio', name, value, 'data-param': 'mode' });
         input.checked = node.params.mode === value;
         input.addEventListener('change', () => { if (input.checked) change('mode', value); });
         return el('label', { class: 'flow-mode-option' }, [input, text]);
@@ -218,7 +248,7 @@ function buildParams(node, app, hooks, message) {
     }
 
     case 'question': {
-      const input = el('input', { type: 'text', 'aria-label': F.params.questionText, placeholder: copy.STATION_RETRIEVE.placeholder || '' });
+      const input = el('input', { type: 'text', 'aria-label': F.params.questionText, placeholder: copy.STATION_RETRIEVE.questionPlaceholder, 'data-param': 'text' });
       input.value = node.params.text;
       input.addEventListener('input', () => change('text', input.value));
       input.addEventListener('keydown', (event) => {
@@ -242,14 +272,14 @@ function buildParams(node, app, hooks, message) {
       return [numberControl(app, node, 'topK', copy.DIALS.topK, C.TOP_K_MIN, C.TOP_K_MAX, change, message)];
 
     case 'assemble': {
-      const textarea = el('textarea', { rows: '3', 'aria-label': F.params.instruction });
+      const textarea = el('textarea', { rows: '3', 'aria-label': F.params.instruction, 'data-param': 'instruction' });
       textarea.value = node.params.instruction;
       textarea.addEventListener('input', () => change('instruction', textarea.value));
       return [labelled(F.params.instruction, textarea)];
     }
 
     case 'answer': {
-      const select = el('select', { 'aria-label': F.params.provider },
+      const select = el('select', { 'aria-label': F.params.provider, 'data-param': 'provider' },
         Object.entries(C.ANSWER_PROVIDERS).map(([key, provider]) => el('option', { value: key, text: `${provider.label} · ${provider.note}` })));
       select.value = node.params.provider;
       select.addEventListener('change', () => change('provider', select.value));
@@ -257,7 +287,7 @@ function buildParams(node, app, hooks, message) {
     }
 
     case 'note': {
-      const textarea = el('textarea', { rows: '4', 'aria-label': F.params.noteText, placeholder: F.params.notePlaceholder });
+      const textarea = el('textarea', { rows: '4', 'aria-label': F.params.noteText, placeholder: F.params.notePlaceholder, 'data-param': 'text' });
       textarea.value = node.params.text;
       textarea.addEventListener('input', () => change('text', textarea.value));
       return [textarea];
@@ -279,7 +309,7 @@ function labelled(text, control, hideLabel = false) {
  * sidebar's messages and the control is set back, rather than clamped.
  */
 function numberControl(app, node, key, dial, min, max, change, message) {
-  const input = el('input', { type: 'number', min: String(min), max: String(max), step: '1' });
+  const input = el('input', { type: 'number', min: String(min), max: String(max), step: '1', 'data-param': key });
   input.value = node.params[key];
   input.addEventListener('change', () => {
     const value = Number(input.value);

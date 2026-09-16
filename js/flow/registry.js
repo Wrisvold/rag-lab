@@ -10,8 +10,8 @@
 //   chunks    { chunks, summary, settings, documentName }        (chunker.js result plus the settings)
 //   vectors   { embedding, projection, mode, chunks }            (glassBox.js / blackBox.js shape plus the 2D map fit)
 //   question  { text }
-//   passages  { question, query, ranked, topK, topKValue, passages, questionPoint, questionHasDirection, chunks, mode }
-//   prompt    { text, instruction, passages, question }
+//   passages  { question, query, ranked, topK, topKValue, passages, questionPoint, questionHasDirection, chunks, mode, embedding, projection }
+//   prompt    { text, instruction, passages, question, chunks }
 //   answer    { provider, model, text, promptText, passages, question }
 //
 // Extension point: a new node type is a new entry here plus a label and hint
@@ -162,6 +162,8 @@ export const NODE_TYPES = {
       return {
         question: question.text, query, ranked, topK, topKValue: params.topK, passages,
         questionPoint, questionHasDirection, chunks, mode: vectors.mode,
+        // The inspector draws the map from these; they are references, not copies.
+        embedding, projection,
       };
     },
   },
@@ -174,7 +176,7 @@ export const NODE_TYPES = {
     params: { instruction: C.DEFAULT_INSTRUCTION },
     async run({ passages, question }, params) {
       const text = buildPrompt({ instruction: params.instruction, passages: passages.passages, question: question.text });
-      return { text, instruction: params.instruction, passages: passages.passages, question: question.text };
+      return { text, instruction: params.instruction, passages: passages.passages, question: question.text, chunks: passages.chunks };
     },
   },
 

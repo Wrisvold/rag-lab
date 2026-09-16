@@ -1,6 +1,7 @@
 // Flow mode — entry point for flow.html. Holds the graph, builds the palette
-// and toolbar, mounts the canvas, runs nodes, and keeps the canvas alive
-// across a reload. The walkthrough (js/main.js) is untouched by this file.
+// and toolbar, mounts the canvas and the inspector, runs nodes with the
+// shared progress bar, and keeps the canvas alive across a reload. The
+// walkthrough (js/main.js) is untouched by this file.
 //
 // All user-facing text comes from js/copy.js (FLOW block). Do not type sentences here.
 
@@ -14,6 +15,7 @@ import { runGraph, runNode } from './runner.js';
 import { toJSON, fromJSON } from './serialize.js';
 import { canonicalGraph } from './presets.js';
 import { mountCanvas } from './canvas.js';
+import { renderInspector } from './inspector.js';
 
 const F = copy.FLOW;
 
@@ -21,48 +23,68 @@ const state = {
   graph: createGraph(),
   busy: false,
   selected: null,
-  sampleText: null,   // the sample document, fetched once
+  sampleText: null,                 // the sample document, fetched once
+  blackBox: { available: true },    // flips to false if the model cannot be loaded
+  // Per-visit interface state that is not part of the graph. The API key lives
+  // here and nowhere else: never persisted, never exported, never logged.
+  ui: { selectedChunk: null, apiKey: '' },
 };
 
 // ---------------------------------------------------------------------------
-// The app object the canvas and the node cards talk to
+// The page object the canvas, the node cards, and the inspector talk to
 // ---------------------------------------------------------------------------
 const app = {
   copy,
   constants,
   get graph() { return state.graph; },
   get busy() { return state.busy; },
+  get blackBoxAvailable() { return state.blackBox.available; },
+  get ui() { return state.ui; },
 
   readout,
 
   /** Structural change (node, wire, position): persist. Chrome is already updated by the canvas. */
   graphChanged() {
     persist();
+    renderInspectorPanel();
   },
 
-  /** A parameter changed on one node: mark it and everything downstream. */
-  paramChanged(nodeId) {
+  /**
+   * A parameter changed on one node: mark it and everything downstream.
+   * Changes typed into the inspector do not rebuild the inspector, or the
+   * student would lose the cursor.
+   */
+  paramChanged(nodeId, { fromInspector = false } = {}) {
     canvas.updateOne(nodeId);
     for (const id of dependents(state.graph, nodeId)) canvas.updateOne(id);
     canvas.refresh();
     persist();
+    if (!fromInspector) renderInspectorPanel();
   },
 
-  async runNode(nodeId) {
-    if (state.busy) return;
-    await withBusy(() => runNode(state.graph, nodeId, runContext(), runHooks()));
+  /** Run one node (and its stale ancestors). Resolves to the runner's report, or undefined when busy. */
+  async runNode(nodeId, { rerenderInspector = true } = {}) {
+    if (state.busy) return undefined;
+    return withBusy(() => runNode(state.graph, nodeId, runContext(), runHooks()), { rerenderInspector });
   },
 
   async runAll() {
-    if (state.busy) return;
+    if (state.busy) return undefined;
     const runnable = [...state.graph.nodes.values()].some((node) => NODE_TYPES[node.type].runnable !== false);
-    if (!runnable) { readout(F.readout.nothingToRun); return; }
-    await withBusy(() => runGraph(state.graph, runContext(), runHooks()));
+    if (!runnable) { readout(F.readout.nothingToRun); return undefined; }
+    return withBusy(() => runGraph(state.graph, runContext(), runHooks()));
   },
 
   select(nodeId) {
     state.selected = nodeId;
-    renderInspector();
+    if (nodeId) showInspector(true);
+    renderInspectorPanel();
+  },
+
+  /** Select a node from the inspector's continue buttons: focus its card, which selects it. */
+  selectNode(nodeId) {
+    canvas.selectNode(nodeId);
+    canvas.focusNode(nodeId);
   },
 
   /** Fill a Document node with the sample. Returns the text, or null if it could not be fetched. */
@@ -93,11 +115,17 @@ const canvas = mountCanvas(app, {
 // ---------------------------------------------------------------------------
 // Running
 // ---------------------------------------------------------------------------
-async function withBusy(run) {
+async function withBusy(run, { rerenderInspector = true } = {}) {
   state.busy = true;
   canvas.refresh();
+  let report;
   try {
-    const report = await run();
+    report = await run();
+    // The walkthrough degrades to Glass Box when the model cannot load; so does the canvas.
+    if (report.failed.some((entry) => entry.code === 'BLACK_BOX_UNAVAILABLE')) {
+      blackBoxFallback(report);
+      report = await run();
+    }
     readout(fill(F.readout.ran, {
       ran: report.ran.length,
       fresh: report.fresh.length,
@@ -106,16 +134,42 @@ async function withBusy(run) {
     }));
   } finally {
     state.busy = false;
+    hideProgress();
     canvas.refresh();
+    if (rerenderInspector) renderInspectorPanel();
   }
+  return report;
+}
+
+function blackBoxFallback(report) {
+  const failed = report.failed.find((entry) => entry.code === 'BLACK_BOX_UNAVAILABLE');
+  // One warning line for the instructor's console; no stack trace on the page.
+  console.warn('RAG Lab: Black Box mode unavailable:', failed.message);
+  state.blackBox.available = false;
+  for (const node of state.graph.nodes.values()) {
+    if (node.type === 'embed' && node.params.mode === 'black') setParam(state.graph, node.id, 'mode', 'glass');
+  }
+  showNotice(copy.CALLOUTS.modelFailed);
+  persist();
 }
 
 function runContext() {
   return {
-    apiKey: '',
+    apiKey: state.ui.apiKey,
     onProgress: (progress) => {
-      const template = progress.stage === 'download' ? F.readout.downloading : F.readout.embedding;
-      readout(fill(template, { percent: progress.percent === null || progress.percent === undefined ? 0 : progress.percent }));
+      if (progress.stage === 'download') {
+        showProgress(
+          progress.percent === null || progress.percent === undefined
+            ? copy.CALLOUTS.modelDownload
+            : `${copy.CALLOUTS.modelDownload} ${fill(copy.STATION_EMBED.progressDownload, { percent: progress.percent })}`,
+          progress.percent ?? null,
+        );
+      } else {
+        showProgress(
+          fill(copy.STATION_EMBED.progressEmbedding, { done: Math.min(progress.done + 1, progress.total), total: progress.total }),
+          progress.percent,
+        );
+      }
     },
   };
 }
@@ -138,13 +192,38 @@ function runHooks() {
 }
 
 // ---------------------------------------------------------------------------
-// Readout (one aria-live line under the canvas)
+// Readout, progress bar, notices
 // ---------------------------------------------------------------------------
 function readout(text) {
   const line = document.getElementById('flow-readout');
   // Clear first so the same sentence twice is announced twice.
   line.textContent = '';
   setTimeout(() => { line.textContent = text; }, 30);
+}
+
+function showProgress(label, percent) {
+  const bar = document.getElementById('global-progress-fill');
+  document.getElementById('global-progress-label').textContent = label;
+  bar.classList.toggle('is-indeterminate', percent === null);
+  bar.style.width = percent === null ? '' : `${percent}%`;
+  document.getElementById('global-progress').hidden = false;
+  document.getElementById('global-status').hidden = false;
+}
+
+function hideProgress() {
+  document.getElementById('global-progress').hidden = true;
+  syncGlobalStatus();
+}
+
+function showNotice(text) {
+  document.getElementById('global-notice-text').textContent = text;
+  document.getElementById('global-notice').hidden = false;
+  document.getElementById('global-status').hidden = false;
+}
+
+function syncGlobalStatus() {
+  const wrap = document.getElementById('global-status');
+  wrap.hidden = document.getElementById('global-progress').hidden && document.getElementById('global-notice').hidden;
 }
 
 // ---------------------------------------------------------------------------
@@ -164,8 +243,12 @@ function renderChrome() {
   document.getElementById('global-notice-dismiss').textContent = copy.UI.dismiss;
   document.getElementById('global-notice-dismiss').addEventListener('click', () => {
     document.getElementById('global-notice').hidden = true;
-    document.getElementById('global-status').hidden = true;
+    syncGlobalStatus();
   });
+  document.getElementById('inspector-heading').textContent = F.inspector.heading;
+  const close = document.getElementById('inspector-close');
+  close.textContent = F.inspector.close;
+  close.addEventListener('click', () => showInspector(false));
 }
 
 function renderPalette() {
@@ -197,26 +280,25 @@ function renderToolbar() {
   toolbar.replaceChildren(
     el('button', { type: 'button', class: 'button button--primary', text: F.toolbar.runAll, onclick: () => app.runAll() }),
     el('span', { class: 'flow-toolbar__spacer' }),
-    el('button', { type: 'button', class: 'button', text: F.toolbar.zoomOut, 'aria-label': F.toolbar.zoomOut, onclick: () => canvas.zoomBy(1 / constants.FLOW_ZOOM_STEP) }),
-    el('button', { type: 'button', class: 'button', text: F.toolbar.zoomIn, 'aria-label': F.toolbar.zoomIn, onclick: () => canvas.zoomBy(constants.FLOW_ZOOM_STEP) }),
+    el('button', { type: 'button', class: 'button', text: F.toolbar.zoomOut, onclick: () => canvas.zoomBy(1 / constants.FLOW_ZOOM_STEP) }),
+    el('button', { type: 'button', class: 'button', text: F.toolbar.zoomIn, onclick: () => canvas.zoomBy(constants.FLOW_ZOOM_STEP) }),
     el('button', { type: 'button', class: 'button', text: F.toolbar.fit, onclick: () => canvas.fit() }),
-    el('span', { class: 'flow-toolbar__zoom', id: 'flow-zoom-level', 'aria-live': 'off' }),
+    el('span', { class: 'flow-toolbar__zoom', id: 'flow-zoom-level' }),
+    el('button', { type: 'button', class: 'button', id: 'inspector-show', text: F.toolbar.inspector, onclick: () => showInspector(true) }),
   );
 }
 
-function renderInspector() {
-  document.getElementById('inspector-heading').textContent = F.inspector.heading;
-  const body = document.getElementById('inspector-body');
+function showInspector(visible) {
+  document.querySelector('.flow-layout').classList.toggle('inspector-hidden', !visible);
+  document.getElementById('inspector-show').hidden = visible;
+  // The canvas changed width, so the wires must be redrawn where the ports now are.
+  canvas.refresh();
+}
+
+function renderInspectorPanel() {
   const node = state.selected ? state.graph.nodes.get(state.selected) : null;
-  if (!node) {
-    body.replaceChildren(el('p', { class: 'inspector-placeholder', text: F.inspector.empty }));
-    return;
-  }
-  body.replaceChildren(
-    el('h3', { text: F.nodes[node.type].label }),
-    el('p', { text: F.nodes[node.type].hint }),
-    el('p', { class: 'inspector-placeholder', text: F.inspector.notYet }),
-  );
+  if (!node) state.selected = null;
+  renderInspector(document.getElementById('inspector-body'), app, state.selected);
 }
 
 // ---------------------------------------------------------------------------
@@ -298,5 +380,6 @@ function fitWhenLaidOut() {
 renderChrome();
 renderPalette();
 renderToolbar();
-renderInspector();
+showInspector(false);
+renderInspectorPanel();
 if (!(await restore())) await loadStandard();

@@ -8,9 +8,25 @@
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: 220px 1fr 320px;
+  grid-template-columns: 200px 1fr 460px;
   gap: 0;
 }
+.flow-layout.inspector-hidden { grid-template-columns: 200px 1fr; }
+.flow-layout.inspector-hidden .flow-inspector { display: none; }
+.flow-inspector__head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.flow-inspector__head h2 { margin: 0; }
+.flow-inspector__head .button { font-size: 0.85rem; padding: 0.25rem 0.6rem; }
+.inspector-station { margin-top: 0.75rem; overflow-x: auto; }
+.inspector-station .station__header h3 { margin: 0; }
+.inspector-station .explainer { margin: 0.5rem 0 1rem; }
+.inspector-station .rank-table { font-size: 0.82rem; }
+.inspector-station .prompt-box { font-size: 0.8rem; }
+.inspector-station .chunk-card__text { font-size: 0.88rem; }
+.inspector-station .document-input { min-height: 8em; }
+.inspector-station .answer-grid { grid-template-columns: 1fr; }
+.inspector-station .key-input { max-width: 100%; }
+.inspector-station .toolbar { margin: 0.5rem 0; }
+.inspector-station .lane-tag { font-size: 0.7rem; }
 .flow-side {
   background: var(--paper);
   padding: 1rem 1.25rem;
@@ -234,7 +250,7 @@
 
 /* ---------- Narrow screens: stack the columns ---------- */
 @media (max-width: 1100px) {
-  .flow-layout { grid-template-columns: 1fr; }
+  .flow-layout, .flow-layout.inspector-hidden { grid-template-columns: 1fr; }
   .flow-side { max-height: 30vh; }
   .flow-palette { border-right: 0; border-bottom: 1px solid var(--line); }
   .flow-inspector { border-left: 0; border-top: 1px solid var(--line); }

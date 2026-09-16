@@ -48,6 +48,9 @@ export const STEPS = [
 // ---------------------------------------------------------------------------
 export const EXPLAINER_TITLE = 'What is happening here';
 
+// The bold lead-ins of the explainer paragraphs, as Flow mode prints them.
+export const EXPLAINER_LABELS = { what: 'What this step does. ', why: 'Why it matters. ', cosine: 'About the score. ' };
+
 export const EXPLAINERS = {
   document: {
     what: "This is the raw material. Everything the chatbot will ever \"know\" comes from the text you put here. Paste it, upload a file, or load the sample employee handbook. The app counts the words so you can see how much material you are working with.",
@@ -419,6 +422,7 @@ export const FLOW = {
     zoomIn: 'Zoom in',
     zoomOut: 'Zoom out',
     fit: 'Fit to screen',
+    inspector: 'Inspector',
     zoomLevel: 'Zoom {percent}%',
     clear: 'Clear the canvas',
     clearConfirm: 'Remove every node and wire from the canvas?',
@@ -426,8 +430,12 @@ export const FLOW = {
 
   inspector: {
     heading: 'Inspector',
-    empty: 'Select a node to see it here.',
-    notYet: 'The artifact view for this node arrives in the next phase.',
+    empty: 'Select a node to see its artifact here.',
+    close: 'Hide',
+    show: 'Inspector',
+    noNext: 'Nothing of that kind is wired after this step yet. Add a {node} node and wire it in.',
+    feeds: 'This question feeds: {nodes}.',
+    feedsNone: 'This question is not wired into anything yet. Drag from its output to a Retrieve node.',
   },
 
   // Short port labels printed beside each port on a node.
@@ -473,7 +481,7 @@ export const FLOW = {
     chunk: '{count} chunks · {cuts} mid-sentence cuts',
     embed: '{count} vectors · {dims} dimensions',
     question: 'Ready',
-    retrieve: 'Top {k} of {total} chunks',
+    retrieve: 'Top {k} of {total}: chunks {numbers}',
     assemble: '{chars} characters · about {tokens} tokens',
     answer: '{provider} replied · {chars} characters',
   },
@@ -491,8 +499,6 @@ export const FLOW = {
     running: 'Running {node}…',
     ran: '{ran} ran, {fresh} already up to date, {skipped} waiting on another step, {failed} failed.',
     nothingToRun: 'Nothing to run yet. Add a Document node and wire it up.',
-    downloading: 'Downloading the model… {percent}%',
-    embedding: 'Embedding chunks… {percent}%',
     cleared: 'Canvas cleared.',
     presetLoaded: 'Loaded the standard pipeline.',
     blankLoaded: 'Started with an empty canvas.',
