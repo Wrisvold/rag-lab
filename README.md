@@ -2,7 +2,7 @@
 
 A browser-based teaching simulator of the retrieval-augmented generation (RAG) pipeline, built for **CBIS 5530 · Introduction to RAG**, MS in AI Strategy, Georgia College & State University.
 
-**Live site:** https://wrisvold.github.io/rag-lab/
+**Live site:** https://wrisvold.github.io/rag-lab/ · **Flow mode:** https://wrisvold.github.io/rag-lab/flow.html
 
 A student pastes or uploads a document and watches it move through the four stages of a RAG pipeline, with every intermediate artifact on screen:
 
