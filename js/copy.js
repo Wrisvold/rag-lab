@@ -1318,5 +1318,7 @@ export const AGENT = {
     agentBlack: 'Black Box ({provider} · {model})',
     promptGlass: 'not read by the Glass Box agent',
     noLimit: 'no limit',
+    // A run can stop in the context part (the token budget). That round has no decision.
+    contextOnly: 'context: {tokens} tokens. The loop stopped before the decision.',
   },
 };
