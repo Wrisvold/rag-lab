@@ -81,7 +81,7 @@ The plan is in [agent-mode-plan.md](agent-mode-plan.md). Phases 12 to 17 are don
 
 **Still open:** the plan asks for a person who did not build the page to do Exercises 1 and 2 with only the page text. A script is not that person. Ask a colleague or a student to do it before the term.
 
-**The instructor's run (17 October 2026, live site):** Exercise 2 gave the expected summary: round 1 fails C1, round 2 finds chunk 08 (Section 3.1) at rank 1, and round 3 is accepted. ANSWER_ACCEPTED after 3 rounds, about 3,012 tokens. The instructor could not find the synonym table from step 4. That step now names the heading "Synonym table (rule F1)" and tells the student to scroll the set-up column.
+**The instructor's run (17 October 2026, live site):** Exercise 2 gave the expected summary: round 1 fails C1, round 2 finds chunk 08 (Section 3.1) at rank 1, and round 3 is accepted. ANSWER_ACCEPTED after 3 rounds, about 3,012 tokens. The instructor could not find the synonym table from step 4. That step now names the heading "Synonym table (rule F1)" and tells the student to scroll the set-up column. Exercise 1, first run: HARD_LIMIT after 12 rounds, about 43,543 tokens, the same as the tests.
 
 ## Phase 15 — Agent mode Black Box agent (done; real-key exit check open)
 
