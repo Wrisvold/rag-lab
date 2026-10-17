@@ -1,14 +1,19 @@
 // Builds Word files for the LMS from the Markdown course files.
 //
-//   NODE_PATH="$(npm root -g)" node agents-course/tools/build-docx.cjs [output-folder]
+//   NODE_PATH="$(npm root -g)" node agents-course/tools/build-docx.cjs [--notes FILE] [output-folder]
 //
 // Needs pandoc (it parses the Markdown) and the npm package `docx`.
 // The default output folder is agents-course/word/, which git ignores.
 //
 // Two editions:
-//   student/     one file per module, with "Instructor notes" sections and
-//                "> **Instructor:**" boxes removed
-//   instructor/  one combined file with everything, notes highlighted
+//   student/     one file per module. "Instructor:" boxes and "Default:"
+//                labels are removed.
+//   instructor/  one combined file with everything. Made only with --notes.
+//
+// The instructor notes are not in this public repository. They are in the
+// private repository wrisvold/agents-course-instructor, file
+// instructor-notes.md. Each "## week-0N.md" section in that file goes at the
+// end of that week, under the heading "Instructor notes", highlighted.
 
 const { execFileSync } = require('node:child_process');
 const fs = require('node:fs');
@@ -20,7 +25,10 @@ const {
 } = require('docx');
 
 const COURSE = path.join(__dirname, '..');
-const OUT = path.resolve(process.argv[2] || path.join(COURSE, 'word'));
+const args = process.argv.slice(2);
+const notesAt = args.indexOf('--notes');
+const NOTES = notesAt >= 0 ? path.resolve(args.splice(notesAt, 2)[1]) : null;
+const OUT = path.resolve(args[0] || path.join(COURSE, 'word'));
 
 // RAG Lab palette (styles.css)
 const C = {
@@ -379,6 +387,20 @@ async function main() {
     await write(path.join(OUT, 'student', m.file + '.docx'), convert(blocks, ctx), ctx, title);
   }
 
+  if (!NOTES) {
+    console.log('no --notes file: the Instructor Edition was not made');
+    return;
+  }
+
+  // Instructor notes, by guide file name
+  const notes = {};
+  let current = null;
+  for (const b of parse(NOTES)) {
+    if (b.t === 'Header' && b.c[0] === 2) { current = plainText(b.c[2]).trim(); notes[current] = []; continue; }
+    if (current) notes[current].push(b);
+  }
+  const notesHeading = { t: 'Header', c: [2, ['', [], []], [{ t: 'Str', c: 'Instructor' }, { t: 'Space' }, { t: 'Str', c: 'notes' }]] };
+
   // Instructor edition: everything in one file
   const ctx = newCtx();
   const title = 'AI Agents for AI Strategy: Instructor Edition';
@@ -401,7 +423,9 @@ async function main() {
   const body = [];
   for (const md of ['README.md', ...MODULES.map((m) => m.md)]) {
     ctx.notesMode = false;
-    body.push(...convert(parse(path.join(COURSE, md)), ctx, { breakBeforeH1: true }));
+    const blocks = parse(path.join(COURSE, md));
+    if (notes[md]) blocks.push(notesHeading, ...notes[md]);
+    body.push(...convert(blocks, ctx, { breakBeforeH1: true }));
   }
   await write(path.join(OUT, 'instructor', 'Instructor Edition - AI Agents for AI Strategy.docx'), [...cover, ...body], ctx, title);
 }

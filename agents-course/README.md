@@ -44,6 +44,17 @@ The course does not use Lesson 00 (Course Setup) as a reading. Students on the o
 
 Weeks 1, 6, 7, and 8 also give optional readings from [LangGraph](https://github.com/langchain-ai/langgraph), a second agent framework. These readings show that the ideas of the course apply to more than one framework. Students do not write LangGraph code.
 
+## Instructor notes and Word files
+
+This repository is public. So, the instructor notes for each week are not in it. They are in the private repository `wrisvold/agents-course-instructor`, in the file `instructor-notes.md`.
+
+The script `tools/build-docx.cjs` makes Word files for the LMS:
+
+- Without notes, it makes one student file for each module.
+- With `--notes path/to/instructor-notes.md`, it also makes one Instructor Edition that includes the notes.
+
+The script writes the files to the folder `word/`. Git ignores that folder. Do not commit the Instructor Edition to this repository.
+
 ## The writing standard
 
 All text in this folder follows the rules of ASD-STE100 Simplified Technical English, Issue 9. The rules make text easier to read for students who use English as a second language. The rules also make text easier to translate.
