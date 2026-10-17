@@ -4,7 +4,7 @@ Updated at the end of each phase. Newest phase first.
 
 ## Agent mode — design plan (Phases 12 to 17)
 
-The plan is in [agent-mode-plan.md](agent-mode-plan.md). Phases 12 to 17 are done. Two exit checks are still open: Phase 15 with real keys (OpenAI passed its first run), and Phase 16 with a person who did not build the page.
+The plan is in [agent-mode-plan.md](agent-mode-plan.md). Phases 12 to 17 are done. One exit check is still open: Phase 16 with a person who did not build the page. The Phase 15 check with real keys is done for OpenAI, Gemini, and Anthropic.
 
 ## Phase 17 — Polish, documentation, review, design rules, dark theme (done)
 
@@ -94,7 +94,7 @@ The plan is in [agent-mode-plan.md](agent-mode-plan.md). Phases 12 to 17 are don
 - Word files built again (17 October 2026): `NODE_PATH="$(npm root -g)" node agents-course/tools/build-docx.cjs` wrote the 12 student files to `agents-course/word/student/`. There was no `--notes` file, so the Instructor Edition was not made. The build needed two tools that were not on this computer: the npm package `docx` (9.12.0, installed with `npm install -g docx`) and pandoc (3.12.1, installed with `winget install JohnMacFarlane.Pandoc --source winget`, in `%LOCALAPPDATA%\Pandoc`). A terminal that was open before the install does not find pandoc until it is opened again. The Week 7 file (about 2,000 words) has the new section after the Agent mode activity, with the eight points and the summary, and no "Instructor:" boxes or "Default:" labels. Not yet uploaded to the LMS.
 - The Theme control sets Light and Dark on each of the three pages. The page colors change, and the choice carries to the next page. The Theme was set back to System after the check.
 
-## Phase 15 — Agent mode Black Box agent (done; real-key exit check open)
+## Phase 15 — Agent mode Black Box agent (done; real-key exit check done)
 
 **Delivered:**
 - `js/agent/providers.js`: one provider-neutral transcript (user text, the assistant reply exactly as sent, tool results), turned into the request of Gemini, OpenAI or Anthropic. `parseAgentResponse` gives a tool call, text, a refusal, a cut-off reply, or an empty reply, with the provider's token counts. `redactRequest` replaces the key with "[key hidden]". `sendRequest` is the only network call and reuses the error codes of Station 5.
@@ -135,14 +135,22 @@ The plan is in [agent-mode-plan.md](agent-mode-plan.md). Phases 12 to 17 are don
 | 17 October 2026 | Google, `gemini-2.5-flash` (a new free-tier key) | 3, prompt v1 | MODEL_ERROR before round 1, 643 tokens. The page said "The provider refused the request. The model name … can be out of date." Cause: since September 2026, Google serves the 2.5 models only to projects that used them before. A new key cannot use them. Fix: the model is now `gemini-3-flash-preview` (AI Studio shows 1,500 requests a day on the free tier for this key; `gemini-3.5-flash` shows 20, which is too few for a class). Gemini 3 thinks at a high level by default, so the requests now set `thinkingConfig.thinkingLevel: LOW`, in Station 5 too. Also fixed: the run summary did not show the error code of a round that stopped before the decision. It now shows, for example, `error:  badRequest`. Run Exercise 3 again with Gemini 3. |
 | 17 October 2026 | Google, `gemini-3-flash-preview` | 3, prompt v1 | ANSWER_ACCEPTED in 3 rounds, 2,932 tokens. Round 1: `search_handbook` "PTO for new employees" (best chunk 02, 0.23, Section 1.1). Round 2: `search_handbook` "vacation accrual new employees" (chunk 08, 0.25, Section 3.1, at rank 1). The model changed "PTO" to "vacation" without a synonym table (compare Exercise 2, where the Glass Box agent needs rule F1). Round 3: the answer gives ten days a year, accrual each pay period, and use after ninety days, with [3.1]. A1 passed. This confirms the fix of PR #13. |
 | 17 October 2026 | Google, `gemini-3-flash-preview` | 3, prompt v2 (no Output format) | ANSWER_ACCEPTED after 4 rounds, 4,158 tokens. Round 1: `search_handbook` "PTO for new employees" (best chunk 02, 0.23, Section 1.1). Round 2: `search_handbook` "vacation accrual policy new hires" (chunk 20, 0.23, Section 5.3, at rank 1; chunk 08, 0.20, Section 3.1, at rank 2). Round 3: the answer gave "(Section 3.1)", not "[3.1]", so A1 failed. The A1 message said that the check needs the form [3.1]. Round 4: the same answer with [3.1]. A1 passed. The first two OpenAI v2 runs got the old A1 text, kept "(Section 3.1)", and stopped at MAX_ROUNDS; with the new A1 text, Gemini changed the form in the next round, as OpenAI did in its third v2 run, and used fewer tokens (4,158 against 6,088). |
+| 17 October 2026 | Anthropic, `claude-opus-5-5` (private window) | 3, prompt v1 | ANSWER_ACCEPTED in 3 rounds, 5,269 tokens. Round 1: `search_handbook` "PTO days for new employees" (best chunk 02, 0.22, Section 1.1). Round 2: `search_handbook` "vacation accrual days per year first year" (chunk 08, 0.37, Section 3.1, at rank 1). Round 3: one paragraph: ten days a year, accrual from the first day, use after ninety days, two weeks of notice, five days of carry-over, and a note that the handbook says "vacation", not "PTO". [3.1]. A1 passed. |
+| 17 October 2026 | Anthropic, `claude-opus-5-5` (private window) | 3, prompt v2 (no Output format) | ANSWER_ACCEPTED after 4 rounds, 8,415 tokens (TOKEN_BUDGET 8,000). Rounds 1 and 2: the same searches as v1. Round 3: a long markdown answer with headings and eight bullets. It added holidays [3.2] and sick leave [3.3], with "(Section 3.1)" and not "[3.1]", so A1 failed. Round 4: the same answer with brackets. A1 passed. |
 
-**Note on Exercise 3, prompt v2.** Without Output format, both models wrote "(Section 3.1)", not "[3.1]". After the A1 fix, the A1 feedback made both models correct the form to [3.1] in the next round. In each v2 run, the A1 failure added one round.
+**Note on Exercise 3, prompt v2.** All three models (OpenAI, Gemini, Anthropic) wrote "(Section 3.1)" without Output format. After the A1 feedback, each model corrected it to [3.1] in the next round. Output format also controls the length and the scope of the answer. Without it, Claude wrote a long markdown answer about three sections.
+
+**Note on chunks.** The sick-leave facts came from chunk 10. Its label is Section 3.2, but its text ends with the start of Section 3.3. A chunk label shows only where the chunk starts. Claude cited [3.3] correctly.
+
+**Note on the budget.** The run ended at 8,415 tokens with a budget of 8,000. The budget is checked in the context part of each round, before the call. It stops the next round, not the current one.
+
+**Note on the first Anthropic try.** In the instructor's normal Chrome window, the call failed with MODEL_ERROR "network". The Console said that the preflight had no Access-Control-Allow-Origin header. A test from the cloud session showed that Anthropic does send the header. A browser extension changed the reply. In a private window, the call worked.
 
 **Note on Exercises 4 and 6.** In the three Exercise 4 runs (no poisoned note), the model sent the request with too little notice in 2 of 3 runs: once with the notice rule off and once with it on. With the notice rule off only, it was 1 of 2 runs. In the two Exercise 6 runs (with the poisoned note), the model refused the request in 2 of 2 runs, with the rule on and with it off. Two runs are too few to explain the difference. A possible reason is that the note looks like an attack, so the model follows the handbook rule more carefully.
 
 **Example result for Exercise 5 (the first two Exercise 5 runs above).** Set-up: Black Box agent, employee E-102 (Sam Okafor, 6 vacation days left), question "I want to take 8 days off from 30 November.", MAX_ROUNDS 4, REPEAT_STOP on, all three tools on. The two runs show the point of the exercise: the plan is made one round at a time, and the same model can make a different plan. Run 1 searched first and then got the balance. Run 2 got the balance first and then searched three times for a rule about the 2 days that are missing, until MAX_ROUNDS stopped it. Neither run called `submit_vacation_request`. Added to the Week 4 instructor notes (private repository) on 17 October 2026, with the instructor's run as run 3.
 
-Still to do: Anthropic.
+The real-key check is done for all three providers.
 
 ## Phase 14 — Agent mode system prompt workbench (done)
 

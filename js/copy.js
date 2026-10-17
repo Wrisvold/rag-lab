@@ -1098,7 +1098,7 @@ export const AGENT = {
     badKey: 'The provider refused the key. Make sure that you copied the full key, and that it belongs to the provider that you selected.',
     noCredit: 'The provider says that the key has no credit. Add credit on the site of the provider, or select Gemini, which has a free tier.',
     rateLimit: 'The provider asked for fewer requests. Wait one minute and try again.',
-    network: 'The request did not get to the provider. Make sure that you are online. Some campus networks block these addresses.',
+    network: 'The request did not get to the provider. Make sure that you are online. Some campus networks block these addresses. If only one provider fails, open the page in a private window. A browser extension can block the request.',
     badRequest: 'The provider refused the request. The model name in js/constants.js can be out of date.',
     server: 'The provider has a problem now. Try again after a few minutes.',
   },
