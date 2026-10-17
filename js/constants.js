@@ -300,3 +300,6 @@ export const AGENT_PROVIDERS = {
 
 // The longest reply of the model check and of the meta prompt, in tokens.
 export const AGENT_TEXT_MAX_OUTPUT_TOKENS = { gemini: 4096, openai: 4096, anthropic: 16000 };
+
+// The theme control (js/theme.js). js/theme-boot.js repeats this key, because it runs before the modules.
+export const THEME_STORAGE_KEY = 'rag-lab-theme';

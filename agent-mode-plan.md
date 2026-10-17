@@ -738,6 +738,12 @@ These notes describe the formats that the adapters must handle. Check each one a
 
 **Checked in Phase 15 (17 October 2026).** The documentation sites were blocked from the build environment. The OpenAI and Gemini formats were checked against the types of the official SDKs on GitHub (`openai-node` and `js-genai`). The Anthropic format was checked against the Anthropic API reference. The table under this note shows the result. Check the formats again each term.
 
+**Checked again in Phase 17 (17 October 2026).** The documentation sites were still blocked. The current SDK types on GitHub agree with the table:
+
+- `openai-node`: `parallel_tool_calls`, `max_completion_tokens`, `tool_call_id`, the arguments as a string, and `refusal`.
+- `js-genai`: `parametersJsonSchema`, `systemInstruction`, the `id` of a `functionResponse`, `thoughtSignature`, the token counts, and `blockReason`.
+- `anthropic-sdk-typescript`: `output_config.effort`, `disable_parallel_tool_use`, `tool_use_id`, and the stop reason `refusal`. `fallbacks` and the header `server-side-fallback-2026-07-01` are in the beta types. A fallback runs when the model declines a request for policy reasons.
+
 | Item | Gemini (`gemini-2.5-flash`) | OpenAI (`gpt-5-mini`, chat completions) | Anthropic (`claude-opus-5-5`, messages) |
 |---|---|---|---|
 | System prompt | `systemInstruction: { parts: [{ text }] }` | A first message with the role `developer` | Top-level `system`. The field is left out when all sections are disabled. |
@@ -770,9 +776,9 @@ RAG Lab keeps its palette, because the colors teach. Teal shows build time, and 
 
 | Item | Rule | Now (17 October 2026) |
 |---|---|---|
-| Spacing | Use a 4-pixel scale: 4, 8, 12, 16, 24, 32, and 48 pixels. Put the scale in tokens, `--space-1` to `--space-7`. Use only the tokens for padding, margins, and gaps. | The three style sheets use 34 different values. |
+| Spacing | Use a 4-pixel scale: 4, 8, 12, 16, 24, 32, and 48 pixels. Put the scale in tokens, `--space-1` to `--space-7`. Use only the tokens for padding, margins, and gaps. Phase 17 used steps of a quarter rem, so the spaces grow with the text size. It added `--space-0` (half a step) for tags and chips. | The three style sheets use 34 different values. |
 | Corners | Use four values: 4 pixels for tags and chips, 8 pixels for buttons and fields, 12 pixels for cards and panels, and a full round for pills. Map points stay circles. | 8 pixels (31 uses), 4 pixels (16), round pills (8), and two other values (2 and 3 pixels). |
-| Depth | Show what is inside what with a 1-pixel border and a change of background. Remove the shadows. Only a Flow node that the student drags keeps a shadow. | A shadow token on the dials, the panels, and the Flow nodes. |
+| Depth | Show what is inside what with a 1-pixel border and a change of background. Remove the shadows. Only content that floats over other content keeps a shadow: a Flow node that the student drags, and the Flow menu. | A shadow token on the dials, the panels, and the Flow nodes. |
 | Focus | Use one focus ring on each control: a 3-pixel outline, 2 pixels from the control, in a color that passes 3:1 in the theme. This includes the map points and the Flow nodes. | A general focus rule, but the map points and the Flow nodes have their own rules. |
 | Touch targets | Each button, field, list, and box with its label is at least 44 pixels high on a touch screen (`pointer: coarse`), and at least 36 pixels high with a mouse. | Not measured. The review measures it. |
 | Type | Keep the fonts. Put the sizes in tokens, and use only the tokens. | Sizes are typed in each rule. |

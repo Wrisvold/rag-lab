@@ -25,7 +25,7 @@ export function buildNode(node, app, hooks) {
   const label = F.nodes[node.type].label;
   const lane = definition.lane ? copy.LANES[definition.lane] : null;
 
-  const article = el('article', {
+  const article = el('section', {
     class: `flow-node flow-node--${node.type}${definition.lane ? ` flow-node--${definition.lane}` : ''}`,
     'data-node': node.id,
     tabindex: '0',

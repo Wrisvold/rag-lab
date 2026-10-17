@@ -21,6 +21,14 @@ export const MODES = {
   agent: 'Agent',
 };
 
+// The theme control in the header of each page.
+export const THEME = {
+  label: 'Theme',
+  system: 'System',
+  light: 'Light',
+  dark: 'Dark',
+};
+
 // ---------------------------------------------------------------------------
 // The stepper across the top. Order matters; ids are used in code.
 // ---------------------------------------------------------------------------

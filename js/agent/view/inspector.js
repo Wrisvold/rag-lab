@@ -37,7 +37,8 @@ export function renderInspector(app, container) {
 
   const details = parts.map((p) => el('details', { class: `context-part context-part--${p.type}`, open: p.type === 'knowledge' && p.tokens > 0 }, [
     el('summary', { text: `${T.types[p.type]} · ${fill(T.tokens, { tokens: p.tokens.toLocaleString('en-US') })}` }),
-    p.text ? el('pre', { class: 'context-part__text', text: p.text }) : el('p', { class: 'hint', text: T.emptyPart }),
+    // The text can scroll. tabindex lets a keyboard scroll it.
+    p.text ? el('pre', { class: 'context-part__text', tabindex: '0', text: p.text }) : el('p', { class: 'hint', text: T.emptyPart }),
   ]));
 
   // The system prompt goes into every round: show its cost so far in this run.
@@ -74,7 +75,7 @@ function modelParts(app, T, round) {
     d.servedBy ? el('p', { class: 'hint', text: fill(C.servedBy, { model: d.servedBy }) }) : null,
     el('details', { class: 'context-part context-part--instructions' }, [
       el('summary', { text: T.rawRequest }),
-      el('pre', { class: 'context-part__text', text: JSON.stringify(d.request, null, 2) }),
+      el('pre', { class: 'context-part__text', tabindex: '0', text: JSON.stringify(d.request, null, 2) }),
     ]),
   ];
 }

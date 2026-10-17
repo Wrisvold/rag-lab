@@ -4,6 +4,7 @@
 //
 // All user-facing text comes from js/copy.js (AGENT block). Do not type sentences here.
 
+import { mountThemeControl } from '../theme.js';
 import * as constants from '../constants.js';
 import * as copy from '../copy.js';
 import { loadSession, saveSession } from '../session.js';
@@ -600,6 +601,7 @@ function renderChrome() {
   document.getElementById('mode-walkthrough').textContent = copy.MODES.walkthrough;
   document.getElementById('mode-flow').textContent = copy.MODES.flow;
   document.getElementById('mode-agent').textContent = copy.MODES.agent;
+  mountThemeControl();
   document.getElementById('agent-skip').textContent = A.page.skip;
   document.getElementById('setup-heading').textContent = A.page.setupHeading;
   document.getElementById('loop-heading').textContent = A.page.loopHeading;

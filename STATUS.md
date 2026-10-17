@@ -4,7 +4,47 @@ Updated at the end of each phase. Newest phase first.
 
 ## Agent mode — design plan (Phases 12 to 17)
 
-The plan is in [agent-mode-plan.md](agent-mode-plan.md). Phases 12 to 16 are done. Two exit checks are still open: Phase 15 with real keys, and Phase 16 with a person who did not build the page. Phase 17 is next. It now also includes the visual design rules and the dark theme of Appendix B of the plan.
+The plan is in [agent-mode-plan.md](agent-mode-plan.md). Phases 12 to 17 are done. Two exit checks are still open: Phase 15 with real keys, and Phase 16 with a person who did not build the page.
+
+## Phase 17 — Polish, documentation, review, design rules, dark theme (done)
+
+**Delivered:**
+- The visual design rules of Appendix B, on the three pages:
+  - Spacing: 34 different values became 8 tokens (`--space-0` to `--space-7`).
+  - Type: 20 font sizes became 8 tokens.
+  - Corners: four tokens. Cards and panels now have 12-pixel corners.
+  - Depth: no shadows, except the content that floats (a dragged Flow card, the Flow menu).
+  - Focus: one focus ring everywhere, in `--focus`.
+  - Touch targets: 36 pixels with a mouse, 44 on a touch screen.
+  - Colors: no color typed outside the tokens.
+- The dark theme:
+  - The page follows the setting of the computer. A Theme control in each header gives System, Light, and Dark. `js/theme.js` draws it. `js/theme-boot.js` applies a saved choice before the page draws.
+  - The dark surfaces come from the analysis. Each teaching color keeps its hue.
+  - Text on a colored fill now has its own tokens (`--on-fill`, `--on-gold`). The header and the code box have their own tokens.
+- `tests/theme.test.js` checks the contrast of each text (4.5:1) and each meaningful fill (3:1) in the two themes. It checks that the two dark blocks have the same values. It also finds each raw color, size, space, corner, or shadow outside the tokens.
+- The review:
+  - axe-core 4.10 found no violations on the three pages, in the two themes, at 375 and 1,400 pixels wide (24 runs).
+  - No page scrolls sideways at 375 pixels.
+  - Each motion stops with `prefers-reduced-motion`.
+- The README has an Agent mode section, a section on themes and tokens, and the hosts that the Black Box agent must reach. The IT check now has a step for `agent.html`. The test list, the folder layout, the browser support, the limits, and the extension points are updated.
+- The provider formats were checked again against the current SDK types on GitHub. They agree with Appendix A of the plan. The documentation sites were still blocked.
+- The STE linter finds no hard errors in the Agent text, the default system prompt, or the new README sections.
+
+**Problems found and fixed:**
+- Gold as a mark (a border, a dot, a bar) gave only 2.2:1 on white. The new token `--gold-mark` (`#B5800F`, 3.2:1) is used for marks. Gold stays the fill behind dark text.
+- The old focus ring (gold) gave only 2.2:1 on white. The light theme now uses a darker gold for focus, and the header keeps the light gold.
+- On a phone, the walkthrough was 302 pixels too wide. The cause was the dial sidebar and then the ranking table. The grid now lets a child shrink, and the table scrolls inside its own box. The box can take the focus, so a keyboard can scroll it.
+- axe-core found two problems. The role of a Flow card was not allowed on `article`, so the card is now a `section`. A scrolling text in the inspector could not take the focus, so it now can.
+- STATUS (Phase 15) said that a Claude fallback runs when the model is overloaded. The SDK types say that it runs when the model declines a request for policy reasons. The sentence is corrected.
+
+**Decisions made while building:**
+- The spaces are quarter-rem steps, not pixels. Then they grow with the text size of the student. `--space-0` (half a step) is for tags and chips.
+- The light theme stays the default when the computer gives no setting.
+- The theme choice is kept in `localStorage`. It is the only thing that RAG Lab keeps between visits.
+
+**Tests:** 5 new in `tests/theme.test.js` (202 in all, all passing).
+
+**Exit check:** The walkthrough and Flow mode tests pass with no change. The theme test passes for the two themes. Screenshots of the three pages, before Phase 17 and after it in the two themes, at 375 and 1,400 pixels wide, show the same color meanings and no horizontal scroll.
 
 ## Phase 16 — Agent mode teaching layer (done; person test open)
 
@@ -51,7 +91,7 @@ The plan is in [agent-mode-plan.md](agent-mode-plan.md). Phases 12 to 16 are don
 - Text: `AGENT.blackBox`, `AGENT.modelCheck`, `AGENT.metaPrompt`, `AGENT.modelErrors`, four help entries, and the `MODEL_ERROR` stop text, all in ASD-STE100. The STE linter finds no hard errors. One advisory is left: the sample question "How many vacation days do I have left?", which is an employee's words.
 
 **Decisions made while building:**
-- Models: `gemini-2.5-flash`, `gpt-5-mini`, `claude-opus-5-5` (in `AGENT_PROVIDERS`, `js/constants.js`). For Claude, the request sets effort to `low`, which keeps a round fast and cheap for this small task. Server-side fallbacks are on (`fallbacks: "default"`): if the model is overloaded, Anthropic can serve the request with a fallback model. The inspector shows the model that the provider says replied in each round.
+- Models: `gemini-2.5-flash`, `gpt-5-mini`, `claude-opus-5-5` (in `AGENT_PROVIDERS`, `js/constants.js`). For Claude, the request sets effort to `low`, which keeps a round fast and cheap for this small task. Server-side fallbacks are on (`fallbacks: "default"`). If the model declines a request for policy reasons, Anthropic tries it again on a fallback model. (Phase 17 corrected this sentence. It first said "overloaded", which was wrong.) The inspector shows the model that the provider says replied in each round.
 - Claude: a forced tool choice is refused when thinking is on, so the request uses `auto` with `disable_parallel_tool_use`. Sometimes a provider makes more than one call. Each extra call gets a "not run" result, so the model sees that only one action runs in each round.
 - The provider formats were checked against the SDK types on GitHub (`openai-node`, `js-genai`) and the Anthropic API reference, because the documentation sites were blocked. Appendix A of the plan has the result.
 - The test replies in `tests/agent/providerFixtures.js` are built by hand from the published formats. They are not recordings of live calls.
