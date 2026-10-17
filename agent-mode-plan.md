@@ -336,7 +336,7 @@ The Glass Box agent does not read the system prompt. The inspector still shows t
 
 The Black Box agent sends the context to a model with tool definitions, and reads the tool call or the answer that the model returns. It supports the three providers of Station 5: Gemini, OpenAI, and Anthropic.
 
-Each provider puts the system prompt and the tools in a different place in the request. The adapter file `js/agent/providers.js` has, for each provider, two pure functions: one builds the request, and one reads the response. They follow the style of `buildRequest` and `parseAnswer` in `js/answer.js`. The appendix gives the formats to check when the build starts.
+Each provider puts the system prompt and the tools in a different place in the request. The adapter file `js/agent/providers.js` has, for each provider, two pure functions: one builds the request, and one reads the response. They follow the style of `buildRequest` and `parseAnswer` in `js/answer.js`. Appendix A gives the formats to check when the build starts.
 
 The inspector shows the raw request, with the key removed. The student sees that the system prompt is a separate field of the request, and that the full history goes again in each round.
 
@@ -715,8 +715,10 @@ The phases continue the numbers of the Flow mode plan in `STATUS.md`. Each phase
 - An update to `STATUS.md`
 - A review for accessibility, small screens, and `prefers-reduced-motion`
 - A check of the provider formats against the current documentation of each provider
+- The visual design rules of Appendix B, on all three pages: the walkthrough, Flow mode, and Agent mode
+- A dark theme (Appendix B, Part 2). The light theme stays the default for a classroom projector.
 
-**Exit check:** The walkthrough and Flow mode tests pass with no change. A review of the full page finds no text that breaks the rules of Section 12.
+**Exit check:** The walkthrough and Flow mode tests pass with no change. A review of the full page finds no text that breaks the rules of Section 12. The theme test passes for the two themes. Screenshots of the three pages, in the two themes and at 375 and 1,400 pixels wide, show no lost color meaning and no horizontal scroll.
 
 ## 19. Risks and open questions
 
@@ -730,7 +732,7 @@ The phases continue the numbers of the Flow mode plan in `STATUS.md`. Each phase
 | Should Agent mode export to LangGraph? | Later, and optional. The state, the rounds, and the stop conditions map to a LangGraph state graph with a conditional edge. A Python export can follow Phase 17. |
 | A batch run of a test set for Week 8 | Later. Run ten questions and count the stop reasons. This is offline evaluation in Lesson 10. |
 
-## Appendix. Provider formats to check at the start of Phase 15
+## Appendix A. Provider formats to check at the start of Phase 15
 
 These notes describe the formats that the adapters must handle. Check each one against the current documentation of the provider before the build.
 
@@ -757,3 +759,36 @@ The first table, from the plan, follows.
 | Tool call in the response | A part with `functionCall` | `message.tool_calls[]`. The arguments are a JSON string. | A content block of type `tool_use` |
 | Tool result in the next request | A part with `functionResponse` | A message with the role `tool` and the `tool_call_id` | A content block of type `tool_result` with the `tool_use_id` |
 | Token counts | `usageMetadata` | `usage` | `usage` |
+
+## Appendix B. Visual design rules for Phase 17
+
+The instructor supplied a design analysis of a commercial product site. Phase 17 takes its structure: a spacing scale, a corner scale, thin borders in place of shadows, one focus ring, and large touch targets. Phase 17 does not take its colors, its fonts, or its rule that a page is dark only.
+
+RAG Lab keeps its palette, because the colors teach. Teal shows build time, and amber shows run time. Each type of context has its own color in the inspector. A read tool and a write tool look different. A design with one accent color removes these signals.
+
+### Part 1. The rules for the two themes
+
+| Item | Rule | Now (17 October 2026) |
+|---|---|---|
+| Spacing | Use a 4-pixel scale: 4, 8, 12, 16, 24, 32, and 48 pixels. Put the scale in tokens, `--space-1` to `--space-7`. Use only the tokens for padding, margins, and gaps. | The three style sheets use 34 different values. |
+| Corners | Use four values: 4 pixels for tags and chips, 8 pixels for buttons and fields, 12 pixels for cards and panels, and a full round for pills. Map points stay circles. | 8 pixels (31 uses), 4 pixels (16), round pills (8), and two other values (2 and 3 pixels). |
+| Depth | Show what is inside what with a 1-pixel border and a change of background. Remove the shadows. Only a Flow node that the student drags keeps a shadow. | A shadow token on the dials, the panels, and the Flow nodes. |
+| Focus | Use one focus ring on each control: a 3-pixel outline, 2 pixels from the control, in a color that passes 3:1 in the theme. This includes the map points and the Flow nodes. | A general focus rule, but the map points and the Flow nodes have their own rules. |
+| Touch targets | Each button, field, list, and box with its label is at least 44 pixels high on a touch screen (`pointer: coarse`), and at least 36 pixels high with a mouse. | Not measured. The review measures it. |
+| Type | Keep the fonts. Put the sizes in tokens, and use only the tokens. | Sizes are typed in each rule. |
+| Colors | Put each color in a token. No color is typed in a rule. | Three colors are typed in rules (one in `styles.css`, two in `flow.css`). The JavaScript has none. |
+
+### Part 2. The dark theme
+
+- The page follows the setting of the computer (`prefers-color-scheme`). A control in the header gives three choices: System, Light, and Dark. The browser keeps the choice for that page only. The choice never leaves the browser.
+- The light theme stays the default when the computer gives no setting. A projector in a room with light shows a light page better.
+- The dark surfaces come from the analysis: page `#0f1011`, panel `#141516`, and raised panel `#18191a`. The borders are `#23252a` and `#34343a`. The text is `#f7f8f8`, and the soft text is `#8a8f98` (6.4:1 on the page). Do not use the darker gray of the analysis (`#62666d`) for text. It gives only 3.6:1.
+- Each teaching color keeps its hue: green, teal, amber, gold, the danger red, and the five context colors. Each one gets a dark-theme version. Text in a color must pass 4.5:1. A fill or a border that carries meaning must pass 3:1.
+- The map, the context bar, and each drawing use the tokens, so they change with the theme.
+- The run summaries, the downloaded files, and the Word files of the course do not change.
+
+### Part 3. Tests
+
+- `tests/theme.test.js` reads the tokens of the two themes from the style sheets. It calculates the contrast of each pair of text and background, and of each meaningful fill and its background. It fails below 4.5:1 for text and 3:1 for a fill.
+- A second check finds each color, size, or space that a rule types without a token.
+- Screenshots of the three pages in the two themes, at 375 and 1,400 pixels wide. A person compares them with the screenshots before Phase 17.

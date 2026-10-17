@@ -4,7 +4,7 @@ Updated at the end of each phase. Newest phase first.
 
 ## Agent mode — design plan (Phases 12 to 17)
 
-The plan is in [agent-mode-plan.md](agent-mode-plan.md). Phases 12 to 16 are done. Two exit checks are still open: Phase 15 with real keys, and Phase 16 with a person who did not build the page. Phase 17 is next.
+The plan is in [agent-mode-plan.md](agent-mode-plan.md). Phases 12 to 16 are done. Two exit checks are still open: Phase 15 with real keys, and Phase 16 with a person who did not build the page. Phase 17 is next. It now also includes the visual design rules and the dark theme of Appendix B of the plan.
 
 ## Phase 16 — Agent mode teaching layer (done; person test open)
 
@@ -53,7 +53,7 @@ The plan is in [agent-mode-plan.md](agent-mode-plan.md). Phases 12 to 16 are don
 **Decisions made while building:**
 - Models: `gemini-2.5-flash`, `gpt-5-mini`, `claude-opus-5-5` (in `AGENT_PROVIDERS`, `js/constants.js`). For Claude, the request sets effort to `low`, which keeps a round fast and cheap for this small task. Server-side fallbacks are on (`fallbacks: "default"`): if the model is overloaded, Anthropic can serve the request with a fallback model. The inspector shows the model that the provider says replied in each round.
 - Claude: a forced tool choice is refused when thinking is on, so the request uses `auto` with `disable_parallel_tool_use`. Sometimes a provider makes more than one call. Each extra call gets a "not run" result, so the model sees that only one action runs in each round.
-- The provider formats were checked against the SDK types on GitHub (`openai-node`, `js-genai`) and the Anthropic API reference, because the documentation sites were blocked. The appendix of the plan has the result.
+- The provider formats were checked against the SDK types on GitHub (`openai-node`, `js-genai`) and the Anthropic API reference, because the documentation sites were blocked. Appendix A of the plan has the result.
 - The test replies in `tests/agent/providerFixtures.js` are built by hand from the published formats. They are not recordings of live calls.
 - The key field has its own class (`agent-key-input`): the Station 5 class `key-input` made the field very tall in a column.
 
