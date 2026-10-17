@@ -4,7 +4,7 @@ Updated at the end of each phase. Newest phase first.
 
 ## Agent mode — design plan (Phases 12 to 17)
 
-The plan is in [agent-mode-plan.md](agent-mode-plan.md). Phases 12 to 17 are done. Two exit checks are still open: Phase 15 with real keys, and Phase 16 with a person who did not build the page.
+The plan is in [agent-mode-plan.md](agent-mode-plan.md). Phases 12 to 17 are done. Two exit checks are still open: Phase 15 with real keys (OpenAI passed its first run), and Phase 16 with a person who did not build the page.
 
 ## Phase 17 — Polish, documentation, review, design rules, dark theme (done)
 
@@ -102,6 +102,14 @@ The plan is in [agent-mode-plan.md](agent-mode-plan.md). Phases 12 to 17 are don
 **Exit check (Chromium, with mocked provider replies):** Black Box with Gemini: Step with no key says "Paste a key first." and puts the focus on the key field. With a key, Run to end stops with ANSWER_ACCEPTED in 2 rounds, each tagged "The model decided", with the provider's token counts. The key is sent in the header and is not in the page; the inspector shows "[key hidden]". Anthropic with a 401 reply: MODEL_ERROR with the bad-key message. The request has `effort: low`, `fallbacks: default`, the beta header, the browser-access header and `disable_parallel_tool_use`. The meta prompt gives three proposals from a reply with `**Role:**` headings, and "Use this text" puts the text in the Role section. The Checker tab shows the default checker prompt. No console errors.
 
 **Still open:** the plan's exit check is "with a real key for each provider, Exercises 3 to 6 run to a stop condition". There were no provider keys in the build environment, so this check is not done. Do it before Phase 16 with a key for each provider.
+
+**Real-key results (the instructor's runs):**
+
+| Date | Provider and model | Exercise | Result |
+|---|---|---|---|
+| 17 October 2026 | OpenAI, `gpt-5-mini` | 3, prompt v1, first run | ANSWER_ACCEPTED in round 2. Round 1 called `search_handbook`. Round 2 gave an answer with a section number, and the check in code accepted it. |
+
+Still to do: Gemini and Anthropic, and Exercises 4 to 6.
 
 ## Phase 14 — Agent mode system prompt workbench (done)
 
