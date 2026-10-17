@@ -638,7 +638,7 @@ export const AGENT = {
     T1: 'The tool returned a result.',
     T1fail: 'The tool returned no result.',
     A1pass: 'The answer gives Section {section}, and a retrieved passage is in that section.',
-    A1fail: 'The answer has no section number from the passages.',
+    A1fail: 'The answer has no section number in brackets, for example [3.1]. The check in code reads only this form.',
     A2: 'The answer comes from a tool result.',
     G1: 'The agent said that it cannot answer. This is an honest result.',
   },
@@ -657,7 +657,7 @@ export const AGENT = {
 
   // Feedback that starts the next round after a failed answer check.
   feedback: {
-    noCitation: 'Your answer has no section number from the passages. Add the section number, or say that the handbook does not answer the question.',
+    noCitation: 'The check found no section number in brackets, for example [3.1]. Write each section number in this form, or say that the handbook does not answer the question.',
     notSupported: 'The model check found a problem: {reason} Correct the answer, or say that the handbook does not answer the question.',
   },
 
@@ -972,7 +972,7 @@ export const AGENT = {
           'Click Step four times. Each click runs one part of round 1.',
           'Read the Check line of round 1. Find the rule that failed.',
           'Click Run to end. Record the stop reason.',
-          'In the synonym table, type PTO in "Word in the question".',
+          'Scroll the set-up column to "Synonym table (rule F1)". Type PTO in "Word in the question".',
           'Type vacation in "Word in the handbook". Then click Add.',
           'Click Run to end. Read the Decide line and the Act line of each round.',
           'Click Copy run summary. Paste the summary in your notes.',
@@ -1318,5 +1318,7 @@ export const AGENT = {
     agentBlack: 'Black Box ({provider} · {model})',
     promptGlass: 'not read by the Glass Box agent',
     noLimit: 'no limit',
+    // A run can stop in the context part (the token budget). That round has no decision.
+    contextOnly: 'context: {tokens} tokens. The loop stopped before the decision.',
   },
 };

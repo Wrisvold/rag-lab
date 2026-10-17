@@ -75,7 +75,7 @@ Do this activity before Assignment 6. It needs no key.
 
 1. Open [Agent mode](https://wrisvold.github.io/rag-lab/agent.html).
 2. Click **Exercise 2. The PTO question**.
-3. In the synonym table, add the pair PTO → vacation. Then click **Run to end**.
+3. Scroll the set-up column to **Synonym table (rule F1)**. Add the pair PTO → vacation. Then click **Run to end**.
 4. For each round, click **Show context**. In the inspector, record the tokens of each of the five types of context.
 5. Find the types of context that increase in each round. Tell why they increase.
 6. Click **Exercise 1. The loop that does not stop**. Click **Run to end**, and record the tokens of round 12 and of the run.

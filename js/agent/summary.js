@@ -37,7 +37,13 @@ export function formatAgentRunSummary(state, { scenario, agentKind, provider = '
   lines.push('');
 
   for (const round of state.rounds) {
-    if (!round.decision) continue;
+    if (!round.decision) {
+      // The token budget stops a run in the context part, before the decision.
+      if (state.stopReason && round.context) {
+        lines.push(`${`Round ${round.number}`.padEnd(INDENT.length - 2)}  ${fill(AGENT.summary.contextOnly, { tokens: round.context.total.toLocaleString('en-US') })}`);
+      }
+      continue;
+    }
     const d = round.decision;
     const label = `Round ${round.number}`.padEnd(INDENT.length - 2);
     const rule = d.rule ? `${d.rule} ` : '';

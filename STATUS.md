@@ -4,7 +4,7 @@ Updated at the end of each phase. Newest phase first.
 
 ## Agent mode — design plan (Phases 12 to 17)
 
-The plan is in [agent-mode-plan.md](agent-mode-plan.md). Phases 12 to 17 are done. Two exit checks are still open: Phase 15 with real keys, and Phase 16 with a person who did not build the page.
+The plan is in [agent-mode-plan.md](agent-mode-plan.md). Phases 12 to 17 are done. Two exit checks are still open: Phase 15 with real keys (OpenAI passed its first run), and Phase 16 with a person who did not build the page.
 
 ## Phase 17 — Polish, documentation, review, design rules, dark theme (done)
 
@@ -81,6 +81,8 @@ The plan is in [agent-mode-plan.md](agent-mode-plan.md). Phases 12 to 17 are don
 
 **Still open:** the plan asks for a person who did not build the page to do Exercises 1 and 2 with only the page text. A script is not that person. Ask a colleague or a student to do it before the term.
 
+**The instructor's run (17 October 2026, live site):** Exercise 2 gave the expected summary: round 1 fails C1, round 2 finds chunk 08 (Section 3.1) at rank 1, and round 3 is accepted. ANSWER_ACCEPTED after 3 rounds, about 3,012 tokens. The instructor could not find the synonym table from step 4. That step now names the heading "Synonym table (rule F1)" and tells the student to scroll the set-up column. Exercise 1: HARD_LIMIT after 12 rounds (43,543 tokens), NO_PROGRESS after 3 rounds (3,230), and BUDGET after 4 rounds (8,133), the same as the tests. The BUDGET run showed that the summary hid round 5: the budget stopped that round in its context part, before the decision. The summary now prints that round ("context: 2,741 tokens. The loop stopped before the decision."), and the instructor notes explain it.
+
 ## Phase 15 — Agent mode Black Box agent (done; real-key exit check open)
 
 **Delivered:**
@@ -102,6 +104,17 @@ The plan is in [agent-mode-plan.md](agent-mode-plan.md). Phases 12 to 17 are don
 **Exit check (Chromium, with mocked provider replies):** Black Box with Gemini: Step with no key says "Paste a key first." and puts the focus on the key field. With a key, Run to end stops with ANSWER_ACCEPTED in 2 rounds, each tagged "The model decided", with the provider's token counts. The key is sent in the header and is not in the page; the inspector shows "[key hidden]". Anthropic with a 401 reply: MODEL_ERROR with the bad-key message. The request has `effort: low`, `fallbacks: default`, the beta header, the browser-access header and `disable_parallel_tool_use`. The meta prompt gives three proposals from a reply with `**Role:**` headings, and "Use this text" puts the text in the Role section. The Checker tab shows the default checker prompt. No console errors.
 
 **Still open:** the plan's exit check is "with a real key for each provider, Exercises 3 to 6 run to a stop condition". There were no provider keys in the build environment, so this check is not done. Do it before Phase 16 with a key for each provider.
+
+**Real-key results (the instructor's runs):**
+
+| Date | Provider and model | Exercise | Result |
+|---|---|---|---|
+| 17 October 2026 | OpenAI, `gpt-5-mini` | 3, prompt v1, first run | ANSWER_ACCEPTED in round 2. Round 1 called `search_handbook`. Round 2 gave an answer with a section number, and the check in code accepted it. |
+
+| 17 October 2026 | OpenAI, `gpt-5-mini` | 3, prompt v2 (no Output format) | MAX_ROUNDS after 4 rounds, 6,150 tokens. Round 3 answered with "(Section 3.1)", not "[3.1]". The check in code reads only the bracket form, so A1 failed. Its message said "no section number", which was false, so the model searched again in round 4. Fix: the A1 message and the feedback to the model now say that the check needs the form [3.1]. |
+| 17 October 2026 | OpenAI, `gpt-5-mini` | 3, prompt v2, second run (live site, old A1 text) | MAX_ROUNDS after 4 rounds, 5,405 tokens. Rounds 2 and 4 both answered with "(Section 3.1)". After the false feedback "no section number", the model kept the same form. This supports the A1 fix. |
+
+Still to do: Gemini and Anthropic, and Exercises 4 to 6.
 
 ## Phase 14 — Agent mode system prompt workbench (done)
 
