@@ -200,6 +200,7 @@ Each stop condition has a code, a message in ASD-STE100, and a teaching note. Th
 | `APPROVAL_REFUSED` | A person refuses an approval. | You refused the action. The agent did not do it. | The person, not the agent, decides each high-risk action. |
 | `TOOL_FAILED` | A tool fails two times in one run. | A tool failed two times. The loop stopped. | Do not let an agent call a broken tool again and again. One retry is enough. |
 | `HUMAN_STOP` | The student clicks Stop. | You stopped the run. | A person must be able to stop an agent at any time. |
+| `MODEL_ERROR` | The call to the model of the Black Box agent fails: a bad key, no credit, a rate limit, no network, or a provider error. Added in Phase 15. | The model did not reply. The loop stopped. | An agent depends on the services that it calls. A real agent needs a plan for a failed call: retry one time, or tell the user and stop. |
 
 ### 7.4 Loop settings
 
@@ -730,6 +731,22 @@ The phases continue the numbers of the Flow mode plan in `STATUS.md`. Each phase
 ## Appendix. Provider formats to check at the start of Phase 15
 
 These notes describe the formats that the adapters must handle. Check each one against the current documentation of the provider before the build.
+
+**Checked in Phase 15 (17 October 2026).** The documentation sites were blocked from the build environment. The OpenAI and Gemini formats were checked against the types of the official SDKs on GitHub (`openai-node` and `js-genai`). The Anthropic format was checked against the Anthropic API reference. The table under this note shows the result. Check the formats again each term.
+
+| Item | Gemini (`gemini-2.5-flash`) | OpenAI (`gpt-5-mini`, chat completions) | Anthropic (`claude-opus-5-5`, messages) |
+|---|---|---|---|
+| System prompt | `systemInstruction: { parts: [{ text }] }` | A first message with the role `developer` | Top-level `system`. The field is left out when all sections are disabled. |
+| Tool definitions | `tools: [{ functionDeclarations: [{ name, description, parametersJsonSchema }] }]` | `tools: [{ type: "function", function: { name, description, parameters } }]` | `tools: [{ name, description, input_schema }]` |
+| One tool call in each round | The adapter runs the first call. Other calls get a "not run" result. | `parallel_tool_calls: false` | `tool_choice: { type: "auto", disable_parallel_tool_use: true }`. A forced tool choice is refused when thinking is on. |
+| Tool call in the response | A part with `functionCall: { id, name, args }` | `message.tool_calls[]`. The arguments are a JSON string. | A content block of type `tool_use` with `id`, `name` and `input` |
+| Tool result in the next request | A `user` turn with `functionResponse: { name, id, response }` | A message with the role `tool` and the `tool_call_id` | A `user` message with `tool_result` blocks, each with the `tool_use_id` |
+| Data to send back unchanged | `thoughtSignature` on the parts of the model turn | Nothing | `thinking` blocks. When "keep only the last N rounds" removes rounds, the adapter removes the thinking blocks of the rounds that stay. |
+| Token counts | `usageMetadata`: `promptTokenCount`, and `candidatesTokenCount` plus `thoughtsTokenCount` | `usage`: `prompt_tokens`, `completion_tokens` | `usage`: `input_tokens`, `output_tokens` |
+| Refusal | `promptFeedback.blockReason`, or a finish reason such as `SAFETY` | `finish_reason: "content_filter"` or `message.refusal` | `stop_reason: "refusal"` |
+| Other settings | None | None | `output_config: { effort: "low" }`, `fallbacks: "default"` with the beta header `server-side-fallback-2026-07-01`, and the header `anthropic-dangerous-direct-browser-access: true` |
+
+The first table, from the plan, follows.
 
 | Item | Gemini | OpenAI (chat completions) | Anthropic (messages) |
 |---|---|---|---|

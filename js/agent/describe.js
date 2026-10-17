@@ -25,9 +25,16 @@ export function describeEvent(event) {
       break;
     case 'decide': {
       const d = event.decision;
-      if (d.type === 'tool') text = fill(R.decideTool, { round, rule: d.rule || '-', tool: d.name });
-      else if (d.type === 'answer') text = fill(R.decideAnswer, { round, rule: d.rule || '-' });
-      else text = fill(R.decideGiveUp, { round, rule: d.rule || '-' });
+      // The Glass Box agent names the rule that fired. A model names no rule.
+      // A failed model call gives no decision: the error line follows.
+      if (!d) text = '';
+      else if (!d.rule) {
+        if (d.type === 'tool') text = fill(R.decideToolModel, { round, tool: d.name });
+        else if (d.type === 'answer') text = fill(R.decideAnswerModel, { round });
+        else text = fill(R.decideGiveUpModel, { round });
+      } else if (d.type === 'tool') text = fill(R.decideTool, { round, rule: d.rule, tool: d.name });
+      else if (d.type === 'answer') text = fill(R.decideAnswer, { round, rule: d.rule });
+      else text = fill(R.decideGiveUp, { round, rule: d.rule });
       break;
     }
     case 'act':
@@ -54,7 +61,9 @@ export function describeEvent(event) {
       text = '';
   }
   const stop = event.stop ? stopMessage(event.stop) : '';
-  return [text, stop].filter(Boolean).join(' ');
+  // A failed model call also says why, in the words of AGENT.modelErrors.
+  const error = event.error ? AGENT.modelErrors[event.error] || '' : '';
+  return [text, stop, error].filter(Boolean).join(' ');
 }
 
 function describeAct(event) {

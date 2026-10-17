@@ -4,7 +4,29 @@ Updated at the end of each phase. Newest phase first.
 
 ## Agent mode — design plan (Phases 12 to 17)
 
-The plan is in [agent-mode-plan.md](agent-mode-plan.md). Phases 12 to 14 are done. Phases 15 to 17 are next.
+The plan is in [agent-mode-plan.md](agent-mode-plan.md). Phases 12 to 15 are done, but the Phase 15 exit check with real keys is still open. Phases 16 and 17 are next.
+
+## Phase 15 — Agent mode Black Box agent (done; real-key exit check open)
+
+**Delivered:**
+- `js/agent/providers.js`: one provider-neutral transcript (user text, the assistant reply exactly as sent, tool results), turned into the request of Gemini, OpenAI or Anthropic. `parseAgentResponse` gives a tool call, text, a refusal, a cut-off reply, or an empty reply, with the provider's token counts. `redactRequest` replaces the key with "[key hidden]". `sendRequest` is the only network call and reuses the error codes of Station 5.
+- `js/agent/blackBoxAgent.js`: the model decides each round. The model's reply goes back unchanged in the next request (Claude thinking blocks, Gemini thought signatures). The check stays in code (the checker is not the maker). The optional model check is a second call with its own system prompt, the checker prompt (rule M1). The meta prompt asks the model to write the six sections from a basic prompt.
+- The loop: decide and check can be async. A failed model call stops the run with the new stop code `MODEL_ERROR`. The page says why: bad key, no credit, rate limit, network, bad request, or server. With a model, the token counts come from the provider, and the run summary no longer says "estimated".
+- The page: the Black Box option in Decision maker. It has the provider, the model, a password field for the key, the key link, Forget the key, the cost note, and Model check. The key stays in memory for this tab only. The rule table is replaced by a note. The workbench has a Checker tab and the meta prompt. Each round card has the tag "The model decided" and the provider's token counts. The inspector shows the raw request with the key hidden. The Agent page footer now says that the Black Box agent sends each round to the provider.
+- Text: `AGENT.blackBox`, `AGENT.modelCheck`, `AGENT.metaPrompt`, `AGENT.modelErrors`, four help entries, and the `MODEL_ERROR` stop text, all in ASD-STE100. The STE linter finds no hard errors. One advisory is left: the sample question "How many vacation days do I have left?", which is an employee's words.
+
+**Decisions made while building:**
+- Models: `gemini-2.5-flash`, `gpt-5-mini`, `claude-opus-5-5` (in `AGENT_PROVIDERS`, `js/constants.js`). For Claude, the request sets effort to `low`, which keeps a round fast and cheap for this small task. Server-side fallbacks are on (`fallbacks: "default"`): if the model is overloaded, Anthropic can serve the request with a fallback model. The inspector shows the model that the provider says replied in each round.
+- Claude: a forced tool choice is refused when thinking is on, so the request uses `auto` with `disable_parallel_tool_use`. Sometimes a provider makes more than one call. Each extra call gets a "not run" result, so the model sees that only one action runs in each round.
+- The provider formats were checked against the SDK types on GitHub (`openai-node`, `js-genai`) and the Anthropic API reference, because the documentation sites were blocked. The appendix of the plan has the result.
+- The test replies in `tests/agent/providerFixtures.js` are built by hand from the published formats. They are not recordings of live calls.
+- The key field has its own class (`agent-key-input`): the Station 5 class `key-input` made the field very tall in a column.
+
+**Tests:** 15 new (`tests/agent/providers.test.js`, `tests/agent/blackBoxAgent.test.js`; 188 in all, all passing, no network).
+
+**Exit check (Chromium, with mocked provider replies):** Black Box with Gemini: Step with no key says "Paste a key first." and puts the focus on the key field. With a key, Run to end stops with ANSWER_ACCEPTED in 2 rounds, each tagged "The model decided", with the provider's token counts. The key is sent in the header and is not in the page; the inspector shows "[key hidden]". Anthropic with a 401 reply: MODEL_ERROR with the bad-key message. The request has `effort: low`, `fallbacks: default`, the beta header, the browser-access header and `disable_parallel_tool_use`. The meta prompt gives three proposals from a reply with `**Role:**` headings, and "Use this text" puts the text in the Role section. The Checker tab shows the default checker prompt. No console errors.
+
+**Still open:** the plan's exit check is "with a real key for each provider, Exercises 3 to 6 run to a stop condition". There were no provider keys in the build environment, so this check is not done. Do it before Phase 16 with a key for each provider.
 
 ## Phase 14 — Agent mode system prompt workbench (done)
 

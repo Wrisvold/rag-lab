@@ -12,9 +12,11 @@ const INDENT = '         ';
 
 /**
  * @param {object} state      a run from js/agent/loop.js
- * @param {{ scenario: object, agentKind: 'glass' | 'black', estimated?: boolean }} info
+ * @param {{ scenario: object, agentKind: 'glass' | 'black', provider?: string, model?: string }} info
+ *   Token counts are estimates unless the provider reported them (the Black Box agent).
  */
-export function formatAgentRunSummary(state, { scenario, agentKind, estimated = true }) {
+export function formatAgentRunSummary(state, { scenario, agentKind, provider = '', model = '' }) {
+  const estimated = !state.measured;
   const employee = scenario.employees.find((e) => e.id === state.employeeId);
   const enabled = state.prompt.sections.filter((s) => s.enabled).length;
   const promptNote = agentKind === 'glass' ? `, ${AGENT.summary.promptGlass}` : '';
@@ -23,7 +25,7 @@ export function formatAgentRunSummary(state, { scenario, agentKind, estimated = 
 
   const lines = [
     fill(AGENT.summary.title, { date: scenario.today }),
-    `Agent: ${agentKind === 'glass' ? AGENT.summary.agentGlass : AGENT.summary.agentBlack} · Employee: ${employee.id} (${employee.label})`,
+    `Agent: ${agentKind === 'glass' ? AGENT.summary.agentGlass : fill(AGENT.summary.agentBlack, { provider, model })} · Employee: ${employee.id} (${employee.label})`,
     `System prompt: ${state.prompt.version} "${state.prompt.name}" (${state.prompt.sections.length} sections, ${enabled} enabled${promptNote})`,
     `Settings: MAX_ROUNDS=${limit(maxRounds)}  TOKEN_BUDGET=${limit(tokenBudget)}  REPEAT_STOP=${repeatStop ? 'on' : 'off'}`,
     `Question: ${state.question}`,
@@ -50,6 +52,7 @@ export function formatAgentRunSummary(state, { scenario, agentKind, estimated = 
       else if (act.kind === 'refused-by-person') lines.push(`${INDENT}act:    not run. A person refused it.`);
       else lines.push(`${INDENT}act:    ${describeResult(d, act.result)}`);
     }
+    if (round.error) lines.push(`${INDENT}error:  ${round.error}`);
     if (round.check) {
       const failed = round.check.reasons.filter((r) => !r.passed);
       lines.push(failed.length

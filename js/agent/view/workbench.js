@@ -40,8 +40,22 @@ export function renderWorkbench(app) {
     ]);
   });
 
+  const tab = app.ui.promptTab || 'agent';
+  const tabButton = (id, value, text) => el('button', {
+    type: 'button', class: `button workbench-tab${tab === value ? ' is-current' : ''}`, id,
+    'aria-pressed': tab === value ? 'true' : 'false', text, onclick: () => app.setPromptTab(value),
+  });
+  const tabs = el('div', { class: 'workbench-tabs', role: 'group', 'aria-label': W.tabs }, [
+    tabButton('agent-tab-agent', 'agent', W.tabAgent),
+    tabButton('agent-tab-checker', 'checker', W.tabChecker),
+  ]);
+  if (tab === 'checker') {
+    return el('section', { class: 'agent-group agent-workbench' }, [el('h3', { text: W.heading }), tabs, ...checkerTab(app, A)]);
+  }
+
   return el('section', { class: 'agent-group agent-workbench' }, [
     el('h3', { text: W.heading }),
+    tabs,
     app.setup.agentKind === 'glass' ? el('p', { class: 'hint', text: W.glassNote }) : null,
     el('p', { class: 'workbench-current', text: fill(W.current, { label }) }),
     el('p', { class: 'hint', text: fill(W.cost, { tokens: cost.total }) }),
@@ -63,7 +77,59 @@ export function renderWorkbench(app) {
       loadButton(app, W),
     ]),
     helpPanel('promptFiles'),
+    ...metaPrompt(app, A),
   ]);
+}
+
+/** The second system prompt: the prompt of the model check. */
+function checkerTab(app, A) {
+  const W = A.workbench;
+  const text = el('textarea', { id: 'agent-checker-text', rows: '6', class: 'prompt-section__text', 'aria-label': W.checkerText });
+  text.value = app.setup.checkerPrompt || A.modelCheck.defaultPrompt;
+  text.addEventListener('change', () => app.setSetup({ checkerPrompt: text.value }, { rebuild: true }));
+  return [
+    el('h4', { text: W.checkerHeading }),
+    el('p', { class: 'hint', text: W.checkerUnused }),
+    text,
+    el('div', { class: 'workbench-actions' }, [
+      button('agent-checker-reset', W.checkerReset, () => app.setSetup({ checkerPrompt: '' }, { rebuild: true }), !app.setup.checkerPrompt),
+    ]),
+    helpPanel('checkerPrompt'),
+  ];
+}
+
+/** Ask a model to write a system prompt from a basic prompt (Black Box only). */
+function metaPrompt(app, A) {
+  const M = A.metaPrompt;
+  const ready = app.setup.agentKind === 'black' && Boolean(app.apiKey);
+  const basic = el('textarea', { id: 'agent-meta-basic', rows: '2', class: 'prompt-section__text', placeholder: M.basicPlaceholder });
+  basic.value = app.ui.metaBasic || '';
+  basic.addEventListener('change', () => app.setMetaBasic(basic.value));
+
+  const result = app.ui.metaResult;
+  const sections = app.prompts.working.sections;
+  const proposals = [];
+  if (result === null) proposals.push(el('p', { class: 'message--error', text: M.nothing }));
+  else if (result) {
+    proposals.push(el('h5', { text: M.resultHeading }));
+    for (const s of sections) {
+      if (!result[s.id]) continue;
+      proposals.push(el('div', { class: 'meta-proposal' }, [
+        el('strong', { text: s.title }),
+        el('p', { text: result[s.id] }),
+        button(`agent-meta-use-${s.id}`, fill(M.use, { title: s.title }), () => app.useMetaSection(s.id)),
+      ]));
+    }
+  }
+
+  return [
+    el('h4', { text: M.heading }),
+    el('div', { class: 'agent-field' }, [el('label', { for: basic.id, text: M.basic }), basic]),
+    ready ? null : el('p', { class: 'hint', text: M.blackOnly }),
+    el('div', { class: 'workbench-actions' }, [button('agent-meta-ask', M.ask, () => app.askMetaPrompt(), !ready || app.busy)]),
+    ...proposals,
+    helpPanel('metaPrompt'),
+  ];
 }
 
 function button(id, text, onclick, disabled = false) {

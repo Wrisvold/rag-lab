@@ -55,7 +55,26 @@ export function renderInspector(app, container) {
     bar,
     legend,
     ...details,
-    app.setup.agentKind === 'glass' ? el('p', { class: 'callout agent-glass-note', text: T.glassNote }) : null,
+    ...modelParts(app, T, round),
     helpPanel('inspector'),
   );
+}
+
+/** For a model decision: what the provider counted, and the exact request. Otherwise the Glass Box note. */
+function modelParts(app, T, round) {
+  const d = round.decision;
+  if (!d || !d.request) {
+    return app.setup.agentKind === 'glass' ? [el('p', { class: 'callout agent-glass-note', text: T.glassNote })] : [];
+  }
+  const C = app.copy.AGENT.card;
+  return [
+    el('p', { class: 'callout agent-glass-note', text: T.blackNote }),
+    d.usage ? el('p', { class: 'context-prompt-cost', text: fill(C.usage, { input: d.usage.input.toLocaleString('en-US'), output: d.usage.output.toLocaleString('en-US') }) }) : null,
+    // With server-side fallbacks, a different model can reply. Show the model that the provider names.
+    d.servedBy ? el('p', { class: 'hint', text: fill(C.servedBy, { model: d.servedBy }) }) : null,
+    el('details', { class: 'context-part context-part--instructions' }, [
+      el('summary', { text: T.rawRequest }),
+      el('pre', { class: 'context-part__text', text: JSON.stringify(d.request, null, 2) }),
+    ]),
+  ];
 }

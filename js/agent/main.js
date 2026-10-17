@@ -11,6 +11,8 @@ import { copyText } from '../clipboard.js';
 import { fill } from '../dom.js';
 import { createHandbook } from './handbook.js';
 import { createGlassBoxAgent } from './glassBoxAgent.js';
+import { createBlackBoxAgent, writePromptWithModel } from './blackBoxAgent.js';
+import { sendRequest } from './providers.js';
 import { createRun, step, approve, refuse, stopRun } from './loop.js';
 import { TOOL_NAMES } from './tools.js';
 import { formatAgentRunSummary } from './summary.js';
@@ -46,6 +48,9 @@ function defaultSetup() {
     repeatStop: constants.AGENT_REPEAT_STOP_DEFAULT,
     keepLastTwo: false,
     disabledRules: [],                 // rules in code turned off (Exercise 4 only)
+    provider: 'gemini',                // Black Box agent: the provider (the key is never kept here)
+    modelCheck: false,                 // Black Box agent: a second call tests each answer
+    checkerPrompt: '',                 // '' means the default checker prompt
   };
 }
 
@@ -67,7 +72,8 @@ const state = {
   history: [],               // finished runs, for the compare view (this visit only)
   runId: 0,
   recordedRunId: null,
-  ui: { saveOpen: false, saveMessage: '', findings: null, compare: null },
+  // apiKey lives here only: in memory for this tab, never in sessionStorage, the set-up, or a summary.
+  ui: { saveOpen: false, saveMessage: '', findings: null, compare: null, apiKey: '', promptTab: 'agent', metaBasic: '', metaResult: undefined },
 };
 
 const reducedMotion = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -86,6 +92,56 @@ const app = {
   get selectedRound() { return state.selectedRound; },
   get prompts() { return state.prompts; },
   get ui() { return state.ui; },
+  get apiKey() { return state.ui.apiKey; },
+
+  // ---- The Black Box agent ----
+  setApiKey(value) {
+    state.ui.apiKey = value.trim();
+    // Typing must not redraw the column (the cursor would move). Update the one button that depends on the key.
+    const ask = document.getElementById('agent-meta-ask');
+    if (ask) ask.disabled = !state.ui.apiKey || state.busy;
+  },
+
+  forgetApiKey() {
+    state.ui.apiKey = '';
+    drawSetup();
+    readout(A.blackBox.forgotten);
+  },
+
+  setPromptTab(tab) {
+    state.ui.promptTab = tab;
+    drawSetup();
+  },
+
+  setMetaBasic(text) {
+    state.ui.metaBasic = text;
+  },
+
+  askMetaPrompt: () => guarded(async () => {
+    const s = state.setup;
+    if (s.agentKind !== 'black' || !state.ui.apiKey) { readout(A.blackBox.noKey); return; }
+    readout(A.metaPrompt.asking);
+    try {
+      const result = await writePromptWithModel({
+        providerKey: s.provider, apiKey: state.ui.apiKey, send: sendRequest,
+        basicPrompt: state.ui.metaBasic || A.metaPrompt.basicPlaceholder,
+        sectionTitles: state.prompts.working.sections,
+      });
+      state.ui.metaResult = result.sections;
+      readout(result.sections ? A.metaPrompt.resultHeading : A.metaPrompt.nothing);
+    } catch (error) {
+      readout(A.modelErrors[error.code] || A.modelErrors.network);
+    }
+    drawSetup();
+  }),
+
+  useMetaSection(id) {
+    const text = state.ui.metaResult && state.ui.metaResult[id];
+    if (!text) return;
+    setPrompts(editSection(state.prompts, id, { text }));
+    const title = state.prompts.working.sections.find((s) => s.id === id).title;
+    readout(fill(A.metaPrompt.used, { title }));
+  },
 
   /** The newest finished run of a prompt version for a question, or null. */
   lastRunFor(version, question) {
@@ -284,7 +340,7 @@ const app = {
 
   async copySummary() {
     if (!state.run) return;
-    const text = formatAgentRunSummary(state.run, { scenario: state.scenario, agentKind: state.setup.agentKind });
+    const text = formatAgentRunSummary(state.run, { scenario: state.scenario, ...summaryInfo() });
     readout((await copyText(text)) ? A.loop.copied : A.loop.copyFailed);
   },
 
@@ -317,6 +373,13 @@ function setPrompts(store) {
   drawCompare();
 }
 
+/** The agent line of the run summary: the provider and the model for the Black Box agent. */
+function summaryInfo() {
+  const s = state.setup;
+  if (s.agentKind !== 'black') return { agentKind: 'glass' };
+  return { agentKind: 'black', provider: constants.ANSWER_PROVIDERS[s.provider].label, model: constants.AGENT_PROVIDERS[s.provider].model };
+}
+
 /** When a run stops, keep its summary for the compare view. */
 function recordIfStopped() {
   const run = state.run;
@@ -330,7 +393,7 @@ function recordIfStopped() {
     stopReason: run.stopReason,
     rounds: run.rounds.filter((r) => r.decision).length,
     tokens: run.tokens,
-    summary: formatAgentRunSummary(run, { scenario: state.scenario, agentKind: state.setup.agentKind }),
+    summary: formatAgentRunSummary(run, { scenario: state.scenario, ...summaryInfo() }),
   });
   drawCompare();
 }
@@ -360,6 +423,12 @@ function ensureRun() {
     readout(A.readout.noQuestion);
     return false;
   }
+  if (s.agentKind === 'black' && !state.ui.apiKey) {
+    readout(A.blackBox.noKey);
+    const key = document.getElementById('agent-api-key');
+    if (key) key.focus();
+    return false;
+  }
   state.run = createRun({
     question: s.question.trim() || A.setup.requestToggle,
     request: s.requestOn ? { start_date: s.start, end_date: s.end } : null,
@@ -382,6 +451,18 @@ function ensureRun() {
 
 function deps() {
   const s = state.setup;
+  const env = { handbook: state.handbook, scenario: state.scenario };
+  if (s.agentKind === 'black') {
+    const agent = createBlackBoxAgent({
+      providerKey: s.provider,
+      apiKey: state.ui.apiKey,
+      send: sendRequest,
+      scenarioDate: state.scenario.today,
+      modelCheck: s.modelCheck,
+      checkerPrompt: s.checkerPrompt || A.modelCheck.defaultPrompt,
+    });
+    return { agent, env };
+  }
   const agent = createGlassBoxAgent({
     handbook: state.handbook,
     synonyms: Object.fromEntries(s.synonyms.map((pair) => [pair.from, pair.to])),
@@ -464,7 +545,7 @@ function renderChrome() {
   document.getElementById('app-title').textContent = copy.APP.title;
   document.getElementById('app-subtitle').textContent = A.page.subtitle;
   document.getElementById('app-course').textContent = copy.APP.course;
-  document.getElementById('app-footer').textContent = copy.UI.footer;
+  document.getElementById('app-footer').textContent = A.page.footer;
   document.getElementById('mode-walkthrough').textContent = copy.MODES.walkthrough;
   document.getElementById('mode-flow').textContent = copy.MODES.flow;
   document.getElementById('mode-agent').textContent = copy.MODES.agent;

@@ -270,3 +270,33 @@ export const AGENT_PROMPT_VAGUE_WORDS = [
   'appropriate', 'appropriately', 'relevant', 'as needed', 'if needed', 'when necessary',
   'if possible', 'etc', 'properly', 'reasonable', 'reasonably', 'suitable', 'and so on', 'various',
 ];
+
+// ---------------------------------------------------------------------------
+// Agent mode: the Black Box agent (Phase 15)
+// ---------------------------------------------------------------------------
+
+// The Black Box agent uses the student's own key, as Station 5 does, with the
+// same endpoints. Its settings are separate, because an agent makes many
+// calls with tools and the models think before each tool call.
+// Model names go stale; update a `model` line here if a provider retires one.
+export const AGENT_PROVIDERS = {
+  gemini: {
+    model: 'gemini-2.5-flash',
+    maxOutputTokens: 4096,       // thinking tokens count toward this limit
+  },
+  openai: {
+    model: 'gpt-5-mini',
+    maxOutputTokens: 4096,       // reasoning tokens count toward this limit
+  },
+  anthropic: {
+    model: 'claude-opus-5-5',
+    maxOutputTokens: 16000,      // thinking is always on for this model and counts toward this limit
+    effort: 'low',               // short routing decisions; the default for this model is 'medium'
+    // On a safety refusal, the API reruns the request on a fallback model it selects.
+    fallbacks: 'default',
+    betas: ['server-side-fallback-2026-07-01'],
+  },
+};
+
+// The longest reply of the model check and of the meta prompt, in tokens.
+export const AGENT_TEXT_MAX_OUTPUT_TOKENS = { gemini: 4096, openai: 4096, anthropic: 16000 };

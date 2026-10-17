@@ -133,6 +133,7 @@ function stopBanner(app, A) {
   return [el('div', { class: `agent-stop ${good ? 'agent-stop--good' : 'agent-stop--warn'}` }, [
     el('p', { class: 'agent-stop__code', text: run.stopReason }),
     el('p', { class: 'agent-stop__message', text: stopMessage(run.stopReason) }),
+    run.stopDetail && A.modelErrors[run.stopDetail] ? el('p', { class: 'agent-stop__message', text: A.modelErrors[run.stopDetail] }) : null,
     el('p', { class: 'agent-stop__note' }, [el('strong', { text: `${A.whyLabel}. ` }), note]),
   ])];
 }
@@ -202,6 +203,7 @@ function card(app, A, round, currentPart) {
   const header = el('div', { class: 'agent-card__header' }, [
     el('h4', { text: fill(C.title, { number: round.number }) }),
     d && d.rule ? el('span', { class: 'agent-tag agent-tag--rule', text: fill(C.rule, { rule: d.rule }) }) : null,
+    d && !d.rule ? el('span', { class: 'agent-tag agent-tag--model', text: C.modelDecided }) : null,
     round.context ? el('button', {
       type: 'button', class: 'button agent-small', 'aria-pressed': selected ? 'true' : 'false',
       text: selected ? C.contextShown : C.showContext, onclick: () => app.selectRound(round.number),
@@ -227,9 +229,10 @@ function card(app, A, round, currentPart) {
 
 function decideText(C, d) {
   if (!d) return C.pending;
-  if (d.type === 'tool') return [el('code', { class: 'agent-call', text: formatCall(d) })];
-  if (d.type === 'answer') return C.decideAnswer;
-  return C.decideGiveUp;
+  const usage = d.usage ? el('p', { class: 'hint', text: fill(C.usage, { input: d.usage.input.toLocaleString('en-US'), output: d.usage.output.toLocaleString('en-US') }) }) : null;
+  if (d.type === 'tool') return [el('code', { class: 'agent-call', text: formatCall(d) }), usage];
+  if (d.type === 'answer') return [C.decideAnswer, usage];
+  return [C.decideGiveUp, usage];
 }
 
 function actContent(C, round) {

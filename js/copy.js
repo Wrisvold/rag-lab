@@ -642,11 +642,15 @@ export const AGENT = {
     recorded: 'The system recorded your vacation request from {start} to {end}, for {days}. Your manager must approve it.',
     refusedByRule: 'The system did not record your request. {reason}',
     refusedByPerson: 'A person refused the request. The system did not record it.',
+    modelRefused: 'The model did not answer this request. The provider stopped it for safety reasons.',
+    modelTruncated: 'The model stopped before it finished. Its reply was too long.',
+    modelEmpty: 'The model sent an empty reply.',
   },
 
   // Feedback that starts the next round after a failed answer check.
   feedback: {
     noCitation: 'Your answer has no section number from the passages. Add the section number, or say that the handbook does not answer the question.',
+    notSupported: 'The model check found a problem: {reason} Correct the answer, or say that the handbook does not answer the question.',
   },
 
   // Stop conditions: the message, then the teaching note.
@@ -687,6 +691,10 @@ export const AGENT = {
       message: 'You stopped the run.',
       note: 'A person must be able to stop an agent at any time.',
     },
+    MODEL_ERROR: {
+      message: 'The model did not reply. The loop stopped.',
+      note: 'An agent depends on the services that it calls. A real agent needs a plan for a failed call: retry one time, or tell the user and stop.',
+    },
   },
 
   // ---- The page (Phase 13) ----
@@ -699,6 +707,7 @@ export const AGENT = {
     inspectorHeading: 'Inspector',
     loading: 'The page loads the handbook and the Fall Line data.',
     loadFailed: 'The page cannot load the handbook or the Fall Line data. Open the page from a web server, not from a file.',
+    footer: 'Nothing that you type goes out of this browser tab, except with the Black Box agent. Then each round goes to the provider that you select. No account, no cookies, no tracking.',
   },
 
   // How to use each function, and why. Steps: 20 words or fewer each.
@@ -831,6 +840,26 @@ export const AGENT = {
       why: 'A rule in the prompt asks the model to obey. A rule in code makes the system obey. Put each rule that must never break in code.',
       course: 'Week 2 · Lesson 04 and Week 7 · Lesson 06',
     },
+    blackBox: {
+      steps: ['Select Black Box agent.', 'Select a provider.', 'Paste a key that you made for this class.', 'Click Step to start the run.'],
+      why: 'A model decides in each round, not a rule table. It reads the system prompt, the tools, and the history. Compare its decisions with the Glass Box agent on the same question.',
+      course: 'Week 1 · Lesson 01 and Week 2 · Lesson 04',
+    },
+    modelCheck: {
+      steps: ['Select Model check.', 'Run a question.', 'Compare the tokens with a run without the model check.'],
+      why: 'The code check costs nothing and gives the same result each time. A model check finds more problems, but it costs one more call, and it can be wrong.',
+      course: 'Week 3 · Lesson 05 and Week 8 · Lesson 10',
+    },
+    checkerPrompt: {
+      steps: ['Click the tab Checker prompt.', 'Read the prompt of the model check.', 'Edit it, then run a question with Model check selected.'],
+      why: 'An agent with two roles has two system prompts. The checker prompt tells the second model what to test. Manage it like the agent prompt.',
+      course: 'Week 5 · Lesson 08 and Week 7 · Lesson 06',
+    },
+    metaPrompt: {
+      steps: ['Write a short basic prompt.', 'Click Ask the model to write a prompt.', 'Compare each section with your prompt.', 'Click Use this text only for the lines that you want.'],
+      why: 'A model can help you write a prompt. You still decide what goes in it, and you still test it.',
+      course: 'Week 7 · Lesson 06',
+    },
     summary: {
       steps: ['Click Copy run summary.', 'Paste the summary into your assignment.'],
       why: 'The summary is a record of the run: each decision, each tool call, each check, and the stop. Your instructor can grade the run from this text.',
@@ -842,7 +871,6 @@ export const AGENT = {
     decisionMakerHeading: 'Decision maker',
     glassBox: 'Glass Box agent',
     glassBoxHelp: 'Decides with a rule table that you can read and edit. It needs no key. It cannot write: it quotes the handbook.',
-    blackBoxLater: 'The Black Box agent, which uses a model, is not available yet.',
     questionHeading: 'The question',
     employee: 'You are',
     questionLabel: 'Question',
@@ -883,9 +911,74 @@ export const AGENT = {
     keepLastTwo: 'Keep only the last two rounds in the context',
   },
 
+  // The Black Box agent (Phase 15).
+  blackBox: {
+    option: 'Black Box agent',
+    optionHelp: 'A model decides with your own key. It reads the system prompt and calls the tools.',
+    provider: 'Provider',
+    model: 'Model: {model}',
+    key: 'Your API key',
+    keyPlaceholder: 'Paste a key that you made for this class',
+    keyHelp: 'The page keeps the key only in this tab. It sends the key only to {provider}. The run summary never shows it.',
+    keyLink: 'Get a key from {provider}',
+    forget: 'Forget the key',
+    forgotten: 'The page forgot the key.',
+    noKey: 'Paste a key first.',
+    modelCheck: 'Model check: a second call tests each answer',
+    costNote: 'Each round is one call to the model. A run of a few rounds costs a small part of one cent on the paid providers.',
+    noRuleTable: 'The Black Box agent has no rule table. The model decides each step.',
+    // The first message of the run. The model reads it in every round.
+    userMessage: 'Employee: {id} ({label}). Today is {date}.\nQuestion: {question}',
+    userRequest: 'Request form: the employee asks for vacation from {start} to {end}. Make this vacation request.',
+    notRun: 'Not run. The agent runs one tool call in each round. Ask for this call again in the next round if you need it.',
+    calling: 'Waiting for {provider}.',
+  },
+
+  // The model check: its default prompt, and what it returns.
+  modelCheck: {
+    defaultPrompt: 'You check the answer of a help agent. Read the passages and the answer. If each fact in the answer comes from the passages, write SUPPORTED. If not, write NOT SUPPORTED. Then write one sentence that names the fact with no support.',
+    request: 'Passages:\n{passages}\n\nAnswer:\n{answer}',
+    noPassages: 'No passages. The agent did not search the handbook.',
+    M1pass: 'The model check found support for the answer in the passages.',
+    M1fail: 'The model check found no support for part of the answer: {reason}',
+    M1unclear: 'The model check did not give a clear result: {reason}',
+  },
+
+  // The meta prompt: a fixed prompt that asks a model to write a system prompt.
+  metaPrompt: {
+    heading: 'Ask a model to write a prompt',
+    basic: 'Your basic prompt',
+    basicPlaceholder: 'For example: Help Fall Line staff with handbook questions and vacation requests.',
+    ask: 'Ask the model to write a prompt',
+    asking: 'Waiting for the model.',
+    resultHeading: 'The prompt that the model wrote',
+    use: 'Use this text for {title}',
+    used: 'The section {title} now has the text of the model.',
+    nothing: 'The model did not write the six sections. Try again, or write a longer basic prompt.',
+    blackOnly: 'This needs the Black Box agent and a key.',
+    prompt: 'You write system prompts for AI agents. Read the basic prompt of the user. Write a system prompt in six sections: Role, Tasks, Rules, Tool guidance, Stop rules, and Output format. Start each section on a new line with its name and a colon, for example Role:. Write short sentences of 20 words or fewer. Use the active voice. Do not use semicolons. Write only the six sections.',
+  },
+
+  // When the model cannot give a usable reply.
+  modelErrors: {
+    badKey: 'The provider refused the key. Make sure that you copied the full key, and that it belongs to the provider that you selected.',
+    noCredit: 'The provider says that the key has no credit. Add credit on the site of the provider, or select Gemini, which has a free tier.',
+    rateLimit: 'The provider asked for fewer requests. Wait one minute and try again.',
+    network: 'The request did not get to the provider. Make sure that you are online. Some campus networks block these addresses.',
+    badRequest: 'The provider refused the request. The model name in js/constants.js can be out of date.',
+    server: 'The provider has a problem now. Try again after a few minutes.',
+  },
+
   // The system prompt workbench (Phase 14).
   workbench: {
     heading: 'System prompt',
+    tabs: 'Prompts',
+    tabAgent: 'Agent prompt',
+    tabChecker: 'Checker prompt',
+    checkerHeading: 'The prompt of the model check',
+    checkerText: 'Text of the checker prompt',
+    checkerReset: 'Use the default checker prompt',
+    checkerUnused: 'Only the Black Box agent uses the checker prompt, and only with Model check selected.',
     glassNote: 'The Glass Box agent does not read the system prompt. With this agent, a change to the prompt changes only the tokens of each round.',
     current: 'Working copy: {label}',
     matches: 'the same as {version} "{name}"',
@@ -1005,6 +1098,9 @@ export const AGENT = {
   card: {
     title: 'Round {number}',
     rule: 'Rule {rule}',
+    modelDecided: 'The model decided',
+    usage: 'The provider counted {input} tokens in and {output} tokens out.',
+    servedBy: 'The provider says that this model replied: {model}.',
     contextLine: 'The agent read {tokens} tokens.',
     showContext: 'Show context',
     contextShown: 'Context shown',
@@ -1051,6 +1147,8 @@ export const AGENT = {
     tokens: '{tokens} tokens',
     promptCost: 'The system prompt is {tokens} tokens of this round. This run sent it {rounds} times: {total} tokens.',
     emptyPart: 'Nothing of this type yet.',
+    blackNote: 'The model read the whole context of this round: the system prompt, the tools, and the history. The provider counts the tokens.',
+    rawRequest: 'The request to the provider (the key is hidden)',
     glassNote: 'The Glass Box agent follows the rule table. It does not read the system prompt. A model reads the system prompt, and it can ignore part of it. The agent always obeys the rule table.',
   },
 
@@ -1060,6 +1158,9 @@ export const AGENT = {
     decideTool: 'Round {round}, Decide: rule {rule} calls {tool}.',
     decideAnswer: 'Round {round}, Decide: rule {rule} gives an answer.',
     decideGiveUp: 'Round {round}, Decide: rule {rule}. The agent cannot answer.',
+    decideToolModel: 'Round {round}, Decide: the model calls {tool}.',
+    decideAnswerModel: 'Round {round}, Decide: the model gives an answer.',
+    decideGiveUpModel: 'Round {round}, Decide: the model did not give a usable reply.',
     actSearch: 'Round {round}, Act: the search returned {count} passages. The best is chunk {chunk}, with a score of {score}.',
     actTool: 'Round {round}, Act: {tool} returned a result.',
     actRefused: 'Round {round}, Act: a rule in code refused the call. {reason}',
@@ -1080,7 +1181,7 @@ export const AGENT = {
   summary: {
     title: 'RAG Lab · Agent mode run · {date} (simulated date)',
     agentGlass: 'Glass Box',
-    agentBlack: 'Black Box',
+    agentBlack: 'Black Box ({provider} · {model})',
     promptGlass: 'not read by the Glass Box agent',
     noLimit: 'no limit',
   },

@@ -16,10 +16,12 @@ export function renderSetup(app, container) {
   if (!app.scenario) { container.replaceChildren(); return; }
 
   container.replaceChildren(
-    decisionMaker(app, T),
+    decisionMaker(app, T, s),
     renderWorkbench(app),
     question(app, T, s),
-    ruleTable(app, T, s),
+    s.agentKind === 'glass'
+      ? ruleTable(app, T, s)
+      : group(T.rulesHeading, [el('p', { class: 'hint', text: app.copy.AGENT.blackBox.noRuleTable })]),
     tools(app, T, s),
     loopSettings(app, T, s),
   );
@@ -46,19 +48,54 @@ function checkbox(id, text, checked, onChange) {
 
 // ---------------------------------------------------------------------------
 
-function decisionMaker(app, T) {
-  const radio = el('input', { type: 'radio', name: 'agent-kind', value: 'glass', id: 'agent-kind-glass', checked: true });
+function decisionMaker(app, T, s) {
+  const B = app.copy.AGENT.blackBox;
+  const option = (value, name, help) => {
+    const radio = el('input', { type: 'radio', name: 'agent-kind', value, id: `agent-kind-${value}`, checked: s.agentKind === value });
+    radio.addEventListener('change', () => { if (radio.checked) app.setSetup({ agentKind: value }, { rebuild: true }); });
+    return el('label', { class: 'mode-toggle__option', for: radio.id }, [
+      radio,
+      el('span', { class: 'mode-toggle__name', text: name }),
+      el('span', { class: 'mode-toggle__help', text: help }),
+    ]);
+  };
+
+  const black = [];
+  if (s.agentKind === 'black') {
+    const providers = app.constants.ANSWER_PROVIDERS;
+    const provider = el('select', {}, Object.entries(providers).map(([key, p]) =>
+      el('option', { value: key, text: `${p.label} · ${p.note}`, selected: key === s.provider })));
+    provider.addEventListener('change', () => app.setSetup({ provider: provider.value }, { rebuild: true }));
+    const chosen = providers[s.provider];
+
+    const key = el('input', { type: 'password', autocomplete: 'off', spellcheck: 'false', placeholder: B.keyPlaceholder, class: 'agent-key-input' });
+    key.value = app.apiKey;
+    key.addEventListener('input', () => app.setApiKey(key.value));
+
+    black.push(
+      labelled('agent-provider', B.provider, provider),
+      el('p', { class: 'hint', text: fill(B.model, { model: app.constants.AGENT_PROVIDERS[s.provider].model }) }),
+      labelled('agent-api-key', B.key, key),
+      el('p', { class: 'hint', text: fill(B.keyHelp, { provider: chosen.label }) }),
+      el('div', { class: 'workbench-actions' }, [
+        el('a', { href: chosen.keyHelpUrl, target: '_blank', rel: 'noopener', text: fill(B.keyLink, { provider: chosen.label }) }),
+        el('button', { type: 'button', class: 'button agent-small', id: 'agent-forget-key', text: B.forget, onclick: () => app.forgetApiKey() }),
+      ]),
+      el('p', { class: 'hint', text: B.costNote }),
+      checkbox('agent-model-check', B.modelCheck, s.modelCheck, (on) => app.setSetup({ modelCheck: on })),
+      helpPanel('modelCheck'),
+    );
+  }
+
   return group(T.decisionMakerHeading, [
     el('fieldset', { class: 'mode-toggle agent-kind' }, [
       el('legend', { class: 'visually-hidden', text: T.decisionMakerHeading }),
-      el('label', { class: 'mode-toggle__option' }, [
-        radio,
-        el('span', { class: 'mode-toggle__name', text: T.glassBox }),
-        el('span', { class: 'mode-toggle__help', text: T.glassBoxHelp }),
-      ]),
+      option('glass', T.glassBox, T.glassBoxHelp),
+      option('black', B.option, B.optionHelp),
     ]),
-    el('p', { class: 'hint', text: T.blackBoxLater }),
     helpPanel('decisionMaker'),
+    ...black,
+    helpPanel('blackBox'),
   ]);
 }
 

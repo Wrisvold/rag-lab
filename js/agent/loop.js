@@ -23,7 +23,7 @@ export const PARTS = ['context', 'decide', 'act', 'check'];
 
 export const STOP_CODES = [
   'ANSWER_ACCEPTED', 'MAX_ROUNDS', 'HARD_LIMIT', 'NO_PROGRESS', 'BUDGET',
-  'GAVE_UP', 'APPROVAL_REFUSED', 'TOOL_FAILED', 'HUMAN_STOP',
+  'GAVE_UP', 'APPROVAL_REFUSED', 'TOOL_FAILED', 'HUMAN_STOP', 'MODEL_ERROR',
 ];
 
 /**
@@ -88,7 +88,26 @@ function view(state, deps) {
     employee: deps.env.scenario.employees.find((e) => e.id === state.employeeId),
     rounds: state.rounds,
     settings: state.settings,
+    prompt: state.prompt,
+    toolNames: state.toolNames,
   };
+}
+
+/**
+ * The Black Box agent reports the tokens that the provider counted. Use them
+ * in place of the estimate, so the run total is what the provider charges.
+ */
+function measured(state, usage, replaceEstimate) {
+  if (!usage) return state;
+  const real = (usage.input || 0) + (usage.output || 0);
+  const estimate = replaceEstimate ? (current(state).context ? current(state).context.total : 0) : 0;
+  return { ...state, tokens: state.tokens - estimate + real, measured: true };
+}
+
+/** A model call failed: stop the run, and keep the reason for the page. */
+function modelError(state, error, event) {
+  const next = { ...patchRound(state, { error: error.code || 'network' }), stopDetail: error.code || 'network' };
+  return { state: stop(next, 'MODEL_ERROR'), event: { ...event, stop: 'MODEL_ERROR', error: error.code || 'network' } };
 }
 
 function toolEnv(state, deps) {
@@ -133,8 +152,13 @@ export async function step(state, deps) {
     }
 
     case 'decide': {
-      const decision = await deps.agent.decide(view(state, deps));
-      let next = patchRound(state, { decision });
+      let decision;
+      try {
+        decision = await deps.agent.decide(view(state, deps));
+      } catch (error) {
+        return modelError(state, error, { type: 'decide', round });
+      }
+      let next = measured(patchRound(state, { decision, usage: decision.usage || null }), decision.usage, true);
       const event = { type: 'decide', round, decision };
       if (decision.type === 'tool' && state.settings.repeatStop) {
         const key = callKey(decision);
@@ -173,8 +197,13 @@ export async function step(state, deps) {
 
     case 'check': {
       const record = current(state);
-      const check = deps.agent.check(record, view(state, deps));
-      let next = patchRound(state, { check });
+      let check;
+      try {
+        check = await deps.agent.check(record, view(state, deps));
+      } catch (error) {
+        return modelError(state, error, { type: 'check', round });
+      }
+      let next = measured(patchRound(state, { check }), check.usage, false);
       const event = { type: 'check', round, check };
 
       if (record.decision.type === 'answer' && check.passed) return { state: stop(next, 'ANSWER_ACCEPTED'), event: { ...event, stop: 'ANSWER_ACCEPTED' } };
