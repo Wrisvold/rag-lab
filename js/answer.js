@@ -24,7 +24,10 @@ export function buildRequest(providerKey, { apiKey, model, prompt, maxTokens, pr
         headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
         body: {
           contents: [{ role: 'user', parts: [{ text: prompt }] }],
-          generationConfig: { maxOutputTokens: maxTokens },
+          generationConfig: {
+            maxOutputTokens: maxTokens,
+            ...(provider.thinkingLevel ? { thinkingConfig: { thinkingLevel: provider.thinkingLevel } } : {}),
+          },
         },
       };
     case 'openai':

@@ -20,6 +20,7 @@ test('gemini request shape', () => {
   assert.match(request.url, /models\/gemini-x:generateContent$/);
   assert.equal(request.headers['x-goog-api-key'], 'sk-test-KEY');
   assert.equal(request.body.contents[0].parts[0].text, 'Hello?');
+  assert.deepEqual(request.body.generationConfig.thinkingConfig, { thinkingLevel: 'LOW' }, 'Gemini 3 thinks at a low level');
 });
 
 test('openai request shape', () => {

@@ -81,7 +81,10 @@ export function buildAgentRequest(providerKey, { apiKey, model, system, tools = 
     case 'gemini': {
       const body = {
         contents: geminiContents(transcript),
-        generationConfig: { maxOutputTokens: maxTokens },
+        generationConfig: {
+          maxOutputTokens: maxTokens,
+          ...(settings.thinkingLevel ? { thinkingConfig: { thinkingLevel: settings.thinkingLevel } } : {}),
+        },
       };
       if (system) body.systemInstruction = { parts: [{ text: system }] };
       if (tools.length) {

@@ -111,7 +111,8 @@ export const CHARS_PER_TOKEN_ESTIMATE = 4;
 export const ANSWER_PROVIDERS = {
   gemini: {
     label: 'Google Gemini',
-    model: 'gemini-2.5-flash',
+    model: 'gemini-3-flash-preview',
+    thinkingLevel: 'LOW',        // Gemini 3 thinks by default, and thinking counts toward the token limit
     endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent',
     keyHelpUrl: 'https://aistudio.google.com/apikey',
     note: 'Has a free tier.',
@@ -281,8 +282,10 @@ export const AGENT_PROMPT_VAGUE_WORDS = [
 // Model names go stale; update a `model` line here if a provider retires one.
 export const AGENT_PROVIDERS = {
   gemini: {
-    model: 'gemini-2.5-flash',
+    // Since September 2026, Google serves the 2.5 models only to projects that used them before.
+    model: 'gemini-3-flash-preview',
     maxOutputTokens: 4096,       // thinking tokens count toward this limit
+    thinkingLevel: 'LOW',        // short routing decisions; the default for this model is high
   },
   openai: {
     model: 'gpt-5-mini',
