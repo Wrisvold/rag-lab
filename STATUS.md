@@ -111,6 +111,8 @@ The plan is in [agent-mode-plan.md](agent-mode-plan.md). Phases 12 to 17 are don
 |---|---|---|---|
 | 17 October 2026 | OpenAI, `gpt-5-mini` | 3, prompt v1, first run | ANSWER_ACCEPTED in round 2. Round 1 called `search_handbook`. Round 2 gave an answer with a section number, and the check in code accepted it. |
 
+| 17 October 2026 | OpenAI, `gpt-5-mini` | 3, prompt v2 (no Output format) | MAX_ROUNDS after 4 rounds, 6,150 tokens. Round 3 answered with "(Section 3.1)", not "[3.1]". The check in code reads only the bracket form, so A1 failed. Its message said "no section number", which was false, so the model searched again in round 4. Fix: the A1 message and the feedback to the model now say that the check needs the form [3.1]. |
+
 Still to do: Gemini and Anthropic, and Exercises 4 to 6.
 
 ## Phase 14 — Agent mode system prompt workbench (done)
