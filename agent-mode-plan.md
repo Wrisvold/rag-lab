@@ -193,6 +193,7 @@ Each stop condition has a code, a message in ASD-STE100, and a teaching note. Th
 |---|---|---|---|
 | `ANSWER_ACCEPTED` | The agent gives an answer, and the check accepts it. | The check accepted the answer. The loop stopped. | This is the stop that you want. The agent stopped because it finished, not because it reached a limit. |
 | `MAX_ROUNDS` | The round number is more than `MAX_ROUNDS`. | The loop stopped at the maximum number of rounds. The agent did not finish. | The limit is the last safety net. If your agent often stops here, its check or its search method needs work. |
+| `HARD_LIMIT` | `MAX_ROUNDS` is "No limit," and the run reaches 12 rounds. | The loop stopped at the hard limit of 12 rounds. You set no other limit. | With no stop condition, a loop runs until something outside it stops it. Each round costs tokens. Add a stop condition. |
 | `NO_PROGRESS` | The agent makes the same tool call with the same arguments two times. | The agent repeated the same action. The loop stopped. | An agent that repeats an action will get the same result. Stop it early and save the cost of the remaining rounds. |
 | `BUDGET` | The tokens for the run are more than `TOKEN_BUDGET`. | The run used its token budget. The loop stopped. | Each round sends the full context again. A budget puts a limit on the cost of one run. |
 | `GAVE_UP` | The agent decides that the tools cannot answer the question. | The agent told the user that it cannot answer. | An honest "I cannot answer" is a correct result. Lesson 05 calls this a fall back on human oversight. |
@@ -205,7 +206,7 @@ Each stop condition has a code, a message in ASD-STE100, and a teaching note. Th
 | Setting | Default | Range | Teaching note |
 |---|---|---|---|
 | `MAX_ROUNDS` | 4 | 1 to 8, or "No limit" | "No limit" is for Exercise 1 only. The engine still stops at a hard ceiling of 12 rounds, and the page tells the student so. |
-| `TOKEN_BUDGET` | 8,000 | 1,000 to 32,000 | The page shows the tokens of each round, so the student sees the cost grow. |
+| `TOKEN_BUDGET` | 8,000 | 1,000 to 32,000, or "No limit" | The page shows the tokens of each round, so the student sees the cost grow. "No limit" is for Exercise 1 only. |
 | `REPEAT_STOP` | On | On or Off | Disable it in Exercise 1 to see a loop that repeats itself. |
 | `SEARCH_EMBEDDING` | Glass Box | Glass Box or Black Box | The embedding that `search_handbook` uses. It is not the same as the decision maker. Exercise 2 needs the Glass Box embedding. |
 
@@ -297,6 +298,8 @@ Both agents give the loop engine the same object:
 { type: 'answer', text: '...', citations: ['3.1'] }
 { type: 'give_up', text: '...' }
 ```
+
+Each decision also has a `rule` field. It names the rule or the reason that made the decision, for example `F1`. The page shows it.
 
 The checker is a separate object with `check(round, context)`. It returns `{ passed, reasons }`. The engine calls the decision maker in the Decide part and the checker in the Check part. Neither object can call the other.
 
@@ -484,16 +487,17 @@ Agent mode has six exercises, in the style of the Flow mode exercises. Each exer
 
 ### Exercise 1. The loop that does not stop
 
-- **Set-up:** Glass Box agent. The check rule C2 has a threshold of 0.9, which no passage reaches. Rule F3 (stop with no answer) is off. `MAX_ROUNDS` is "No limit." `REPEAT_STOP` is off.
+- **Set-up:** Glass Box agent. The check rule C2 has a threshold of 0.9, which no passage reaches. Rule F3 (stop with no answer) is off. `MAX_ROUNDS` and `TOKEN_BUDGET` are "No limit." `REPEAT_STOP` is off.
 - **Steps:** Run the question to the end. Read the token count. Configure a stop condition. Run the question again.
-- **What the student sees:** Rule F2 widens the search one time. Then rule F4 repeats the same search until the hard ceiling of 12 rounds. The token count grows each round.
+- **What the student sees:** Rule F2 widens the search one time. Then rule F4 repeats the same search until the hard limit of 12 rounds. The run reads about 43,500 tokens. Each round reads more tokens than the round before it.
+- **What each stop condition does:** With `REPEAT_STOP` on, the run stops at round 3 (`NO_PROGRESS`). With the default budget of 8,000 tokens, the budget stops the run (`BUDGET`).
 - **Question:** Which stop condition stopped your second run? Was it the correct stop condition?
 
 ### Exercise 2. The PTO question
 
 - **Set-up:** Glass Box agent with the default rules. The question is "How many days of PTO do new employees get?" The synonym table is empty.
 - **Steps:** Click **Step** until round 1 ends. Read why the check failed. Add the pair "PTO → vacation" to the synonym table. Run the question again.
-- **What the student sees:** See Section 14. Round 1 fails rule C1. Round 2 rewrites the question and finds Section 3.1 at rank 1.
+- **What the student sees:** See Section 14. Round 1 fails rule C1. Round 2 rewrites the question and finds Section 3.1 at rank 1. Round 3 gives the answer. Before the student adds the synonym, the agent tells the user that the handbook does not answer the question (`GAVE_UP`).
 - **Question:** In Week 3, you did this loop by hand. Which of your steps does each part of the round do now?
 
 ### Exercise 3. One section at a time
@@ -528,7 +532,7 @@ The results of Exercises 3 to 6 depend on the model. The exercise text says so, 
 
 ## 14. Worked example: the PTO question in the Glass Box agent
 
-This trace shows the display and the run summary for Exercise 2 after the student adds "PTO → vacation" to the synonym table. The scores and ranks come from `node tools/flow-run.mjs` on 17 October 2026, with the sample handbook, `CHUNK_SIZE` 400, `CHUNK_OVERLAP` 50, `TOP_K` 3, and Glass Box embeddings.
+This trace shows the display and the run summary for Exercise 2 after the student adds "PTO → vacation" to the synonym table. The run uses the sample handbook, `CHUNK_SIZE` 400, `CHUNK_OVERLAP` 50, `TOP_K` 3, and Glass Box embeddings.
 
 **Round 1**
 
@@ -536,42 +540,51 @@ This trace shows the display and the run summary for Exercise 2 after the studen
 - **Decide:** Rule R3. Call `search_handbook`.
 - **Act:** The best passages are chunk 02 (score 0.19), chunk 03 (0.10), and chunk 07 (0.08). None of them is about vacation.
 - **Check:** Rule C1 failed. The word "pto" is not in the handbook.
-- **Next:** Rule F1. The synonym table changes "PTO" to "vacation."
 
 **Round 2**
 
-- **Context:** The new query "How many days of vacation do new employees get?" and round 1
-- **Decide:** Rule R3. Call `search_handbook`.
+- **Context:** The question, and the record of round 1
+- **Decide:** Rule F1. The synonym table changes "PTO" to "vacation." Call `search_handbook` with the new query "How many days of vacation do new employees get?"
 - **Act:** The best passages are chunk 08 (score 0.24), chunk 02 (0.17), and chunk 09 (0.14). Chunk 08 has the start of Section 3.1 Vacation.
 - **Check:** Rules C1, C2, and C3 passed. The text of chunk 08 starts with ".1 Vacation." The tool gives its section, 3.1, from its position in the handbook.
-- **Answer:** Rule A1. "A newly hired employee gets ten vacation days a year. [3.1]" This sentence has two words of the query, "vacation" and "days." Two later sentences also have two, so rule A1 quotes the first.
-- **Stop:** `ANSWER_ACCEPTED` after 2 rounds.
 
-These values come from RAG Lab on 17 October 2026. The ranks and scores come from `tools/flow-run.mjs`. The section comes from the heading positions in `data/sample.txt`. The sentence counts come from the Glass Box tokenizer. A test in Phase 12 runs this example and checks them. If the sample document changes, the test fails, and the exercise text must change.
+**Round 3**
+
+- **Context:** The question, and the records of rounds 1 and 2
+- **Decide:** Rule A1. Quote "A newly hired employee gets ten vacation days a year. [3.1]" This sentence has two words of the query, "vacation" and "days." Two later sentences also have two, so rule A1 quotes the first.
+- **Act:** The agent gives the answer. There is no tool to run.
+- **Check:** Rule A1 of the answer check passed. The answer gives Section 3.1, and a retrieved passage is in that section.
+- **Stop:** `ANSWER_ACCEPTED` after 3 rounds.
+
+The answer has its own round, and the check tests it. The Black Box agent works the same way, so the two agents show the same loop.
+
+These values come from RAG Lab on 17 October 2026. The ranks and scores come from `tools/flow-run.mjs` and `tools/agent-run.mjs`. The section comes from the heading positions in `data/sample.txt`. The sentence counts come from the Glass Box tokenizer. The test `tests/agent/glassBoxAgent.test.js` runs this example and checks these values. If the sample document changes, the test fails, and the exercise text must change.
 
 ## 15. The run summary
 
-The button **Copy agent run summary** makes a plain text block for assignments, in the style of the walkthrough run summary:
+The button **Copy agent run summary** makes a plain text block for assignments, in the style of the walkthrough run summary. This is the summary of the worked example, from `node tools/agent-run.mjs`:
 
 ```
 RAG Lab · Agent mode run · 2026-11-02 (simulated date)
-Agent: Glass Box · Employee: E-101 (new, 49 days of service)
+Agent: Glass Box · Employee: E-101 (New employee)
 System prompt: v1 "Default" (6 sections, 6 enabled, not read by the Glass Box agent)
 Settings: MAX_ROUNDS=4  TOKEN_BUDGET=8000  REPEAT_STOP=on
 Question: How many days of PTO do new employees get?
 
-Round 1  decide: search_handbook("How many days of PTO do new employees get?")
-         act:    chunks 02 (0.19), 03 (0.10), 07 (0.08)
-         check:  FAILED C1 - "pto" is not in the handbook
-Round 2  decide: search_handbook("How many days of vacation do new employees get?")
-         act:    chunks 08 (0.24, section 3.1), 02 (0.17), 09 (0.14)
+Round 1  decide: R3 search_handbook({"query":"How many days of PTO do new employees get?","top_k":3})
+         act:    chunks 02 (0.19, Section 1.1), 03 (0.10, Section 1.2), 07 (0.08, Section 2.5)
+         check:  FAILED C1 - These words are not in the handbook: "pto".
+Round 2  decide: F1 search_handbook({"query":"How many days of vacation do new employees get?","top_k":3})
+         act:    chunks 08 (0.24, Section 3.1), 02 (0.17, Section 1.1), 09 (0.14, Section 3.1)
          check:  passed C1 C2 C3
+Round 3  decide: A1 answer
          answer: A newly hired employee gets ten vacation days a year. [3.1]
+         check:  passed A1
 
-Stop: ANSWER_ACCEPTED after 2 rounds · about <n> tokens
+Stop: ANSWER_ACCEPTED after 3 rounds · about 3,012 tokens
 ```
 
-The page writes the real token count in place of `<n>`. The summary never has the key. The token count of the Glass Box agent is an estimate, and the summary says "about."
+The summary never has the key. The token count of the Glass Box agent is an estimate, so the summary says "about."
 
 ## 16. Architecture
 
@@ -583,6 +596,7 @@ The page writes the real token count in place of `<n>`. The summary never has th
 | `agent.css` | The layout of the three columns, the loop diagram, and the round cards | – |
 | `js/agent/main.js` | The state of the page and the wiring of the controls | No |
 | `js/agent/loop.js` | The loop engine: `step`, the stop conditions, and the round records | Yes |
+| `js/agent/handbook.js` | The handbook behind `search_handbook`: chunks, embedding, search, and the section of each passage | Yes |
 | `js/agent/glassBoxAgent.js` | The rule table and the Glass Box checker | Yes |
 | `js/agent/blackBoxAgent.js` | The Black Box decision maker and checker | Yes, except one network call |
 | `js/agent/providers.js` | Request builders and response readers for the three providers | Yes |
@@ -610,6 +624,8 @@ The page writes the real token count in place of `<n>`. The summary never has th
 | `tests/agent/glassBoxAgent.test.js` | Each rule. The worked example of Section 14, with its ranks. |
 | `tests/agent/tools.test.js` | Each rule in code, with the three employees and fixed dates. A request for another employee fails. |
 | `tests/agent/providers.test.js` | The request and the response of each provider, with recorded samples. The key is never in the URL or the body. |
+| `tests/agent/handbook.test.js` | The sections of the handbook. Chunk 08 gets Section 3.1 from its position. |
+| `tests/agent/summary.test.js` | The run summary of the worked example |
 | `tests/agent/prompt.test.js` | Sections, versions, the compare data, and each finding of the prompt checker |
 | `tests/agent-copy.test.js` | The text contract of Section 12 |
 

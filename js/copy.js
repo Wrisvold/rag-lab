@@ -552,3 +552,148 @@ export const FLOW = {
     badEdge: 'The graph has a wire that cannot be made: {reason}',
   },
 };
+
+// ---------------------------------------------------------------------------
+// Agent mode (agent.html). See agent-mode-plan.md.
+// All text here follows ASD-STE100 Simplified Technical English:
+// instructions of 20 words or fewer, other sentences of 25 words or fewer,
+// active voice, no semicolons, no phrasal verbs. {name} marks a value.
+// ---------------------------------------------------------------------------
+export const AGENT = {
+  // The default system prompt, in the six sections of the workbench.
+  defaultPrompt: {
+    name: 'Default',
+    sections: [
+      { id: 'role', title: 'Role',
+        text: 'You are the Fall Line help agent. You help employees of Fall Line Supply Company.' },
+      { id: 'tasks', title: 'Tasks',
+        text: 'You answer questions about the handbook. You tell employees their vacation balance. You help employees make vacation requests.' },
+      { id: 'rules', title: 'Rules',
+        text: 'Use only the handbook passages for facts. Give the section number for each fact. Give vacation data only for the employee who asks. Do not send a vacation request with less than two weeks of notice.' },
+      { id: 'tools', title: 'Tool guidance',
+        text: 'Use search_handbook for each handbook question. Use get_vacation_balance before you prepare a vacation request.' },
+      { id: 'stop', title: 'Stop rules',
+        text: 'If a search does not answer the question, search one more time with different words. If the second search fails, say that the handbook does not answer the question.' },
+      { id: 'format', title: 'Output format',
+        text: 'Write two to four short sentences. End with the section number in brackets, for example [3.1].' },
+    ],
+  },
+
+  // Tool descriptions: what the model reads. 25 words or fewer each.
+  tools: {
+    search_handbook: {
+      description: 'Finds the handbook passages that best match a query. Returns each passage with its section number and its score.',
+      params: {
+        query: 'The words to search for.',
+        top_k: 'How many passages to return. The default is 3.',
+      },
+    },
+    get_vacation_balance: {
+      description: 'Returns the vacation days left for the employee who asks. It cannot return data about a different employee.',
+      params: { employee_id: 'The ID of the employee who asks, for example E-101.' },
+    },
+    submit_vacation_request: {
+      description: 'Records a vacation request for the manager of the employee. A person must approve each request before the tool records it.',
+      params: {
+        employee_id: 'The ID of the employee who asks.',
+        start_date: 'The first day of the vacation, as YYYY-MM-DD.',
+        end_date: 'The last day of the vacation, as YYYY-MM-DD.',
+      },
+    },
+  },
+
+  // Rules in code that the tools apply. [n.n] is the handbook section.
+  rules: {
+    owner: 'The agent can give vacation data only for the employee who asks. [5.2]',
+    dates: 'The dates must be real dates, as YYYY-MM-DD, and the end must not be before the start.',
+    notice: 'A vacation request must arrive at least {days} before the vacation starts. This request has {actual} of notice. [3.1]',
+    service: 'An employee can use vacation after {days} of service. On the first day of this vacation, the employee has {actual} of service. [3.1]',
+    balance: 'The request is for {requested}. The employee has {left} of vacation left. [3.1]',
+    passed: 'Passed.',
+    disabled: 'This exercise disables the rule in code.',
+    // Counts: {n} is a number. The code selects the singular or the plural.
+    day: '{n} day',
+    days: '{n} days',
+    workDay: '{n} work day',
+    workDays: '{n} work days',
+  },
+
+  // What the check part reports. One line for each rule.
+  checks: {
+    C1pass: 'All important words of the query are in the handbook.',
+    C1fail: 'These words are not in the handbook: {words}.',
+    C2pass: 'The best score is {score}. The threshold is {threshold}.',
+    C2fail: 'The best score is {score}. It is less than the threshold of {threshold}.',
+    C3pass: 'The best passage is in Section {section}.',
+    C3fail: 'The best passage is not in a numbered section.',
+    T1: 'The tool returned a result.',
+    T1fail: 'The tool returned no result.',
+    A1pass: 'The answer gives Section {section}, and a retrieved passage is in that section.',
+    A1fail: 'The answer has no section number from the passages.',
+    A2: 'The answer comes from a tool result.',
+    G1: 'The agent said that it cannot answer. This is an honest result.',
+  },
+
+  // Answers that the Glass Box agent can give. It cannot write, so it uses these forms.
+  answers: {
+    giveUp: 'The handbook does not answer this question. Ask the People Operations team.',
+    balance: 'You have {days} of vacation left.',
+    recorded: 'The system recorded your vacation request from {start} to {end}, for {days}. Your manager must approve it.',
+    refusedByRule: 'The system did not record your request. {reason}',
+    refusedByPerson: 'A person refused the request. The system did not record it.',
+  },
+
+  // Feedback that starts the next round after a failed answer check.
+  feedback: {
+    noCitation: 'Your answer has no section number from the passages. Add the section number, or say that the handbook does not answer the question.',
+  },
+
+  // Stop conditions: the message, then the teaching note.
+  stops: {
+    ANSWER_ACCEPTED: {
+      message: 'The check accepted the answer. The loop stopped.',
+      note: 'This is the stop that you want. The agent stopped because it finished, not because it reached a limit.',
+    },
+    MAX_ROUNDS: {
+      message: 'The loop stopped at the maximum number of rounds. The agent did not finish.',
+      note: 'The limit is the last safety net. If your agent often stops here, its check or its search method needs work.',
+    },
+    HARD_LIMIT: {
+      message: 'The loop stopped at the hard limit of {limit} rounds. You set no other limit.',
+      note: 'With no stop condition, a loop runs until something outside it stops it. Each round costs tokens. Add a stop condition.',
+    },
+    NO_PROGRESS: {
+      message: 'The agent repeated the same action. The loop stopped.',
+      note: 'An agent that repeats an action gets the same result. Stop it early and save the cost of the remaining rounds.',
+    },
+    BUDGET: {
+      message: 'The run used its token budget. The loop stopped.',
+      note: 'Each round sends the full context again. A budget puts a limit on the cost of one run.',
+    },
+    GAVE_UP: {
+      message: 'The agent told the user that it cannot answer.',
+      note: 'An honest answer of "I cannot answer" is a correct result. Lesson 05 calls this a fall back on human oversight.',
+    },
+    APPROVAL_REFUSED: {
+      message: 'You refused the action. The agent did not do it.',
+      note: 'The person, not the agent, decides each high-risk action.',
+    },
+    TOOL_FAILED: {
+      message: 'A tool failed two times. The loop stopped.',
+      note: 'Do not let an agent call a broken tool again and again. One retry is enough.',
+    },
+    HUMAN_STOP: {
+      message: 'You stopped the run.',
+      note: 'A person must be able to stop an agent at any time.',
+    },
+  },
+
+  // The run summary for assignments.
+  summary: {
+    title: 'RAG Lab · Agent mode run · {date} (simulated date)',
+    agentGlass: 'Glass Box',
+    agentBlack: 'Black Box',
+    promptGlass: 'not read by the Glass Box agent',
+    noLimit: 'no limit',
+  },
+};

@@ -2,9 +2,32 @@
 
 Updated at the end of each phase. Newest phase first.
 
-## Agent mode — design plan (proposed, Phases 12 to 17)
+## Agent mode — design plan (Phases 12 to 17)
 
-The plan is in [agent-mode-plan.md](agent-mode-plan.md). No code is written yet.
+The plan is in [agent-mode-plan.md](agent-mode-plan.md). Phase 12 is done. Phases 13 to 17 are next.
+
+## Phase 12 — Agent mode loop core (done)
+
+**Delivered** (pure modules, no UI yet):
+- `js/agent/loop.js`: the loop engine. `step()` does one part of one round (context, decide, act, check) and returns a new state and one event; it never changes its input (a test deep-freezes every state). `approve`, `refuse`, `stopRun`, `runRound`, `runToEnd`. Nine stop codes: `ANSWER_ACCEPTED`, `MAX_ROUNDS`, `HARD_LIMIT`, `NO_PROGRESS`, `BUDGET`, `GAVE_UP`, `APPROVAL_REFUSED`, `TOOL_FAILED`, `HUMAN_STOP`.
+- `js/agent/tools.js`: `search_handbook`, `get_vacation_balance`, `submit_vacation_request`, their schemas, and the rules in code (owner 5.2; dates; notice, service and balance 3.1). Rules for the write tool run before a person is asked; a refused request never reaches the approval step. Rules can be disabled one at a time for Exercise 4.
+- `js/agent/handbook.js`: chunk, embed (Glass Box by default) and search, with the section of each passage found from its position. Chunk 08 starts at ".1 Vacation." and still gets 3.1.
+- `js/agent/glassBoxAgent.js`: the rule table R1–R3, C1–C3, F1–F4, A1, and the answer check shared with the future Black Box agent.
+- `js/agent/context.js`: the context of a round in the five types of Lesson 12, with token estimates; the default system prompt.
+- `js/agent/summary.js`: the run summary for assignments.
+- `data/agent-scenario.json`: fictional date (2026-11-02) and three employees.
+- `tools/agent-run.mjs`: runs Glass Box scenarios in Node and prints the run summary.
+- `js/copy.js`: new `AGENT` block (default prompt, tool descriptions, rule messages, check lines, answers, stop messages and teaching notes), all in ASD-STE100; checked with the STE linter, no findings.
+- `js/constants.js`: `AGENT_` defaults.
+
+**Decisions made while building** (the plan is updated to match):
+- The answer gets its own round, and the check tests it, the same as the Black Box agent will do. The PTO worked example takes three rounds, not two.
+- `HARD_LIMIT` is its own stop code, separate from `MAX_ROUNDS`, so the page can say "you set no other limit."
+- Exercise 1 also turns the token budget off. With the default budget of 8,000, the budget stops the runaway loop first (also tested).
+
+**Tests:** 32 new tests in `tests/agent/` (156 in all, all passing). `package.json` runs `tests/agent/*.test.js`.
+
+**Exit check:** `node tools/agent-run.mjs` prints the worked example: chunks 02/03/07 in round 1 (C1 fails on "pto"), chunks 08/02/09 in round 2 with Section 3.1, the answer "A newly hired employee gets ten vacation days a year. [3.1]" in round 3, `ANSWER_ACCEPTED`. `node tools/agent-run.mjs --exercise 1` stops at `HARD_LIMIT` after 12 rounds and about 43,500 tokens.
 
 ## Flow mode — phase plan (done: Phases 7 to 11, on the flow-mode branch)
 

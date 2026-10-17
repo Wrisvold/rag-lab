@@ -1,0 +1,33 @@
+{
+  "note": "Fictional data for Agent mode. The people and the numbers are not real.",
+  "today": "2026-11-02",
+  "employees": [
+    {
+      "id": "E-101",
+      "name": "Jordan Ellis",
+      "label": "New employee",
+      "role": "Warehouse associate, Milledgeville",
+      "startDate": "2026-09-14",
+      "vacationDaysLeft": 1,
+      "manager": "Pat Morgan"
+    },
+    {
+      "id": "E-102",
+      "name": "Sam Okafor",
+      "label": "Two years of service",
+      "role": "Showroom associate, Macon",
+      "startDate": "2024-10-01",
+      "vacationDaysLeft": 6,
+      "manager": "Lee Hart"
+    },
+    {
+      "id": "E-103",
+      "name": "Riley Chen",
+      "label": "Five years of service",
+      "role": "Sales representative, remote",
+      "startDate": "2021-08-16",
+      "vacationDaysLeft": 12,
+      "manager": "Lee Hart"
+    }
+  ]
+}

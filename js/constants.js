@@ -193,3 +193,39 @@ export const FLOW_EXERCISE_OVERLAP_SIZE = 500;
 
 // File name offered by "Download graph".
 export const FLOW_EXPORT_FILENAME = 'rag-lab-flow.json';
+
+// ---------------------------------------------------------------------------
+// Agent mode (agent.html): the agent loop. See agent-mode-plan.md.
+// ---------------------------------------------------------------------------
+
+// The simulated Fall Line data: today's date, employees, requests.
+export const AGENT_SCENARIO_PATH = 'data/agent-scenario.json';
+
+// MAX_ROUNDS: the most rounds a run may take. "No limit" (null) is for
+// Exercise 1 only, and even then the engine stops at AGENT_HARD_LIMIT.
+export const AGENT_MAX_ROUNDS_DEFAULT = 4;
+export const AGENT_MAX_ROUNDS_MIN = 1;
+export const AGENT_MAX_ROUNDS_MAX = 8;
+export const AGENT_HARD_LIMIT = 12;
+
+// TOKEN_BUDGET: the most context tokens a run may read, added over all
+// rounds. Each round sends the whole context again, so the total grows fast.
+// null means no budget (Exercise 1 only).
+export const AGENT_TOKEN_BUDGET_DEFAULT = 8000;
+export const AGENT_TOKEN_BUDGET_MIN = 1000;
+export const AGENT_TOKEN_BUDGET_MAX = 32000;
+
+// REPEAT_STOP: stop when the agent makes the same tool call twice.
+export const AGENT_REPEAT_STOP_DEFAULT = true;
+
+// A tool that throws this many times in one run stops the loop (TOOL_FAILED).
+export const AGENT_TOOL_FAILURE_LIMIT = 2;
+
+// Glass Box agent: the editable parts of its rule table.
+export const AGENT_GLASS_SCORE_THRESHOLD = 0.15;   // rule C2
+export const AGENT_GLASS_WIDER_STEP = 2;           // rule F2 adds this to TOP_K
+export const AGENT_GLASS_BALANCE_WORDS = ['balance', 'left', 'how many days do i have', 'remaining'];
+
+// Handbook rules that the tools enforce in code (Section 3.1).
+export const AGENT_NOTICE_DAYS = 14;
+export const AGENT_SERVICE_DAYS = 90;
