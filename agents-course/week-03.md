@@ -2,7 +2,7 @@
 
 **Microsoft lesson:** [05 Agentic RAG](https://github.com/microsoft/ai-agents-for-beginners/tree/main/05-agentic-rag)
 
-**Tool:** [RAG Lab](https://wrisvold.github.io/rag-lab/)
+**Tools:** [RAG Lab](https://wrisvold.github.io/rag-lab/) and RAG Lab [Agent mode](https://wrisvold.github.io/rag-lab/agent.html)
 
 ## Objectives
 
@@ -13,12 +13,14 @@ After this week, you can:
 3. Find a retrieval failure in RAG Lab, and correct it by hand as an agent would.
 4. Write a check step and a stop condition for a retrieval loop.
 5. Explain the limits of agentic RAG that Lesson 05 gives.
+6. Run an agent loop in Agent mode, and name the stop condition that stopped it.
 
 ## Read and watch
 
 1. Read Lesson 05 and watch its video.
 2. Read these sections again: "Iterative Loops, Tool Integration, and Memory," "Handling Failure Modes and Self-Correction," and "Boundaries of Agency."
 3. Do the RAG Lab activity below before you start the assignment.
+4. Then do the Agent mode activity. It does the same loop with no person.
 
 ## Key ideas
 
@@ -69,6 +71,18 @@ In this activity, you do the work of the checker step by hand.
 
 In steps 6 to 9, you did the maker-checker loop. You checked the result, found the cause of the failure, wrote a new query, and retrieved again. An agent does these steps with no person.
 
+## Agent mode activity: the loop with no person
+
+In the RAG Lab activity, you were the checker. In this activity, an agent does the same loop. It needs no key.
+
+1. Open [Agent mode](https://wrisvold.github.io/rag-lab/agent.html).
+2. Click **Exercise 1. The loop that does not stop**. Do the steps in the exercise panel.
+3. Click **Exercise 2. The PTO question**. Do the steps in the exercise panel.
+4. In Exercise 2, click **Copy run summary** after the run with the synonym. Paste the summary into your assignment.
+5. Compare the run of Exercise 2 with your work in the RAG Lab activity. For each part of a round, find the step that you did by hand.
+
+In Exercise 1, the agent has no stop condition. It stops only at the hard limit of 12 rounds. In Exercise 2, the check of each round decides if the loop continues.
+
 ## Discussion 3
 
 In the RAG Lab activity, Black Box mode finds the vacation passage for the word "PTO." Glass Box mode does not. If a better embedding model fixes the problem, does Fall Line still need an agentic loop? Give one case in which the loop still adds value.
@@ -80,24 +94,26 @@ In the RAG Lab activity, Black Box mode finds the vacation passage for the word 
 **Steps:**
 
 1. Do the RAG Lab activity. Paste your two run summaries: the first question and your new question.
-2. Write the check step. Give two or three tests that tell if the retrieved passages are sufficient. Each test must be specific. For example: "At least one passage has a section number."
-3. Write the action for each failure. What does the agent do if a test fails?
-4. Write the stop condition. Give the maximum number of rounds and the reason for that number.
-5. Write what the agent tells the user when it stops with no good answer. Write the exact words.
-6. Draw the loop as a flowchart. Use boxes for steps and diamonds for decisions.
-7. At the end, write your statement about the AI tools that you used.
+2. Do Exercises 1 and 2 in Agent mode. Paste the run summary of Exercise 2, after you add the synonym. In 100 to 150 words, compare the agent's loop with your work by hand. Tell which stop condition stopped each run of Exercise 1.
+3. Write the check step. Give two or three tests that tell if the retrieved passages are sufficient. Each test must be specific. For example: "At least one passage has a section number."
+4. Write the action for each failure. What does the agent do if a test fails?
+5. Write the stop condition. Give the maximum number of rounds and the reason for that number.
+6. Write what the agent tells the user when it stops with no good answer. Write the exact words.
+7. Draw the loop as a flowchart. Use boxes for steps and diamonds for decisions.
+8. At the end, write your statement about the AI tools that you used.
 
-**Submit:** A document of 500 to 800 words with the two run summaries and the flowchart, as a PDF or Word file.
+**Submit:** A document of 600 to 950 words with the three run summaries and the flowchart, as a PDF or Word file.
 
 **Rubric (100 points):**
 
 | Criterion | Full credit | Partial credit | Points |
 |---|---|---|---|
-| RAG Lab run summaries | Two run summaries. The second summary shows the vacation passage in the results. | Only one summary, or the second does not show an improvement. | 15 |
-| Check step | The tests are specific, and code or a model can apply them. | The tests are vague, for example "the passages are good." | 25 |
+| RAG Lab run summaries | Two run summaries. The second summary shows the vacation passage in the results. | Only one summary, or the second does not show an improvement. | 10 |
+| Agent mode run and comparison | The Exercise 2 summary stops with ANSWER_ACCEPTED. The comparison matches each part of a round to a step by hand. It names the stop conditions of Exercise 1. | The summary is missing, or the comparison is general. | 15 |
+| Check step | The tests are specific, and code or a model can apply them. | The tests are vague, for example "the passages are good." | 20 |
 | Failure actions | Each failed test has an action. The actions use the methods of Lesson 05. | Some failures have no action. | 20 |
 | Stop condition and message | A maximum number of rounds, with a reason. The message to the user is honest and tells the user what to do next. | No maximum, or the message hides the failure. | 20 |
-| Flowchart | The flowchart agrees with the text and has no path that loops forever. | The flowchart is not complete or has a path with no end. | 20 |
+| Flowchart | The flowchart agrees with the text and has no path that loops forever. | The flowchart is not complete or has a path with no end. | 15 |
 
 ## Optional code path
 

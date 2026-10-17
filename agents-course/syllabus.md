@@ -40,6 +40,10 @@ All materials are free.
 
 - **The Microsoft course.** [AI Agents for Beginners](https://github.com/microsoft/ai-agents-for-beginners). Each lesson has a written text and, for most lessons, a video. Each weekly guide tells you which parts to read.
 - **RAG Lab.** [The RAG Lab simulator](https://wrisvold.github.io/rag-lab/), which you used in CBIS 5530. You use it again in Week 3.
+- **RAG Lab Agent mode.** [Agent mode](https://wrisvold.github.io/rag-lab/agent.html) is a page of RAG Lab. It shows an agent that works in a loop on the Fall Line handbook. It has six exercises. You use it in Weeks 2, 3, 4, 6, 7, and 8. Assignments 3 and 7 use it.
+  - Exercises 1 and 2 need no key.
+  - Exercises 3 to 6 need an API key. If you do not have a key, get a free key from [Google AI Studio](https://aistudio.google.com/apikey), and select Google Gemini in the page.
+  - Use a key that you made for this class. Do not use a key from your employer. The page keeps the key only in the browser tab.
 - **LangGraph (optional).** [LangGraph](https://github.com/langchain-ai/langgraph) is a second agent framework, from LangChain. Some weeks give its documentation as optional reading.
 - **The Fall Line case.** [case-fall-line.md](case-fall-line.md). Read it in Week 1.
 

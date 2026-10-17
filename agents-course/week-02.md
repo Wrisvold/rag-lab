@@ -57,6 +57,18 @@ Lesson 04 discusses a database tool that writes SQL. The risk is that the model 
 
 This is a general rule. Put the control in the system that the tool connects to, not only in the instructions to the model.
 
+## Optional Agent mode activity: compare the schemas
+
+Do this activity after you write the schemas of Assignment 2. It needs no key.
+
+1. Open [Agent mode](https://wrisvold.github.io/rag-lab/agent.html).
+2. Under **Tools**, click **Schema** for each of the three tools. Read the name, the description, and the parameters.
+3. Compare each schema with your schema. Record one difference in a description and one difference in the parameters.
+4. Under **Rules in code**, read the three rules of `submit_vacation_request`. Each rule gives a handbook section.
+5. Optional, if you have a key: click **Exercise 4. The rule in the prompt**. Do the steps until the approval panel opens.
+
+The page puts the notice, service, and balance rules in code. The model cannot ignore a rule in code. This is the general rule of this week: put the control in the system that the tool connects to.
+
 ## Discussion 2
 
 Lesson 04 says that a read-only database role controls the risk of SQL that a model writes. Is this control sufficient for the Fall Line HR system? Think about confidential personnel records. What other control does the HR system need?

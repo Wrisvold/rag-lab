@@ -193,19 +193,21 @@ Each stop condition has a code, a message in ASD-STE100, and a teaching note. Th
 |---|---|---|---|
 | `ANSWER_ACCEPTED` | The agent gives an answer, and the check accepts it. | The check accepted the answer. The loop stopped. | This is the stop that you want. The agent stopped because it finished, not because it reached a limit. |
 | `MAX_ROUNDS` | The round number is more than `MAX_ROUNDS`. | The loop stopped at the maximum number of rounds. The agent did not finish. | The limit is the last safety net. If your agent often stops here, its check or its search method needs work. |
+| `HARD_LIMIT` | `MAX_ROUNDS` is "No limit," and the run reaches 12 rounds. | The loop stopped at the hard limit of 12 rounds. You set no other limit. | With no stop condition, a loop runs until something outside it stops it. Each round costs tokens. Add a stop condition. |
 | `NO_PROGRESS` | The agent makes the same tool call with the same arguments two times. | The agent repeated the same action. The loop stopped. | An agent that repeats an action will get the same result. Stop it early and save the cost of the remaining rounds. |
 | `BUDGET` | The tokens for the run are more than `TOKEN_BUDGET`. | The run used its token budget. The loop stopped. | Each round sends the full context again. A budget puts a limit on the cost of one run. |
 | `GAVE_UP` | The agent decides that the tools cannot answer the question. | The agent told the user that it cannot answer. | An honest "I cannot answer" is a correct result. Lesson 05 calls this a fall back on human oversight. |
 | `APPROVAL_REFUSED` | A person refuses an approval. | You refused the action. The agent did not do it. | The person, not the agent, decides each high-risk action. |
 | `TOOL_FAILED` | A tool fails two times in one run. | A tool failed two times. The loop stopped. | Do not let an agent call a broken tool again and again. One retry is enough. |
 | `HUMAN_STOP` | The student clicks Stop. | You stopped the run. | A person must be able to stop an agent at any time. |
+| `MODEL_ERROR` | The call to the model of the Black Box agent fails: a bad key, no credit, a rate limit, no network, or a provider error. Added in Phase 15. | The model did not reply. The loop stopped. | An agent depends on the services that it calls. A real agent needs a plan for a failed call: retry one time, or tell the user and stop. |
 
 ### 7.4 Loop settings
 
 | Setting | Default | Range | Teaching note |
 |---|---|---|---|
 | `MAX_ROUNDS` | 4 | 1 to 8, or "No limit" | "No limit" is for Exercise 1 only. The engine still stops at a hard ceiling of 12 rounds, and the page tells the student so. |
-| `TOKEN_BUDGET` | 8,000 | 1,000 to 32,000 | The page shows the tokens of each round, so the student sees the cost grow. |
+| `TOKEN_BUDGET` | 8,000 | 1,000 to 32,000, or "No limit" | The page shows the tokens of each round, so the student sees the cost grow. "No limit" is for Exercise 1 only. |
 | `REPEAT_STOP` | On | On or Off | Disable it in Exercise 1 to see a loop that repeats itself. |
 | `SEARCH_EMBEDDING` | Glass Box | Glass Box or Black Box | The embedding that `search_handbook` uses. It is not the same as the decision maker. Exercise 2 needs the Glass Box embedding. |
 
@@ -298,6 +300,8 @@ Both agents give the loop engine the same object:
 { type: 'give_up', text: '...' }
 ```
 
+Each decision also has a `rule` field. It names the rule or the reason that made the decision, for example `F1`. The page shows it.
+
 The checker is a separate object with `check(round, context)`. It returns `{ passed, reasons }`. The engine calls the decision maker in the Decide part and the checker in the Check part. Neither object can call the other.
 
 ### 9.2 The Glass Box agent
@@ -332,7 +336,7 @@ The Glass Box agent does not read the system prompt. The inspector still shows t
 
 The Black Box agent sends the context to a model with tool definitions, and reads the tool call or the answer that the model returns. It supports the three providers of Station 5: Gemini, OpenAI, and Anthropic.
 
-Each provider puts the system prompt and the tools in a different place in the request. The adapter file `js/agent/providers.js` has, for each provider, two pure functions: one builds the request, and one reads the response. They follow the style of `buildRequest` and `parseAnswer` in `js/answer.js`. The appendix gives the formats to check when the build starts.
+Each provider puts the system prompt and the tools in a different place in the request. The adapter file `js/agent/providers.js` has, for each provider, two pure functions: one builds the request, and one reads the response. They follow the style of `buildRequest` and `parseAnswer` in `js/answer.js`. Appendix A gives the formats to check when the build starts.
 
 The inspector shows the raw request, with the key removed. The student sees that the system prompt is a separate field of the request, and that the full history goes again in each round.
 
@@ -458,7 +462,7 @@ Course link: Week 7 · Lesson 06.
 
 ### 12.3 The test for the text
 
-A new test, `tests/agent-copy.test.js`, checks all text in the `AGENT` part of `js/copy.js`:
+The test `tests/agent/copy.test.js` checks all text in the `AGENT` part of `js/copy.js`. Phase 13 added it, before Phase 16, because the page needs the text from its first version:
 
 - Each function in a fixed list has the three texts.
 - Each step of "How to use it" has 20 words or fewer.
@@ -467,7 +471,7 @@ A new test, `tests/agent-copy.test.js`, checks all text in the `AGENT` part of `
 - No text has a word from the existing banned list or from a list of phrasal verbs.
 - No text uses a perfect tense with "been."
 
-The checker is a small function in `tests/ste.js`. It does not replace a review by a person. It catches the most frequent errors.
+The test also checks that each help panel on the page has its three texts. It checks that each stop code has a message and a teaching note. It does not replace a review by a person. It catches the most frequent errors.
 
 ## 13. The exercises
 
@@ -484,16 +488,17 @@ Agent mode has six exercises, in the style of the Flow mode exercises. Each exer
 
 ### Exercise 1. The loop that does not stop
 
-- **Set-up:** Glass Box agent. The check rule C2 has a threshold of 0.9, which no passage reaches. Rule F3 (stop with no answer) is off. `MAX_ROUNDS` is "No limit." `REPEAT_STOP` is off.
+- **Set-up:** Glass Box agent. The check rule C2 has a threshold of 0.9, which no passage reaches. Rule F3 (stop with no answer) is off. `MAX_ROUNDS` and `TOKEN_BUDGET` are "No limit." `REPEAT_STOP` is off.
 - **Steps:** Run the question to the end. Read the token count. Configure a stop condition. Run the question again.
-- **What the student sees:** Rule F2 widens the search one time. Then rule F4 repeats the same search until the hard ceiling of 12 rounds. The token count grows each round.
+- **What the student sees:** Rule F2 widens the search one time. Then rule F4 repeats the same search until the hard limit of 12 rounds. The run reads about 43,500 tokens. Each round reads more tokens than the round before it.
+- **What each stop condition does:** With `REPEAT_STOP` on, the run stops at round 3 (`NO_PROGRESS`). With the default budget of 8,000 tokens, the budget stops the run (`BUDGET`).
 - **Question:** Which stop condition stopped your second run? Was it the correct stop condition?
 
 ### Exercise 2. The PTO question
 
 - **Set-up:** Glass Box agent with the default rules. The question is "How many days of PTO do new employees get?" The synonym table is empty.
 - **Steps:** Click **Step** until round 1 ends. Read why the check failed. Add the pair "PTO → vacation" to the synonym table. Run the question again.
-- **What the student sees:** See Section 14. Round 1 fails rule C1. Round 2 rewrites the question and finds Section 3.1 at rank 1.
+- **What the student sees:** See Section 14. Round 1 fails rule C1. Round 2 rewrites the question and finds Section 3.1 at rank 1. Round 3 gives the answer. Before the student adds the synonym, the agent tells the user that the handbook does not answer the question (`GAVE_UP`).
 - **Question:** In Week 3, you did this loop by hand. Which of your steps does each part of the round do now?
 
 ### Exercise 3. One section at a time
@@ -528,7 +533,7 @@ The results of Exercises 3 to 6 depend on the model. The exercise text says so, 
 
 ## 14. Worked example: the PTO question in the Glass Box agent
 
-This trace shows the display and the run summary for Exercise 2 after the student adds "PTO → vacation" to the synonym table. The scores and ranks come from `node tools/flow-run.mjs` on 17 October 2026, with the sample handbook, `CHUNK_SIZE` 400, `CHUNK_OVERLAP` 50, `TOP_K` 3, and Glass Box embeddings.
+This trace shows the display and the run summary for Exercise 2 after the student adds "PTO → vacation" to the synonym table. The run uses the sample handbook, `CHUNK_SIZE` 400, `CHUNK_OVERLAP` 50, `TOP_K` 3, and Glass Box embeddings.
 
 **Round 1**
 
@@ -536,42 +541,51 @@ This trace shows the display and the run summary for Exercise 2 after the studen
 - **Decide:** Rule R3. Call `search_handbook`.
 - **Act:** The best passages are chunk 02 (score 0.19), chunk 03 (0.10), and chunk 07 (0.08). None of them is about vacation.
 - **Check:** Rule C1 failed. The word "pto" is not in the handbook.
-- **Next:** Rule F1. The synonym table changes "PTO" to "vacation."
 
 **Round 2**
 
-- **Context:** The new query "How many days of vacation do new employees get?" and round 1
-- **Decide:** Rule R3. Call `search_handbook`.
+- **Context:** The question, and the record of round 1
+- **Decide:** Rule F1. The synonym table changes "PTO" to "vacation." Call `search_handbook` with the new query "How many days of vacation do new employees get?"
 - **Act:** The best passages are chunk 08 (score 0.24), chunk 02 (0.17), and chunk 09 (0.14). Chunk 08 has the start of Section 3.1 Vacation.
 - **Check:** Rules C1, C2, and C3 passed. The text of chunk 08 starts with ".1 Vacation." The tool gives its section, 3.1, from its position in the handbook.
-- **Answer:** Rule A1. "A newly hired employee gets ten vacation days a year. [3.1]" This sentence has two words of the query, "vacation" and "days." Two later sentences also have two, so rule A1 quotes the first.
-- **Stop:** `ANSWER_ACCEPTED` after 2 rounds.
 
-These values come from RAG Lab on 17 October 2026. The ranks and scores come from `tools/flow-run.mjs`. The section comes from the heading positions in `data/sample.txt`. The sentence counts come from the Glass Box tokenizer. A test in Phase 12 runs this example and checks them. If the sample document changes, the test fails, and the exercise text must change.
+**Round 3**
+
+- **Context:** The question, and the records of rounds 1 and 2
+- **Decide:** Rule A1. Quote "A newly hired employee gets ten vacation days a year. [3.1]" This sentence has two words of the query, "vacation" and "days." Two later sentences also have two, so rule A1 quotes the first.
+- **Act:** The agent gives the answer. There is no tool to run.
+- **Check:** Rule A1 of the answer check passed. The answer gives Section 3.1, and a retrieved passage is in that section.
+- **Stop:** `ANSWER_ACCEPTED` after 3 rounds.
+
+The answer has its own round, and the check tests it. The Black Box agent works the same way, so the two agents show the same loop.
+
+These values come from RAG Lab on 17 October 2026. The ranks and scores come from `tools/flow-run.mjs` and `tools/agent-run.mjs`. The section comes from the heading positions in `data/sample.txt`. The sentence counts come from the Glass Box tokenizer. The test `tests/agent/glassBoxAgent.test.js` runs this example and checks these values. If the sample document changes, the test fails, and the exercise text must change.
 
 ## 15. The run summary
 
-The button **Copy agent run summary** makes a plain text block for assignments, in the style of the walkthrough run summary:
+The button **Copy agent run summary** makes a plain text block for assignments, in the style of the walkthrough run summary. This is the summary of the worked example, from `node tools/agent-run.mjs`:
 
 ```
 RAG Lab · Agent mode run · 2026-11-02 (simulated date)
-Agent: Glass Box · Employee: E-101 (new, 49 days of service)
+Agent: Glass Box · Employee: E-101 (New employee)
 System prompt: v1 "Default" (6 sections, 6 enabled, not read by the Glass Box agent)
 Settings: MAX_ROUNDS=4  TOKEN_BUDGET=8000  REPEAT_STOP=on
 Question: How many days of PTO do new employees get?
 
-Round 1  decide: search_handbook("How many days of PTO do new employees get?")
-         act:    chunks 02 (0.19), 03 (0.10), 07 (0.08)
-         check:  FAILED C1 - "pto" is not in the handbook
-Round 2  decide: search_handbook("How many days of vacation do new employees get?")
-         act:    chunks 08 (0.24, section 3.1), 02 (0.17), 09 (0.14)
+Round 1  decide: R3 search_handbook({"query":"How many days of PTO do new employees get?","top_k":3})
+         act:    chunks 02 (0.19, Section 1.1), 03 (0.10, Section 1.2), 07 (0.08, Section 2.5)
+         check:  FAILED C1 - These words are not in the handbook: "pto".
+Round 2  decide: F1 search_handbook({"query":"How many days of vacation do new employees get?","top_k":3})
+         act:    chunks 08 (0.24, Section 3.1), 02 (0.17, Section 1.1), 09 (0.14, Section 3.1)
          check:  passed C1 C2 C3
+Round 3  decide: A1 answer
          answer: A newly hired employee gets ten vacation days a year. [3.1]
+         check:  passed A1
 
-Stop: ANSWER_ACCEPTED after 2 rounds · about <n> tokens
+Stop: ANSWER_ACCEPTED after 3 rounds · about 3,012 tokens
 ```
 
-The page writes the real token count in place of `<n>`. The summary never has the key. The token count of the Glass Box agent is an estimate, and the summary says "about."
+The summary never has the key. The token count of the Glass Box agent is an estimate, so the summary says "about."
 
 ## 16. Architecture
 
@@ -583,6 +597,7 @@ The page writes the real token count in place of `<n>`. The summary never has th
 | `agent.css` | The layout of the three columns, the loop diagram, and the round cards | – |
 | `js/agent/main.js` | The state of the page and the wiring of the controls | No |
 | `js/agent/loop.js` | The loop engine: `step`, the stop conditions, and the round records | Yes |
+| `js/agent/handbook.js` | The handbook behind `search_handbook`: chunks, embedding, search, and the section of each passage | Yes |
 | `js/agent/glassBoxAgent.js` | The rule table and the Glass Box checker | Yes |
 | `js/agent/blackBoxAgent.js` | The Black Box decision maker and checker | Yes, except one network call |
 | `js/agent/providers.js` | Request builders and response readers for the three providers | Yes |
@@ -590,6 +605,7 @@ The page writes the real token count in place of `<n>`. The summary never has th
 | `js/agent/prompt.js` | The sections, the versions, the compare view data, and the prompt checker | Yes |
 | `js/agent/context.js` | The context of a round, split by the five types, with token counts | Yes |
 | `js/agent/summary.js` | The run summary | Yes |
+| `js/agent/exercises.js` | The set-ups of the six exercises, and the poisoned handbook of Exercise 6. Added in Phase 16. | Yes |
 | `js/agent/view/*.js` | The loop diagram, the round cards, the inspector, the workbench, and the approval panel | No |
 | `data/agent-scenario.json` | The simulated date, employees, and requests | – |
 | `tools/agent-run.mjs` | Runs a Glass Box scenario in Node and prints the run summary | – |
@@ -610,8 +626,12 @@ The page writes the real token count in place of `<n>`. The summary never has th
 | `tests/agent/glassBoxAgent.test.js` | Each rule. The worked example of Section 14, with its ranks. |
 | `tests/agent/tools.test.js` | Each rule in code, with the three employees and fixed dates. A request for another employee fails. |
 | `tests/agent/providers.test.js` | The request and the response of each provider, with recorded samples. The key is never in the URL or the body. |
+| `tests/agent/handbook.test.js` | The sections of the handbook. Chunk 08 gets Section 3.1 from its position. |
+| `tests/agent/summary.test.js` | The run summary of the worked example |
 | `tests/agent/prompt.test.js` | Sections, versions, the compare data, and each finding of the prompt checker |
-| `tests/agent-copy.test.js` | The text contract of Section 12 |
+| `tests/agent/copy.test.js` | The text contract of Section 12 |
+| `tests/agent/describe.test.js` | The readout sentence for each part of each round |
+| `tests/agent/exercises.test.js` | The text of each exercise. Exercises 1, 2, 4, and 6 give the results that their text describes. Added in Phase 16. |
 
 ## 17. Course integration
 
@@ -681,7 +701,7 @@ The phases continue the numbers of the Flow mode plan in `STATUS.md`. Each phase
 
 - The six exercises, with their set-ups and questions
 - The three texts of Section 12 for each function
-- `tests/agent-copy.test.js` and `tests/ste.js`
+- More checks in `tests/agent/copy.test.js`, if the review finds new types of error
 - The run summary button
 - The changes to the weekly guides of the agents course (Section 17)
 
@@ -695,8 +715,10 @@ The phases continue the numbers of the Flow mode plan in `STATUS.md`. Each phase
 - An update to `STATUS.md`
 - A review for accessibility, small screens, and `prefers-reduced-motion`
 - A check of the provider formats against the current documentation of each provider
+- The visual design rules of Appendix B, on all three pages: the walkthrough, Flow mode, and Agent mode
+- A dark theme (Appendix B, Part 2). The light theme stays the default for a classroom projector.
 
-**Exit check:** The walkthrough and Flow mode tests pass with no change. A review of the full page finds no text that breaks the rules of Section 12.
+**Exit check:** The walkthrough and Flow mode tests pass with no change. A review of the full page finds no text that breaks the rules of Section 12. The theme test passes for the two themes. Screenshots of the three pages, in the two themes and at 375 and 1,400 pixels wide, show no lost color meaning and no horizontal scroll.
 
 ## 19. Risks and open questions
 
@@ -710,9 +732,31 @@ The phases continue the numbers of the Flow mode plan in `STATUS.md`. Each phase
 | Should Agent mode export to LangGraph? | Later, and optional. The state, the rounds, and the stop conditions map to a LangGraph state graph with a conditional edge. A Python export can follow Phase 17. |
 | A batch run of a test set for Week 8 | Later. Run ten questions and count the stop reasons. This is offline evaluation in Lesson 10. |
 
-## Appendix. Provider formats to check at the start of Phase 15
+## Appendix A. Provider formats to check at the start of Phase 15
 
 These notes describe the formats that the adapters must handle. Check each one against the current documentation of the provider before the build.
+
+**Checked in Phase 15 (17 October 2026).** The documentation sites were blocked from the build environment. The OpenAI and Gemini formats were checked against the types of the official SDKs on GitHub (`openai-node` and `js-genai`). The Anthropic format was checked against the Anthropic API reference. The table under this note shows the result. Check the formats again each term.
+
+**Checked again in Phase 17 (17 October 2026).** The documentation sites were still blocked. The current SDK types on GitHub agree with the table:
+
+- `openai-node`: `parallel_tool_calls`, `max_completion_tokens`, `tool_call_id`, the arguments as a string, and `refusal`.
+- `js-genai`: `parametersJsonSchema`, `systemInstruction`, the `id` of a `functionResponse`, `thoughtSignature`, the token counts, and `blockReason`.
+- `anthropic-sdk-typescript`: `output_config.effort`, `disable_parallel_tool_use`, `tool_use_id`, and the stop reason `refusal`. `fallbacks` and the header `server-side-fallback-2026-07-01` are in the beta types. A fallback runs when the model declines a request for policy reasons.
+
+| Item | Gemini (`gemini-2.5-flash`) | OpenAI (`gpt-5-mini`, chat completions) | Anthropic (`claude-opus-5-5`, messages) |
+|---|---|---|---|
+| System prompt | `systemInstruction: { parts: [{ text }] }` | A first message with the role `developer` | Top-level `system`. The field is left out when all sections are disabled. |
+| Tool definitions | `tools: [{ functionDeclarations: [{ name, description, parametersJsonSchema }] }]` | `tools: [{ type: "function", function: { name, description, parameters } }]` | `tools: [{ name, description, input_schema }]` |
+| One tool call in each round | The adapter runs the first call. Other calls get a "not run" result. | `parallel_tool_calls: false` | `tool_choice: { type: "auto", disable_parallel_tool_use: true }`. A forced tool choice is refused when thinking is on. |
+| Tool call in the response | A part with `functionCall: { id, name, args }` | `message.tool_calls[]`. The arguments are a JSON string. | A content block of type `tool_use` with `id`, `name` and `input` |
+| Tool result in the next request | A `user` turn with `functionResponse: { name, id, response }` | A message with the role `tool` and the `tool_call_id` | A `user` message with `tool_result` blocks, each with the `tool_use_id` |
+| Data to send back unchanged | `thoughtSignature` on the parts of the model turn | Nothing | `thinking` blocks. When "keep only the last N rounds" removes rounds, the adapter removes the thinking blocks of the rounds that stay. |
+| Token counts | `usageMetadata`: `promptTokenCount`, and `candidatesTokenCount` plus `thoughtsTokenCount` | `usage`: `prompt_tokens`, `completion_tokens` | `usage`: `input_tokens`, `output_tokens` |
+| Refusal | `promptFeedback.blockReason`, or a finish reason such as `SAFETY` | `finish_reason: "content_filter"` or `message.refusal` | `stop_reason: "refusal"` |
+| Other settings | None | None | `output_config: { effort: "low" }`, `fallbacks: "default"` with the beta header `server-side-fallback-2026-07-01`, and the header `anthropic-dangerous-direct-browser-access: true` |
+
+The first table, from the plan, follows.
 
 | Item | Gemini | OpenAI (chat completions) | Anthropic (messages) |
 |---|---|---|---|
@@ -721,3 +765,36 @@ These notes describe the formats that the adapters must handle. Check each one a
 | Tool call in the response | A part with `functionCall` | `message.tool_calls[]`. The arguments are a JSON string. | A content block of type `tool_use` |
 | Tool result in the next request | A part with `functionResponse` | A message with the role `tool` and the `tool_call_id` | A content block of type `tool_result` with the `tool_use_id` |
 | Token counts | `usageMetadata` | `usage` | `usage` |
+
+## Appendix B. Visual design rules for Phase 17
+
+The instructor supplied a design analysis of a commercial product site. Phase 17 takes its structure: a spacing scale, a corner scale, thin borders in place of shadows, one focus ring, and large touch targets. Phase 17 does not take its colors, its fonts, or its rule that a page is dark only.
+
+RAG Lab keeps its palette, because the colors teach. Teal shows build time, and amber shows run time. Each type of context has its own color in the inspector. A read tool and a write tool look different. A design with one accent color removes these signals.
+
+### Part 1. The rules for the two themes
+
+| Item | Rule | Now (17 October 2026) |
+|---|---|---|
+| Spacing | Use a 4-pixel scale: 4, 8, 12, 16, 24, 32, and 48 pixels. Put the scale in tokens, `--space-1` to `--space-7`. Use only the tokens for padding, margins, and gaps. Phase 17 used steps of a quarter rem, so the spaces grow with the text size. It added `--space-0` (half a step) for tags and chips. | The three style sheets use 34 different values. |
+| Corners | Use four values: 4 pixels for tags and chips, 8 pixels for buttons and fields, 12 pixels for cards and panels, and a full round for pills. Map points stay circles. | 8 pixels (31 uses), 4 pixels (16), round pills (8), and two other values (2 and 3 pixels). |
+| Depth | Show what is inside what with a 1-pixel border and a change of background. Remove the shadows. Only content that floats over other content keeps a shadow: a Flow node that the student drags, and the Flow menu. | A shadow token on the dials, the panels, and the Flow nodes. |
+| Focus | Use one focus ring on each control: a 3-pixel outline, 2 pixels from the control, in a color that passes 3:1 in the theme. This includes the map points and the Flow nodes. | A general focus rule, but the map points and the Flow nodes have their own rules. |
+| Touch targets | Each button, field, list, and box with its label is at least 44 pixels high on a touch screen (`pointer: coarse`), and at least 36 pixels high with a mouse. | Not measured. The review measures it. |
+| Type | Keep the fonts. Put the sizes in tokens, and use only the tokens. | Sizes are typed in each rule. |
+| Colors | Put each color in a token. No color is typed in a rule. | Three colors are typed in rules (one in `styles.css`, two in `flow.css`). The JavaScript has none. |
+
+### Part 2. The dark theme
+
+- The page follows the setting of the computer (`prefers-color-scheme`). A control in the header gives three choices: System, Light, and Dark. The browser keeps the choice for that page only. The choice never leaves the browser.
+- The light theme stays the default when the computer gives no setting. A projector in a room with light shows a light page better.
+- The dark surfaces come from the analysis: page `#0f1011`, panel `#141516`, and raised panel `#18191a`. The borders are `#23252a` and `#34343a`. The text is `#f7f8f8`, and the soft text is `#8a8f98` (6.4:1 on the page). Do not use the darker gray of the analysis (`#62666d`) for text. It gives only 3.6:1.
+- Each teaching color keeps its hue: green, teal, amber, gold, the danger red, and the five context colors. Each one gets a dark-theme version. Text in a color must pass 4.5:1. A fill or a border that carries meaning must pass 3:1.
+- The map, the context bar, and each drawing use the tokens, so they change with the theme.
+- The run summaries, the downloaded files, and the Word files of the course do not change.
+
+### Part 3. Tests
+
+- `tests/theme.test.js` reads the tokens of the two themes from the style sheets. It calculates the contrast of each pair of text and background, and of each meaningful fill and its background. It fails below 4.5:1 for text and 3:1 for a fill.
+- A second check finds each color, size, or space that a rule types without a token.
+- Screenshots of the three pages in the two themes, at 375 and 1,400 pixels wide. A person compares them with the screenshots before Phase 17.

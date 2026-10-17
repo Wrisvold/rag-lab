@@ -198,7 +198,8 @@ function renderResults(container, app, runButton) {
   body.append(el('section', { class: 'table-section', 'aria-labelledby': 'rank-table-heading' }, [
     el('h3', { id: 'rank-table-heading', text: text.tableHeading }),
     el('p', { class: 'hint', text: text.tableIntro }),
-    table,
+    // On a phone the table scrolls inside its own box, not the page. The box takes the focus, so a keyboard can scroll it.
+    el('div', { class: 'table-scroll', tabindex: '0', role: 'region', 'aria-labelledby': 'rank-table-heading' }, table),
   ]));
 
   // ---- Top-k cards ----

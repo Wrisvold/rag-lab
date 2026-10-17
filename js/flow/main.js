@@ -5,6 +5,7 @@
 //
 // All user-facing text comes from js/copy.js (FLOW block). Do not type sentences here.
 
+import { mountThemeControl } from '../theme.js';
 import * as constants from '../constants.js';
 import * as copy from '../copy.js';
 import { el, fill } from '../dom.js';
@@ -244,6 +245,8 @@ function renderChrome() {
   document.getElementById('app-footer').textContent = copy.UI.footer;
   document.getElementById('mode-walkthrough').textContent = copy.MODES.walkthrough;
   document.getElementById('mode-flow').textContent = copy.MODES.flow;
+  document.getElementById('mode-agent').textContent = copy.MODES.agent;
+  mountThemeControl();
   document.getElementById('flow-skip').textContent = F.page.skip;
   document.getElementById('flow-canvas').setAttribute('aria-label', F.page.canvasLabel);
   document.getElementById('flow-help').textContent = F.page.canvasHelp;

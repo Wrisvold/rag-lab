@@ -193,3 +193,113 @@ export const FLOW_EXERCISE_OVERLAP_SIZE = 500;
 
 // File name offered by "Download graph".
 export const FLOW_EXPORT_FILENAME = 'rag-lab-flow.json';
+
+// ---------------------------------------------------------------------------
+// Agent mode (agent.html): the agent loop. See agent-mode-plan.md.
+// ---------------------------------------------------------------------------
+
+// The simulated Fall Line data: today's date, employees, requests.
+export const AGENT_SCENARIO_PATH = 'data/agent-scenario.json';
+
+// MAX_ROUNDS: the most rounds a run may take. "No limit" (null) is for
+// Exercise 1 only, and even then the engine stops at AGENT_HARD_LIMIT.
+export const AGENT_MAX_ROUNDS_DEFAULT = 4;
+export const AGENT_MAX_ROUNDS_MIN = 1;
+export const AGENT_MAX_ROUNDS_MAX = 8;
+export const AGENT_HARD_LIMIT = 12;
+
+// TOKEN_BUDGET: the most context tokens a run may read, added over all
+// rounds. Each round sends the whole context again, so the total grows fast.
+// null means no budget (Exercise 1 only).
+export const AGENT_TOKEN_BUDGET_DEFAULT = 8000;
+export const AGENT_TOKEN_BUDGET_MIN = 1000;
+export const AGENT_TOKEN_BUDGET_MAX = 32000;
+
+// REPEAT_STOP: stop when the agent makes the same tool call twice.
+export const AGENT_REPEAT_STOP_DEFAULT = true;
+
+// A tool that throws this many times in one run stops the loop (TOOL_FAILED).
+export const AGENT_TOOL_FAILURE_LIMIT = 2;
+
+// Glass Box agent: the editable parts of its rule table.
+export const AGENT_GLASS_SCORE_THRESHOLD = 0.15;   // rule C2
+export const AGENT_GLASS_WIDER_STEP = 2;           // rule F2 adds this to TOP_K
+export const AGENT_GLASS_BALANCE_WORDS = ['balance', 'left', 'how many days do i have', 'remaining'];
+
+// Handbook rules that the tools enforce in code (Section 3.1).
+export const AGENT_NOTICE_DAYS = 14;
+export const AGENT_SERVICE_DAYS = 90;
+
+// Key used to keep the Agent mode set-up alive across a page reload.
+export const AGENT_SESSION_STORAGE_KEY = 'rag-lab-agent';
+
+// Pause between the parts of a round in "Run round" and "Run to end", in
+// milliseconds, so a student can follow the highlight. No pause when the
+// browser asks for reduced motion.
+export const AGENT_RUN_PAUSE_MS = 600;
+
+// ---------------------------------------------------------------------------
+// Agent mode: the system prompt workbench (Phase 14)
+// ---------------------------------------------------------------------------
+
+// Key used to keep the prompt versions alive across a page reload.
+export const AGENT_PROMPTS_SESSION_KEY = 'rag-lab-agent-prompts';
+
+// File name and format stamp for downloaded prompt versions.
+export const AGENT_PROMPTS_FILENAME = 'rag-lab-agent-prompts.json';
+export const AGENT_PROMPTS_FORMAT = 'rag-lab-agent-prompts';
+export const AGENT_PROMPTS_FORMAT_VERSION = 1;
+
+// The prompt checker uses the structural rules of ASD-STE100.
+// Sections that hold instructions allow 20 words per sentence; the others 25.
+export const AGENT_PROMPT_INSTRUCTION_SECTIONS = ['rules', 'tools', 'stop'];
+export const AGENT_PROMPT_MAX_WORDS_INSTRUCTION = 20;
+export const AGENT_PROMPT_MAX_WORDS_DESCRIPTION = 25;
+
+// Two-word verbs with meanings the parts do not predict, and one plain verb for each.
+export const AGENT_PROMPT_PHRASAL_VERBS = {
+  'set up': 'configure', 'look up': 'find', 'find out': 'learn', 'turn off': 'disable',
+  'turn on': 'enable', 'fill in': 'complete', 'fill out': 'complete', 'carry out': 'do',
+  'go back': 'return', 'pick up': 'collect', 'write down': 'record', 'give up': 'stop',
+  'point out': 'show', 'check out': 'examine', 'make up': 'create', 'deal with': 'handle',
+  'follow up': 'continue', 'back up': 'support', 'come up with': 'make', 'get back to': 'answer',
+};
+
+// Words that make the model guess. The checker asks for the exact condition instead.
+export const AGENT_PROMPT_VAGUE_WORDS = [
+  'appropriate', 'appropriately', 'relevant', 'as needed', 'if needed', 'when necessary',
+  'if possible', 'etc', 'properly', 'reasonable', 'reasonably', 'suitable', 'and so on', 'various',
+];
+
+// ---------------------------------------------------------------------------
+// Agent mode: the Black Box agent (Phase 15)
+// ---------------------------------------------------------------------------
+
+// The Black Box agent uses the student's own key, as Station 5 does, with the
+// same endpoints. Its settings are separate, because an agent makes many
+// calls with tools and the models think before each tool call.
+// Model names go stale; update a `model` line here if a provider retires one.
+export const AGENT_PROVIDERS = {
+  gemini: {
+    model: 'gemini-2.5-flash',
+    maxOutputTokens: 4096,       // thinking tokens count toward this limit
+  },
+  openai: {
+    model: 'gpt-5-mini',
+    maxOutputTokens: 4096,       // reasoning tokens count toward this limit
+  },
+  anthropic: {
+    model: 'claude-opus-5-5',
+    maxOutputTokens: 16000,      // thinking is always on for this model and counts toward this limit
+    effort: 'low',               // short routing decisions; the default for this model is 'medium'
+    // On a safety refusal, the API reruns the request on a fallback model it selects.
+    fallbacks: 'default',
+    betas: ['server-side-fallback-2026-07-01'],
+  },
+};
+
+// The longest reply of the model check and of the meta prompt, in tokens.
+export const AGENT_TEXT_MAX_OUTPUT_TOKENS = { gemini: 4096, openai: 4096, anthropic: 16000 };
+
+// The theme control (js/theme.js). js/theme-boot.js repeats this key, because it runs before the modules.
+export const THEME_STORAGE_KEY = 'rag-lab-theme';

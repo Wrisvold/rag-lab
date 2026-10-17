@@ -51,3 +51,4 @@ This glossary gives the meaning of each term that the course uses. Each term has
 | the Fall Line case | The case in [case-fall-line.md](case-fall-line.md). |
 | the Fall Line agent | The agent that students design for the Fall Line case. |
 | RAG Lab | The browser simulator at https://wrisvold.github.io/rag-lab/. |
+| Agent mode | The page of RAG Lab that shows an agent loop, at https://wrisvold.github.io/rag-lab/agent.html. |

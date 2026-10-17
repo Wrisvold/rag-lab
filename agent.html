@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RAG Lab · Agent</title>
+  <meta name="description" content="Watch an agent work in a loop: it reads its context, decides, acts, and checks the result, round after round.">
+  <meta name="color-scheme" content="light dark">
+  <script src="js/theme-boot.js"></script>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23245C4F'/%3E%3Ctext x='16' y='22' text-anchor='middle' font-family='Georgia,serif' font-size='18' font-weight='bold' fill='%23E0A32E'%3ER%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="agent.css">
+</head>
+<body class="agent-page">
+  <a class="skip-link" href="#agent-loop" id="agent-skip"></a>
+
+  <header class="app-header">
+    <div class="app-header__text">
+      <h1 id="app-title"></h1>
+      <p id="app-subtitle" class="app-header__subtitle"></p>
+    </div>
+    <div class="app-header__side">
+      <p id="app-course" class="app-header__course"></p>
+      <nav class="mode-switch" aria-label="Mode">
+        <a id="mode-walkthrough" href="index.html"></a>
+        <a id="mode-flow" href="flow.html"></a>
+        <a id="mode-agent" href="agent.html" aria-current="page"></a>
+      </nav>
+    </div>
+  </header>
+
+  <div id="agent-notice" class="notice agent-notice" role="alert" hidden></div>
+
+  <div class="agent-layout">
+    <!-- The agent set-up: decision maker, question, rule table, tools, loop settings. Built by js/agent/view/setup.js -->
+    <aside class="agent-side agent-setup" aria-labelledby="setup-heading">
+      <h2 id="setup-heading"></h2>
+      <div id="agent-setup"></div>
+    </aside>
+
+    <!-- The loop: diagram, status, controls, readout, approval panel, round cards. Built by js/agent/view/loop.js -->
+    <main class="agent-main" id="agent-loop" tabindex="-1" aria-labelledby="loop-heading">
+      <h2 id="loop-heading" class="visually-hidden"></h2>
+      <div id="agent-diagram"></div>
+      <div id="agent-controls"></div>
+      <p id="agent-readout" class="agent-readout" role="status" aria-live="polite"></p>
+      <div id="agent-stop"></div>
+      <div id="agent-approval"></div>
+      <div id="agent-compare"></div>
+      <div id="agent-rounds"></div>
+    </main>
+
+    <!-- The inspector: the context of the selected round. Built by js/agent/view/inspector.js -->
+    <aside class="agent-side agent-inspector" aria-labelledby="inspector-heading">
+      <h2 id="inspector-heading"></h2>
+      <div id="agent-inspector"></div>
+    </aside>
+  </div>
+
+  <footer class="app-footer">
+    <p id="app-footer"></p>
+  </footer>
+
+  <script type="module" src="js/agent/main.js"></script>
+</body>
+</html>

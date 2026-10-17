@@ -71,6 +71,17 @@ You saw problem 2 in Week 3 and problem 3 in Week 2.
 
 Use evaluation to make sure that a cheaper method does not decrease quality too much.
 
+## Activity: read a run summary as a trace
+
+Do this short activity before the class activity. Use the run summary of Exercise 2 from Week 3, or run Exercise 2 again in [Agent mode](https://wrisvold.github.io/rag-lab/agent.html).
+
+1. Find the trace and the spans in the run summary. The full summary is the trace. Each line of a round is a span.
+2. For each round, name the span type: a model decision, a tool call, or a check.
+3. Find two metrics of the table above in the summary. Tell what each one measures.
+4. Find a metric of the table that the summary does not have. Tell how Fall Line can measure it.
+
+A run summary is a small trace. A production trace also records the time and the cost of each span.
+
 ## Class activity: write the test set
 
 Do this activity in the live session, or alone if the course is fully online. Your capstone brief uses the result.

@@ -3,6 +3,7 @@
 //
 // All user-facing text comes from js/copy.js. Do not type sentences here.
 
+import { mountThemeControl } from './theme.js';
 import * as constants from './constants.js';
 import * as copy from './copy.js';
 import { el, fill } from './dom.js';
@@ -440,6 +441,8 @@ function renderChrome() {
   document.getElementById('app-footer').textContent = copy.UI.footer;
   document.getElementById('mode-walkthrough').textContent = copy.MODES.walkthrough;
   document.getElementById('mode-flow').textContent = copy.MODES.flow;
+  document.getElementById('mode-agent').textContent = copy.MODES.agent;
+  mountThemeControl();
 }
 
 // ---------------------------------------------------------------------------

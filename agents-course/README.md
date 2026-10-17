@@ -2,7 +2,7 @@
 
 This folder holds an 8-week graduate course about AI agents. The course uses the open lessons of [Microsoft AI Agents for Beginners](https://github.com/microsoft/ai-agents-for-beginners) as its readings and videos. This folder adds the structure that a university course needs: a syllabus, weekly guides, assignments, rubrics, and a capstone project.
 
-The course is for students in the MS in AI Strategy program at Georgia College & State University. It follows CBIS 5530 · Introduction to RAG, and it uses [RAG Lab](https://wrisvold.github.io/rag-lab/) in Week 3.
+The course is for students in the MS in AI Strategy program at Georgia College & State University. It follows CBIS 5530 · Introduction to RAG. It uses [RAG Lab](https://wrisvold.github.io/rag-lab/) in Week 3, and RAG Lab [Agent mode](https://wrisvold.github.io/rag-lab/agent.html) in Weeks 2, 3, 4, 6, 7, and 8.
 
 ## Who the course is for
 
