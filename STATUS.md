@@ -2,6 +2,10 @@
 
 Updated at the end of each phase. Newest phase first.
 
+## Agent mode — design plan (proposed, Phases 12 to 17)
+
+The plan is in [agent-mode-plan.md](agent-mode-plan.md). No code is written yet.
+
 ## Flow mode — phase plan (done: Phases 7 to 11, on the flow-mode branch)
 
 A second way to use RAG Lab: a node canvas in the style of Langflow or Flowise, where the student places the stages and wires them together, but built to teach rather than to ship. Nothing in the existing walkthrough changes. Flow mode is added beside it and shares every compute module.
