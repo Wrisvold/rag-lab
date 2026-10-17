@@ -9,6 +9,7 @@ import { el, fill } from '../../dom.js';
 import { toolSchemas, TOOL_DEFINITIONS, TOOL_NAMES } from '../tools.js';
 import { helpPanel } from './help.js';
 import { renderWorkbench } from './workbench.js';
+import { EXERCISES, exercise } from '../exercises.js';
 
 export function renderSetup(app, container) {
   const T = app.copy.AGENT.setup;
@@ -16,6 +17,7 @@ export function renderSetup(app, container) {
   if (!app.scenario) { container.replaceChildren(); return; }
 
   container.replaceChildren(
+    exercises(app, s),
     decisionMaker(app, T, s),
     renderWorkbench(app),
     question(app, T, s),
@@ -47,6 +49,43 @@ function checkbox(id, text, checked, onChange) {
 }
 
 // ---------------------------------------------------------------------------
+
+/** The exercise buttons, and the panel of the exercise that is loaded. */
+function exercises(app, s) {
+  const X = app.copy.AGENT.exercises;
+  const buttons = el('div', { class: 'agent-exercises', role: 'group', 'aria-label': X.heading }, EXERCISES.map((entry) => el('button', {
+    type: 'button', id: `agent-exercise-${entry.key}`,
+    class: `button agent-exercise${s.exercise === entry.key ? ' is-current' : ''}`,
+    'aria-pressed': s.exercise === entry.key ? 'true' : 'false',
+    text: X.items[entry.key].label, onclick: () => app.loadExercise(entry.key),
+  })));
+
+  const entry = exercise(s.exercise);
+  const panel = entry ? exercisePanel(app, X, entry) : null;
+  return group(X.heading, [el('p', { class: 'hint', text: X.intro }), buttons, panel, helpPanel('exercises')]);
+}
+
+function exercisePanel(app, X, entry) {
+  const item = X.items[entry.key];
+  const black = entry.agentKind === 'black';
+  return el('section', { class: 'agent-exercise-panel', 'aria-labelledby': 'agent-exercise-heading' }, [
+    el('h4', { id: 'agent-exercise-heading', tabindex: '-1', text: item.label }),
+    el('p', { class: 'hint', text: fill(X.course, { course: item.course }) }),
+    el('h5', { text: X.goalHeading }),
+    el('p', { text: item.goal }),
+    black ? el('p', { class: 'hint', text: X.needsKey }) : null,
+    entry.handbook === 'poisoned' ? el('p', { class: 'hint agent-warn', text: X.poisonNote }) : null,
+    el('h5', { text: X.stepsHeading }),
+    el('ol', { class: 'agent-exercise-steps' }, item.steps.map((step) => el('li', { text: step }))),
+    el('h5', { text: X.lookHeading }),
+    el('p', { text: item.look }),
+    el('h5', { text: X.questionHeading }),
+    el('p', { class: 'agent-exercise-question', text: item.question }),
+    black ? el('p', { class: 'hint', text: X.modelNote }) : null,
+    el('p', { class: 'agent-exercise-why' }, [el('strong', { text: `${X.whyHeading} ` }), item.why]),
+    el('button', { type: 'button', class: 'button agent-small', id: 'agent-exercise-close', text: X.close, onclick: () => app.closeExercise() }),
+  ]);
+}
 
 function decisionMaker(app, T, s) {
   const B = app.copy.AGENT.blackBox;

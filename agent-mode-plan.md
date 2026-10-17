@@ -605,6 +605,7 @@ The summary never has the key. The token count of the Glass Box agent is an esti
 | `js/agent/prompt.js` | The sections, the versions, the compare view data, and the prompt checker | Yes |
 | `js/agent/context.js` | The context of a round, split by the five types, with token counts | Yes |
 | `js/agent/summary.js` | The run summary | Yes |
+| `js/agent/exercises.js` | The set-ups of the six exercises, and the poisoned handbook of Exercise 6. Added in Phase 16. | Yes |
 | `js/agent/view/*.js` | The loop diagram, the round cards, the inspector, the workbench, and the approval panel | No |
 | `data/agent-scenario.json` | The simulated date, employees, and requests | – |
 | `tools/agent-run.mjs` | Runs a Glass Box scenario in Node and prints the run summary | – |
@@ -630,6 +631,7 @@ The summary never has the key. The token count of the Glass Box agent is an esti
 | `tests/agent/prompt.test.js` | Sections, versions, the compare data, and each finding of the prompt checker |
 | `tests/agent/copy.test.js` | The text contract of Section 12 |
 | `tests/agent/describe.test.js` | The readout sentence for each part of each round |
+| `tests/agent/exercises.test.js` | The text of each exercise. Exercises 1, 2, 4, and 6 give the results that their text describes. Added in Phase 16. |
 
 ## 17. Course integration
 

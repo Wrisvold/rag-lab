@@ -69,6 +69,20 @@ Lesson 13 gives these types:
 
 Each item that an agent keeps is data about a person. The agent must obey the rules for that data. Recall the control guideline of Lesson 03: users can see and delete their data. A memory policy tells what the agent keeps, for how long, and who can see it.
 
+## Agent mode activity: measure the context
+
+Do this activity before Assignment 6. It needs no key.
+
+1. Open [Agent mode](https://wrisvold.github.io/rag-lab/agent.html).
+2. Click **Exercise 2. The PTO question**.
+3. In the synonym table, add the pair PTO → vacation. Then click **Run to end**.
+4. For each round, click **Show context**. In the inspector, record the tokens of each of the five types of context.
+5. Find the types of context that increase in each round. Tell why they increase.
+6. Click **Exercise 1. The loop that does not stop**. Click **Run to end**, and record the tokens of round 12 and of the run.
+7. Select the box **Keep only the last two rounds in the context**. Click **Run to end** again, and record the same two numbers.
+
+Each round sends the full context again. The instructions are the same in each round, but the knowledge and the tool results increase. When the agent keeps only the last rounds, the context stops its increase. The context map of Assignment 6 must control this increase.
+
 ## Discussion 6
 
 Should the Fall Line agent keep an employee's vacation balance in long-term memory, or get it from the HR system each time? Think about context poisoning and Section 5.2 of the handbook. Give your decision and your reasons.

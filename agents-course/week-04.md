@@ -63,6 +63,17 @@ The last example in Lesson 09 is clear. An agent selects the cheapest hotel. Use
 
 Lesson 09 also gives corrective RAG. The agent uses feedback to write new search queries and to rank new results. This is the loop of Week 3, with feedback from the user added.
 
+## Class activity: a plan in rounds
+
+Do this activity in the live session, or alone if the course is fully online. Do it before Assignment 4. It needs a key.
+
+1. Open [Agent mode](https://wrisvold.github.io/rag-lab/agent.html).
+2. Click **Exercise 5. A plan in rounds**. Do the steps in the exercise panel.
+3. Write the plan of the agent as a table, with one row for each round.
+4. Compare the table with the plan of Lesson 07. Did the agent make the full plan first, or one step at a time?
+
+The agent does not make the full plan before it starts. It selects one action in each round from the facts that it has. When a tool gives a new fact, the next action can change. This is a change of plan, as in the key ideas above.
+
 ## Discussion 4
 
 Metacognition lets an agent change its own rules. In the Lesson 09 example, the agent changes from "cheapest" to "highest quality." Which rules of the Fall Line agent must the agent never change by itself? Who must approve a change to those rules?

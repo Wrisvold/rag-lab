@@ -14,6 +14,7 @@ import { createGlassBoxAgent } from './glassBoxAgent.js';
 import { createBlackBoxAgent, writePromptWithModel } from './blackBoxAgent.js';
 import { sendRequest } from './providers.js';
 import { createRun, step, approve, refuse, stopRun } from './loop.js';
+import { exercise, exerciseSetup, poisonHandbook } from './exercises.js';
 import { TOOL_NAMES } from './tools.js';
 import { formatAgentRunSummary } from './summary.js';
 import { describeEvent } from './describe.js';
@@ -51,6 +52,7 @@ function defaultSetup() {
     provider: 'gemini',                // Black Box agent: the provider (the key is never kept here)
     modelCheck: false,                 // Black Box agent: a second call tests each answer
     checkerPrompt: '',                 // '' means the default checker prompt
+    exercise: null,                    // the key of the exercise that is loaded (js/agent/exercises.js)
   };
 }
 
@@ -63,6 +65,8 @@ function loadPrompts() {
 const state = {
   setup: { ...defaultSetup(), ...(loadSession(constants.AGENT_SESSION_STORAGE_KEY) || {}) },
   handbook: null,
+  handbookText: '',          // the handbook as loaded; Exercise 6 adds a paragraph to a copy
+  handbookVariant: null,     // null or 'poisoned'
   scenario: null,
   run: null,
   selectedRound: null,
@@ -265,6 +269,39 @@ const app = {
     if (target) target.focus();
   },
 
+
+  // ---- The exercises ----
+  loadExercise(key) {
+    const entry = exercise(key);
+    if (!entry || state.busy) return;
+    state.setup = exerciseSetup(entry, defaultSetup(), state.scenario, state.setup);
+    saveSession(constants.AGENT_SESSION_STORAGE_KEY, state.setup);
+    useHandbook(entry.handbook || null);
+    state.run = null;
+    state.selectedRound = null;
+    state.lastApprovalRound = null;
+    state.ui.findings = null;
+    state.ui.compare = null;
+    // Exercise 3 starts from the default prompt. The saved versions stay.
+    if (entry.promptV1) state.prompts = useVersion(state.prompts, 'v1');
+    saveSession(constants.AGENT_PROMPTS_SESSION_KEY, state.prompts);
+    drawAll();
+    readout(fill(A.exercises.loaded, { label: A.exercises.items[key].label }));
+    const heading = document.getElementById('agent-exercise-heading');
+    if (heading) heading.focus();
+  },
+
+  closeExercise() {
+    if (state.busy) return;
+    state.setup = { ...state.setup, exercise: null };
+    saveSession(constants.AGENT_SESSION_STORAGE_KEY, state.setup);
+    // The poisoned paragraph belongs to Exercise 6 only.
+    if (state.handbookVariant) { useHandbook(null); invalidateRun(); }
+    drawAll();
+    readout(A.exercises.closed);
+    const button = document.getElementById('agent-exercise-loop');
+    if (button) button.focus();
+  },
 
   selectRound(number) {
     state.selectedRound = number;
@@ -522,6 +559,20 @@ function drawSetup() {
   }
 }
 
+function drawAll() {
+  drawSetup();
+  drawLoop();
+  drawInspector();
+  drawCompare();
+}
+
+/** Build the handbook: as loaded, or with the poisoned paragraph of Exercise 6. */
+function useHandbook(variant) {
+  if (state.handbookVariant === variant && state.handbook) return;
+  state.handbookVariant = variant;
+  state.handbook = createHandbook(variant === 'poisoned' ? poisonHandbook(state.handbookText) : state.handbookText);
+}
+
 function drawCompare() {
   renderCompare(app, document.getElementById('agent-compare'));
 }
@@ -568,8 +619,10 @@ async function loadData() {
       fetch(constants.SAMPLE_DOCUMENT_PATH).then((r) => { if (!r.ok) throw new Error(r.status); return r.text(); }),
       fetch(constants.AGENT_SCENARIO_PATH).then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); }),
     ]);
-    state.handbook = createHandbook(text.replace(/\r\n?/g, '\n'));
+    state.handbookText = text.replace(/\r\n?/g, '\n');
     state.scenario = scenario;
+    const loaded = exercise(state.setup.exercise);
+    useHandbook(loaded && loaded.handbook ? loaded.handbook : null);
     showNotice('');
   } catch (error) {
     console.warn('RAG Lab: Agent mode could not load its data:', error);
@@ -582,7 +635,4 @@ async function loadData() {
 // ---------------------------------------------------------------------------
 renderChrome();
 await loadData();
-drawSetup();
-drawLoop();
-drawInspector();
-drawCompare();
+drawAll();

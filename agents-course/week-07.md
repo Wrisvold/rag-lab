@@ -72,9 +72,24 @@ Lesson 18 is clear about the limits. A receipt proves three things:
 
 A receipt does not prove that the action was correct. It does not prove that the agent obeyed a policy, or which person approved the action. It also does not prove that the inputs were true.
 
+## Agent mode activity: the system prompt and the rules in code
+
+Do this activity before Discussion 7 and Assignment 7. It needs a key. If you do not have a key, get a free key from [Google AI Studio](https://aistudio.google.com/apikey), and select Google Gemini in the page.
+
+1. Open [Agent mode](https://wrisvold.github.io/rag-lab/agent.html).
+2. Click **Exercise 3. One section at a time**. Do the steps in the exercise panel.
+3. Click **Exercise 4. The rule in the prompt**. Do the steps in the exercise panel.
+4. Click **Exercise 6. A poisoned passage**. Do the steps in the exercise panel.
+
+A model can give a different result each time. Do each run two times. If the results are not the same, write about the difference.
+
+Exercise 3 shows that the system prompt goes to the model in each round. Exercise 4 shows the difference between a rule in the prompt and a rule in code. Exercise 6 shows knowledge base poisoning: the attack is in a handbook passage, not in the question of the user.
+
 ## Discussion 7
 
 A manager says: "The agent signs a receipt for each expense claim, so our expense process is safe." Use the limits in Lesson 18 to answer the manager. What other controls does the expense process need?
+
+Then use your run of Exercise 6. Where did the attack enter the context? Which control stopped it? Would a receipt for the refused request prove that the agent obeyed the handbook?
 
 ## Assignment 7. The Threat Register and the Approval Matrix
 
@@ -93,19 +108,21 @@ A manager says: "The agent signs a receipt for each expense claim, so our expens
 4. Write the words that the agent shows when it asks for approval of `submit_expense_claim`. The person must see exactly what the agent will send.
 5. Tell what a receipt for `submit_expense_claim` proves and what it does not prove. Use the four limits of Lesson 18.
 6. Write two rules for the system message of the Fall Line agent that decrease the threats. Use the handbook rules in Sections 5.2 and 5.3.
-7. At the end, write your statement about the AI tools that you used.
+7. Test your two rules in Agent mode. Add each rule to the Rules section of the system prompt. Save each change as a version, with a note. Run one question with each version. Then click **Download versions**, and submit the file `rag-lab-agent-prompts.json`.
+8. At the end, write your statement about the AI tools that you used.
 
-**Submit:** A threat register, an approval matrix, and 400 to 700 words of text, as a PDF or Word file.
+**Submit:** A threat register, an approval matrix, and 400 to 700 words of text, as a PDF or Word file. Also submit the prompt version file from step 7.
 
 **Rubric (100 points):**
 
 | Criterion | Full credit | Partial credit | Points |
 |---|---|---|---|
-| Threat register | Six threats, each with a realistic example, a rating, a control, and an owner. | Some threats have no realistic example or no owner. | 30 |
+| Threat register | Six threats, each with a realistic example, a rating, a control, and an owner. | Some threats have no realistic example or no owner. | 25 |
 | Approval matrix | Each tool has a correct risk level. Each high-risk tool needs approval of each action. | A write tool has no approval, or the risk levels have no reasons. | 25 |
 | Approval message | The message shows the employee, the amount, the date, and the receipt. The person can refuse. | The message hides details or is not clear. | 15 |
-| Receipt limits | The text uses the limits of Lesson 18 correctly. | The text says that receipts prove more than they do. | 15 |
+| Receipt limits | The text uses the limits of Lesson 18 correctly. | The text says that receipts prove more than they do. | 10 |
 | System message rules | Two specific rules that agree with Sections 5.2 and 5.3. | The rules are general. | 15 |
+| Prompt version file | The file has a version for each rule. Each version has a note that tells what changed and why. | A version has no note, or the file is missing a rule. | 10 |
 
 ## Optional code path
 

@@ -273,3 +273,16 @@
 .meta-proposal { border: 1px solid var(--line); border-radius: 4px; padding: 0.3rem 0.5rem; margin: 0.35rem 0; font-size: 0.85rem; }
 .meta-proposal p { margin: 0.15rem 0 0.3rem; }
 .agent-key-input { font-family: var(--font-mono); }
+
+/* The exercises (Phase 16) */
+.agent-exercises { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 0.5rem; }
+.agent-exercise { text-align: left; font-size: 0.85rem; padding: 0.3rem 0.55rem; }
+.agent-exercise.is-current { background: var(--gold-soft); border-color: var(--gold); }
+.agent-exercise-panel { border: 1px solid var(--gold); border-left-width: 5px; border-radius: var(--radius); background: var(--paper); padding: 0.5rem 0.7rem; margin: 0.5rem 0; font-size: 0.9rem; }
+.agent-exercise-panel h4 { margin: 0 0 0.2rem; color: var(--green); }
+.agent-exercise-panel h5 { margin: 0.6rem 0 0.15rem; font-size: 0.85rem; color: var(--green); }
+.agent-exercise-panel p { margin: 0.15rem 0; }
+.agent-exercise-steps { margin: 0.2rem 0; padding-left: 1.3rem; }
+.agent-exercise-steps li { margin: 0.15rem 0; }
+.agent-exercise-question { font-weight: 600; }
+.agent-exercise-why { background: var(--ice); padding: 0.35rem 0.5rem; border-radius: 4px; margin: 0.5rem 0 !important; }

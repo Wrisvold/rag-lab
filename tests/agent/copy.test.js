@@ -67,3 +67,18 @@ test('each stop code has a message and a teaching note', async () => {
     assert.ok(AGENT.stops[code] && AGENT.stops[code].message && AGENT.stops[code].note, code);
   }
 });
+
+test('each control that an exercise step names exists on the page with that name', () => {
+  // Exercise text that names a control the page does not have is a broken instruction.
+  const labels = strings(AGENT).filter(([path]) => !path.startsWith('AGENT.exercises.items')).map(([, text]) => text);
+  const has = (name) => labels.some((text) => text === name || text.startsWith(`${name} `) || text.startsWith(`${name}:`) || text.startsWith(`${name} (`));
+  const buttons = ['Run to end', 'Step', 'Copy run summary', 'Save as a version', 'Save', 'Compare versions', 'Show context', 'Refuse', 'Approve', 'Add', 'Output format', 'REPEAT_STOP'];
+  for (const [key, item] of Object.entries(AGENT.exercises.items)) {
+    for (const step of item.steps) {
+      for (const [, quoted] of step.matchAll(/"([^"]+)"/g)) assert.ok(has(quoted), `${key}: "${quoted}" is not a label of the page`);
+      for (const name of buttons) {
+        if (new RegExp(`\\b(Click|clear the box|select the box) ${name}\\b`, 'i').test(step)) assert.ok(has(name), `${key}: no control "${name}"`);
+      }
+    }
+  }
+});
