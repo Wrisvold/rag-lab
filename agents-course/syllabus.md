@@ -7,7 +7,7 @@
 | Format | 8 weeks, online. Each week has readings, videos, a discussion, and an assignment. |
 | Instructor | Ward Risvold |
 | Recommended preparation | CBIS 5530 · Introduction to RAG |
-| Writing standard | ASD-STE100 Simplified Technical English. See the [course README](README.md). |
+| Writing standard | ASD-STE100 Simplified Technical English: short sentences, the active voice, and one meaning for each term. The [glossary](glossary.md) gives the terms. |
 
 > **Instructor:** Items in this syllabus marked "Default" are suggestions. Change them before the term starts.
 
@@ -80,7 +80,7 @@ Default: Discussions are due on Wednesday at 11:59 p.m. Replies to two classmate
 | Capstone presentation (Week 8) | 1 | 5% | 5% |
 | **Total** | | | **100%** |
 
-Default grade scale: A is 90% or more. B is 80% to 89%. C is 70% to 79%. F is less than 70%.
+Default: The grade scale is A for 90% or more, B for 80% to 89%, C for 70% to 79%, and F below 70%.
 
 Each assignment has a rubric with a total of 100 points. The weekly guide gives the rubric.
 
