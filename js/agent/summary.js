@@ -29,6 +29,9 @@ export function formatAgentRunSummary(state, { scenario, agentKind, estimated = 
     `Question: ${state.question}`,
   ];
   if (state.request) lines.push(`Request form: from ${state.request.start_date} to ${state.request.end_date}`);
+  if (state.settings.disabledRules && state.settings.disabledRules.length) {
+    lines.push(`Rules in code turned off: ${state.settings.disabledRules.join(', ')}`);
+  }
   lines.push('');
 
   for (const round of state.rounds) {

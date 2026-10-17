@@ -48,7 +48,7 @@ export function formatCall(decision) {
  *           employee: object, rounds: object[], keepLastRounds?: number | null }} input
  *   `rounds` are the round records of the loop (js/agent/loop.js). Only
  *   rounds that finished their Act part add tool results.
- * @returns {{ parts: { type: string, text: string, tokens: number }[], total: number }}
+ * @returns {{ parts: { type: string, text: string, tokens: number }[], total: number, promptTokens: number }}
  */
 export function buildContext({ prompt, toolNames, question, request, employee, rounds, keepLastRounds = null }) {
   const kept = keepLastRounds ? rounds.slice(-keepLastRounds) : rounds;
@@ -99,5 +99,8 @@ export function buildContext({ prompt, toolNames, question, request, employee, r
     text: texts[type],
     tokens: estimateTokens(texts[type], CHARS_PER_TOKEN_ESTIMATE),
   }));
-  return { parts, total: parts.reduce((sum, p) => sum + p.tokens, 0) };
+  // The system prompt alone, without the tool list: the part that the
+  // workbench changes, and that the system sends again in every round.
+  const promptTokens = estimateTokens(systemPromptText(prompt), CHARS_PER_TOKEN_ESTIMATE);
+  return { parts, total: parts.reduce((sum, p) => sum + p.tokens, 0), promptTokens };
 }

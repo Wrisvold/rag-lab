@@ -40,9 +40,18 @@ export function renderInspector(app, container) {
     p.text ? el('pre', { class: 'context-part__text', text: p.text }) : el('p', { class: 'hint', text: T.emptyPart }),
   ]));
 
+  // The system prompt goes into every round: show its cost so far in this run.
+  const sent = run.rounds.filter((r) => r.number <= round.number && r.context);
+  const promptTotal = sent.reduce((sum, r) => sum + (r.context.promptTokens || 0), 0);
+
   container.replaceChildren(
     el('h3', { text: fill(T.heading, { number: round.number }) }),
     el('p', { class: 'context-total', text: fill(T.total, { tokens: total.toLocaleString('en-US'), run: runTotal.toLocaleString('en-US') }) }),
+    el('p', { class: 'context-prompt-cost', text: fill(T.promptCost, {
+      tokens: (round.context.promptTokens || 0).toLocaleString('en-US'),
+      rounds: sent.length,
+      total: promptTotal.toLocaleString('en-US'),
+    }) }),
     bar,
     legend,
     ...details,

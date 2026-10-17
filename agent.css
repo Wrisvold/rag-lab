@@ -213,3 +213,54 @@
 .context-part--preferences { border-left-color: var(--gold); }
 .context-part__text { white-space: pre-wrap; font-size: 0.78rem; max-height: 22rem; overflow-y: auto; background: var(--page); padding: 0.4rem; margin: 0.3rem 0 0; }
 .agent-glass-note { font-size: 0.85rem; }
+
+/* ---------- System prompt workbench (Phase 14) ---------- */
+.prompt-section { border: 1px solid var(--line); border-left: 4px solid var(--green); border-radius: 4px; padding: 0.35rem 0.5rem; margin: 0.4rem 0; }
+.prompt-section.is-off { border-left-color: var(--line); background: var(--page); }
+.prompt-section.is-off .prompt-section__text { opacity: 0.6; }
+.prompt-section__head { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
+.prompt-section__head .agent-field { margin: 0; }
+.prompt-section__head label { font-weight: 600; }
+.prompt-section__text { width: 100%; font: inherit; font-size: 0.85rem; padding: 0.3rem 0.4rem; border: 1px solid var(--line); border-radius: 4px; resize: vertical; margin-top: 0.25rem; }
+.workbench-current { font-weight: 600; margin: 0.3rem 0; }
+.workbench-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.5rem 0; }
+.workbench-actions .button { font-size: 0.85rem; padding: 0.3rem 0.6rem; }
+.workbench-save { border: 1px solid var(--green); border-radius: var(--radius); padding: 0.5rem 0.7rem; margin: 0.5rem 0; background: var(--ice); }
+.workbench-save textarea, .workbench-save input { font: inherit; padding: 0.3rem 0.4rem; border: 1px solid var(--line); border-radius: 4px; }
+.workbench-versions { margin: 0.2rem 0 0.5rem 1.2rem; padding: 0; font-size: 0.85rem; }
+.workbench-versions li { margin: 0.35rem 0; }
+.workbench-versions li.is-in-use { background: var(--gold-soft); border-radius: 4px; padding: 0.2rem 0.3rem; }
+.workbench-version__head { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+.workbench-version__head .button { font-size: 0.78rem; padding: 0.1rem 0.5rem; }
+.workbench-note { margin: 0.2rem 0 0; display: grid; grid-template-columns: max-content 1fr; gap: 0.1rem 0.5rem; }
+.workbench-note dt { font-weight: 600; color: var(--ink-soft); }
+.workbench-note dd { margin: 0; }
+.workbench-findings { border: 1px solid var(--amber); background: var(--amber-soft); border-radius: var(--radius); padding: 0.4rem 0.6rem; font-size: 0.85rem; margin: 0.5rem 0; }
+.workbench-findings h4 { margin: 0 0 0.2rem; }
+.workbench-findings ul { margin: 0; padding-left: 1.1rem; }
+.workbench-findings li { margin: 0.35rem 0; }
+.workbench-findings q { display: block; font-style: italic; margin: 0.1rem 0; }
+.workbench-findings li p { margin: 0.1rem 0 0; }
+.context-prompt-cost { font-size: 0.85rem; color: var(--green-dark); font-weight: 600; }
+
+/* ---------- Compare view ---------- */
+.agent-compare { border: 2px solid var(--green); border-radius: var(--radius); background: var(--paper); padding: 0.75rem 1rem; margin: 0.75rem 0; }
+.agent-compare__head { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
+.agent-compare__head h3 { margin: 0; }
+.agent-compare__head h3:focus { outline: 3px solid var(--gold); outline-offset: 2px; }
+.compare-select { display: flex; gap: 1rem; flex-wrap: wrap; }
+.compare-sections { list-style: none; margin: 0; padding: 0; }
+.compare-section { border-top: 1px solid var(--line); padding: 0.3rem 0; }
+.compare-section__head { display: flex; gap: 0.5rem; align-items: center; }
+.compare-section.is-same { color: var(--ink-soft); }
+.compare-section.is-changed .agent-tag, .compare-section.is-disabled .agent-tag, .compare-section.is-enabled .agent-tag { background: var(--gold-soft); border-color: var(--gold); color: var(--ink); }
+.compare-diff { list-style: none; margin: 0.2rem 0 0; padding: 0; font-size: 0.9rem; }
+.compare-diff ins { background: var(--teal-soft); text-decoration: none; }
+.compare-diff del { background: var(--danger-soft); }
+.diff-mark { font-weight: 700; }
+.compare-runs { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+@media (max-width: 800px) { .compare-runs { grid-template-columns: 1fr; } }
+.compare-run { border: 1px solid var(--line); border-radius: 4px; padding: 0.4rem 0.6rem; min-width: 0; }
+.compare-run h5 { margin: 0 0 0.2rem; font-size: 0.95rem; }
+.compare-run__facts { font-weight: 600; margin: 0 0 0.3rem; }
+.compare-run__summary { white-space: pre-wrap; font-size: 0.72rem; background: var(--page); padding: 0.4rem; max-height: 24rem; overflow-y: auto; margin: 0; }

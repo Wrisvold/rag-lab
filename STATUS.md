@@ -4,7 +4,27 @@ Updated at the end of each phase. Newest phase first.
 
 ## Agent mode — design plan (Phases 12 to 17)
 
-The plan is in [agent-mode-plan.md](agent-mode-plan.md). Phases 12 and 13 are done. Phases 14 to 17 are next.
+The plan is in [agent-mode-plan.md](agent-mode-plan.md). Phases 12 to 14 are done. Phases 15 to 17 are next.
+
+## Phase 14 — Agent mode system prompt workbench (done)
+
+**Delivered:**
+- `js/agent/prompt.js` (pure): the prompt store (v1 is the default and always present; the working copy matches a saved version or is "unsaved"), `editSection`, `saveVersion` (a note with "What I changed" and "Why I changed it" is required; saving an unchanged prompt is refused), `useVersion`, `promptForRun` (a run is labelled with its version, or "unsaved"), download/load (`rag-lab-agent-prompts.json`, format-stamped and validated), `promptCost`, a sentence-level diff and `comparePrompts`, and `checkPrompt`.
+- The prompt checker applies the structural rules of ASD-STE100 to the student's prompt: sentences over 20 words in Rules, Tool guidance and Stop rules (25 elsewhere), semicolons, phrasal verbs (with a plain verb for each), vague words, a possible "always"/"never" conflict about the same tool or key word, and an empty or disabled Stop rules section. Advice only; it never blocks a run.
+- `js/agent/view/workbench.js`: six sections with on/off boxes, editable text and a token count each; the working copy label; the save form; the version list with notes and Use buttons; Check the prompt with the findings; Compare versions; Download and Load; Use the default prompt.
+- `js/agent/view/compare.js`: two saved versions next to each other in the loop column: the cost of each per round, each section's status, the removed and added sentences, and the last run of each version for the current question (stop reason, rounds, tokens, run summary). With the Glass Box agent, a note says only the tokens change.
+- The inspector shows the system prompt's tokens in the selected round and in the run so far.
+- Rules in code: switches for the notice, service and balance rules of `submit_vacation_request` (Section 8.6). The owner rule (5.2) cannot be turned off. A run keeps the list, the approval panel says "This exercise disables the rule in code," and the run summary prints "Rules in code turned off".
+- Text: `AGENT.workbench`, `AGENT.checker`, `AGENT.compare`, and six more help entries (prompt sections, versions, files, checker, compare, rule in code), all in ASD-STE100; the STE linter finds nothing.
+
+**Decisions made while building:**
+- Finished runs are kept in memory for this visit only (not in sessionStorage), for the compare view.
+- The checker removes whole tool names before it compares key words, so "search_handbook" does not match "handbook" in an unrelated rule. Its conflict message keeps the hedge: "If the two rules conflict, the model must select one of them."
+- Every set-up control has a fixed id; a redraw first blurs the focused field (so its change is saved), never runs inside another redraw, and puts the focus back by id. Before this fix, an edit could be lost when the column redrew.
+
+**Tests:** 10 new in `tests/agent/prompt.test.js` (173 in all, all passing).
+
+**Exit check (Chromium):** with "PTO → vacation", run v1 (ANSWER_ACCEPTED, 3 rounds, 3,012 tokens); disable Output format (focus stays on the box); Save without a note is refused and keeps the typed name; save v2 "No format" with a note; run again (3 rounds, 2,928 tokens: 28 tokens a round × 3). Compare versions shows "Output format: Disabled in B", 212 vs 184 tokens a round, and both runs side by side. A test prompt gives exactly six findings, one of each type. Download, then Load, gives back v1 and v2 with the note. With the notice rule off, a request with 7 days of notice reaches the approval panel. No console errors.
 
 ## Phase 13 — Agent mode page and loop display (done)
 

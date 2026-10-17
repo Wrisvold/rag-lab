@@ -237,3 +237,36 @@ export const AGENT_SESSION_STORAGE_KEY = 'rag-lab-agent';
 // milliseconds, so a student can follow the highlight. No pause when the
 // browser asks for reduced motion.
 export const AGENT_RUN_PAUSE_MS = 600;
+
+// ---------------------------------------------------------------------------
+// Agent mode: the system prompt workbench (Phase 14)
+// ---------------------------------------------------------------------------
+
+// Key used to keep the prompt versions alive across a page reload.
+export const AGENT_PROMPTS_SESSION_KEY = 'rag-lab-agent-prompts';
+
+// File name and format stamp for downloaded prompt versions.
+export const AGENT_PROMPTS_FILENAME = 'rag-lab-agent-prompts.json';
+export const AGENT_PROMPTS_FORMAT = 'rag-lab-agent-prompts';
+export const AGENT_PROMPTS_FORMAT_VERSION = 1;
+
+// The prompt checker uses the structural rules of ASD-STE100.
+// Sections that hold instructions allow 20 words per sentence; the others 25.
+export const AGENT_PROMPT_INSTRUCTION_SECTIONS = ['rules', 'tools', 'stop'];
+export const AGENT_PROMPT_MAX_WORDS_INSTRUCTION = 20;
+export const AGENT_PROMPT_MAX_WORDS_DESCRIPTION = 25;
+
+// Two-word verbs with meanings the parts do not predict, and one plain verb for each.
+export const AGENT_PROMPT_PHRASAL_VERBS = {
+  'set up': 'configure', 'look up': 'find', 'find out': 'learn', 'turn off': 'disable',
+  'turn on': 'enable', 'fill in': 'complete', 'fill out': 'complete', 'carry out': 'do',
+  'go back': 'return', 'pick up': 'collect', 'write down': 'record', 'give up': 'stop',
+  'point out': 'show', 'check out': 'examine', 'make up': 'create', 'deal with': 'handle',
+  'follow up': 'continue', 'back up': 'support', 'come up with': 'make', 'get back to': 'answer',
+};
+
+// Words that make the model guess. The checker asks for the exact condition instead.
+export const AGENT_PROMPT_VAGUE_WORDS = [
+  'appropriate', 'appropriately', 'relevant', 'as needed', 'if needed', 'when necessary',
+  'if possible', 'etc', 'properly', 'reasonable', 'reasonably', 'suitable', 'and so on', 'various',
+];

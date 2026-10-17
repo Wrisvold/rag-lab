@@ -30,8 +30,9 @@ export const STOP_CODES = [
  * @param {{ question: string, request?: { start_date: string, end_date: string } | null,
  *           employeeId: string, prompt: object, toolNames: string[],
  *           settings?: { maxRounds?: number | null, tokenBudget?: number | null,
- *                        repeatStop?: boolean, keepLastRounds?: number | null } }} input
- *   maxRounds and tokenBudget take null for "no limit" (Exercise 1).
+ *                        repeatStop?: boolean, keepLastRounds?: number | null, disabledRules?: string[] } }} input
+ *   maxRounds and tokenBudget take null for "no limit" (Exercise 1). disabledRules
+ *   turns off rules in code for Exercise 4; the run keeps the list, so its summary shows it.
  */
 export function createRun({ question, request = null, employeeId, prompt, toolNames, settings = {} }) {
   return {
@@ -45,6 +46,7 @@ export function createRun({ question, request = null, employeeId, prompt, toolNa
       tokenBudget: settings.tokenBudget === undefined ? AGENT_TOKEN_BUDGET_DEFAULT : settings.tokenBudget,
       repeatStop: settings.repeatStop ?? AGENT_REPEAT_STOP_DEFAULT,
       keepLastRounds: settings.keepLastRounds ?? null,
+      disabledRules: [...(settings.disabledRules || [])],
     },
     round: 1,
     part: 'context',
@@ -90,7 +92,8 @@ function view(state, deps) {
 }
 
 function toolEnv(state, deps) {
-  return { ...deps.env, employeeId: state.employeeId };
+  const disabledRules = [...(deps.env.disabledRules || []), ...(state.settings.disabledRules || [])];
+  return { ...deps.env, employeeId: state.employeeId, disabledRules };
 }
 
 // ---------------------------------------------------------------------------

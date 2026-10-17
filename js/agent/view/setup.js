@@ -1,15 +1,14 @@
-// Agent mode: the set-up column. The decision maker, the question, the rule
-// table of the Glass Box agent, the tools, and the loop settings.
+// Agent mode: the set-up column. The decision maker, the system prompt
+// workbench, the question, the rule table of the Glass Box agent, the tools
+// with the rules in code, and the loop settings.
 //
-// Each control calls app.setSetup(). Typing in a field does not redraw this
-// column (so the cursor stays); adding or removing controls does.
+// Each control calls app.setSetup() (or a workbench action). Every control
+// has a fixed id, so main.js can put the focus back on it after a redraw.
 
 import { el, fill } from '../../dom.js';
 import { toolSchemas, TOOL_DEFINITIONS, TOOL_NAMES } from '../tools.js';
 import { helpPanel } from './help.js';
-
-let uid = 0;
-const id = (name) => `agent-${name}-${++uid}`;
+import { renderWorkbench } from './workbench.js';
 
 export function renderSetup(app, container) {
   const T = app.copy.AGENT.setup;
@@ -18,6 +17,7 @@ export function renderSetup(app, container) {
 
   container.replaceChildren(
     decisionMaker(app, T),
+    renderWorkbench(app),
     question(app, T, s),
     ruleTable(app, T, s),
     tools(app, T, s),
@@ -31,23 +31,23 @@ function group(title, children) {
   return el('section', { class: 'agent-group' }, [el('h3', { text: title }), ...children]);
 }
 
-function labelled(text, control, { inline = false } = {}) {
-  control.id = control.id || id('field');
-  const label = el('label', { for: control.id, text });
+function labelled(id, text, control, { inline = false } = {}) {
+  control.id = id;
+  const label = el('label', { for: id, text });
   return el('div', { class: inline ? 'agent-field agent-field--inline' : 'agent-field' }, inline ? [control, label] : [label, control]);
 }
 
-function checkbox(text, checked, onChange) {
+function checkbox(id, text, checked, onChange) {
   const input = el('input', { type: 'checkbox' });
   input.checked = Boolean(checked);
   input.addEventListener('change', () => onChange(input.checked));
-  return labelled(text, input, { inline: true });
+  return labelled(id, text, input, { inline: true });
 }
 
 // ---------------------------------------------------------------------------
 
 function decisionMaker(app, T) {
-  const radio = el('input', { type: 'radio', name: 'agent-kind', value: 'glass', checked: true });
+  const radio = el('input', { type: 'radio', name: 'agent-kind', value: 'glass', id: 'agent-kind-glass', checked: true });
   return group(T.decisionMakerHeading, [
     el('fieldset', { class: 'mode-toggle agent-kind' }, [
       el('legend', { class: 'visually-hidden', text: T.decisionMakerHeading }),
@@ -72,24 +72,24 @@ function question(app, T, s) {
   text.addEventListener('change', () => app.setSetup({ question: text.value }));
 
   const samples = el('div', { class: 'agent-samples', role: 'group', 'aria-label': T.samples },
-    T.sampleQuestions.map((q) => el('button', {
-      type: 'button', class: 'button agent-sample', text: q,
+    T.sampleQuestions.map((q, i) => el('button', {
+      type: 'button', class: 'button agent-sample', text: q, id: `agent-sample-${i}`,
       onclick: () => app.setSetup({ question: q, requestOn: false }, { rebuild: true }),
     })));
 
-  const request = checkbox(T.requestToggle, s.requestOn, (on) => app.setSetup({ requestOn: on }, { rebuild: true }));
+  const request = checkbox('agent-request-on', T.requestToggle, s.requestOn, (on) => app.setSetup({ requestOn: on }, { rebuild: true }));
   const dates = [];
   if (s.requestOn) {
     const start = el('input', { type: 'date', value: s.start });
     start.addEventListener('change', () => app.setSetup({ start: start.value }));
     const end = el('input', { type: 'date', value: s.end });
     end.addEventListener('change', () => app.setSetup({ end: end.value }));
-    dates.push(el('div', { class: 'agent-dates' }, [labelled(T.requestStart, start), labelled(T.requestEnd, end)]));
+    dates.push(el('div', { class: 'agent-dates' }, [labelled('agent-request-start', T.requestStart, start), labelled('agent-request-end', T.requestEnd, end)]));
   }
 
   return group(T.questionHeading, [
-    labelled(T.employee, employee),
-    labelled(T.questionLabel, text),
+    labelled('agent-employee', T.employee, employee),
+    labelled('agent-question', T.questionLabel, text),
     el('p', { class: 'agent-field__label', text: T.samples }),
     samples,
     helpPanel('question'),
@@ -118,7 +118,8 @@ function ruleTable(app, T, s) {
     ? el('ul', { class: 'agent-synonyms' }, s.synonyms.map((pair, i) => el('li', {}, [
       el('span', { text: `${pair.from} → ${pair.to}` }),
       el('button', {
-        type: 'button', class: 'button agent-small', text: '×', 'aria-label': fill(T.synonymRemove, { from: pair.from }),
+        type: 'button', class: 'button agent-small', text: '×', id: `agent-syn-remove-${i}`,
+        'aria-label': fill(T.synonymRemove, { from: pair.from }),
         onclick: () => app.setSetup({ synonyms: s.synonyms.filter((_, j) => j !== i) }, { rebuild: true }),
       }),
     ])))
@@ -126,7 +127,7 @@ function ruleTable(app, T, s) {
   const from = el('input', { type: 'text', size: '10', autocomplete: 'off' });
   const to = el('input', { type: 'text', size: '10', autocomplete: 'off' });
   const add = el('button', {
-    type: 'button', class: 'button', text: T.synonymAdd,
+    type: 'button', class: 'button', text: T.synonymAdd, id: 'agent-syn-add',
     onclick: () => {
       const pair = { from: from.value.trim(), to: to.value.trim() };
       if (!pair.from || !pair.to) return;
@@ -147,25 +148,26 @@ function ruleTable(app, T, s) {
     el('div', { class: 'agent-table-wrap' }, table),
     el('h4', { text: T.synonymsHeading }),
     list,
-    el('div', { class: 'agent-synonym-add' }, [labelled(T.synonymFrom, from), labelled(T.synonymTo, to), add]),
+    el('div', { class: 'agent-synonym-add' }, [labelled('agent-syn-from', T.synonymFrom, from), labelled('agent-syn-to', T.synonymTo, to), add]),
     helpPanel('synonyms'),
-    labelled(T.threshold, threshold),
+    labelled('agent-threshold', T.threshold, threshold),
     helpPanel('threshold'),
-    checkbox(T.switchC3, s.c3, (on) => app.setSetup({ c3: on })),
-    checkbox(T.switchF2, s.f2, (on) => app.setSetup({ f2: on })),
-    checkbox(T.switchF3, s.f3, (on) => app.setSetup({ f3: on })),
+    checkbox('agent-rule-c3', T.switchC3, s.c3, (on) => app.setSetup({ c3: on })),
+    checkbox('agent-rule-f2', T.switchF2, s.f2, (on) => app.setSetup({ f2: on })),
+    checkbox('agent-rule-f3', T.switchF3, s.f3, (on) => app.setSetup({ f3: on })),
     helpPanel('ruleSwitches'),
-    labelled(T.balanceWords, balance),
+    labelled('agent-balance-words', T.balanceWords, balance),
     helpPanel('balanceWords'),
   ]);
 }
 
 function tools(app, T, s) {
+  const W = app.copy.AGENT.workbench;
   const items = TOOL_NAMES.map((name) => {
     const def = TOOL_DEFINITIONS[name];
     const schema = toolSchemas([name])[0];
     return el('li', { class: `agent-tool agent-tool--${def.type}` }, [
-      checkbox(name, s.tools[name], (on) => app.setSetup({ tools: { ...s.tools, [name]: on } })),
+      checkbox(`agent-tool-${name}`, name, s.tools[name], (on) => app.setSetup({ tools: { ...s.tools, [name]: on } })),
       el('p', { class: 'agent-tool__desc', text: schema.description }),
       el('p', { class: 'agent-tool__tags' }, [
         el('span', { class: 'agent-tag', text: T.toolType[def.type] }),
@@ -177,7 +179,22 @@ function tools(app, T, s) {
       ]),
     ]);
   });
-  return group(T.toolsHeading, [el('ul', { class: 'agent-tools' }, items), helpPanel('tools')]);
+
+  // The rules in code of submit_vacation_request. Clearing one is for Exercise 4 only.
+  const disabled = new Set(s.disabledRules || []);
+  const rules = Object.entries(W.ruleInCode).map(([rule, text]) => checkbox(
+    `agent-code-rule-${rule}`, text, !disabled.has(rule),
+    (on) => app.setSetup({ disabledRules: on ? [...disabled].filter((r) => r !== rule) : [...disabled, rule] }, { rebuild: true }),
+  ));
+
+  return group(T.toolsHeading, [
+    el('ul', { class: 'agent-tools' }, items),
+    helpPanel('tools'),
+    el('h4', { text: W.rulesInCodeHeading }),
+    ...rules,
+    disabled.size ? el('p', { class: 'hint agent-warn', text: W.ruleInCodeOff }) : null,
+    helpPanel('ruleInCode'),
+  ]);
 }
 
 function loopSettings(app, T, s) {
@@ -202,15 +219,15 @@ function loopSettings(app, T, s) {
   });
 
   return group(T.loopHeading, [
-    labelled(T.maxRounds, max),
+    labelled('agent-max-rounds', T.maxRounds, max),
     s.maxRounds === null ? el('p', { class: 'hint agent-warn', text: fill(T.noLimitNote, { limit }) }) : null,
     helpPanel('maxRounds'),
-    labelled(T.tokenBudget, budget),
-    checkbox(T.budgetNoLimit, s.tokenBudget === null, (on) => app.setSetup({ tokenBudget: on ? null : app.constants.AGENT_TOKEN_BUDGET_DEFAULT }, { rebuild: true })),
+    labelled('agent-token-budget', T.tokenBudget, budget),
+    checkbox('agent-no-budget', T.budgetNoLimit, s.tokenBudget === null, (on) => app.setSetup({ tokenBudget: on ? null : app.constants.AGENT_TOKEN_BUDGET_DEFAULT }, { rebuild: true })),
     helpPanel('tokenBudget'),
-    checkbox(T.repeatStop, s.repeatStop, (on) => app.setSetup({ repeatStop: on })),
+    checkbox('agent-repeat-stop', T.repeatStop, s.repeatStop, (on) => app.setSetup({ repeatStop: on })),
     helpPanel('repeatStop'),
-    checkbox(T.keepLastTwo, s.keepLastTwo, (on) => app.setSetup({ keepLastTwo: on })),
+    checkbox('agent-keep-two', T.keepLastTwo, s.keepLastTwo, (on) => app.setSetup({ keepLastTwo: on })),
     helpPanel('keepLastTwo'),
   ]);
 }
