@@ -83,6 +83,8 @@ In the RAG Lab activity, you were the checker. In this activity, an agent does t
 
 In Exercise 1, the agent has no stop condition. It stops only at the hard limit of 12 rounds. In Exercise 2, the check of each round decides if the loop continues.
 
+The loop checks the token budget at the start of each round. It stops the next round, not the current round. Thus a run can end above the budget.
+
 ## Discussion 3
 
 In the RAG Lab activity, Black Box mode finds the vacation passage for the word "PTO." Glass Box mode does not. If a better embedding model fixes the problem, does Fall Line still need an agentic loop? Give one case in which the loop still adds value.
