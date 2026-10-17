@@ -244,6 +244,7 @@ function renderChrome() {
   document.getElementById('app-footer').textContent = copy.UI.footer;
   document.getElementById('mode-walkthrough').textContent = copy.MODES.walkthrough;
   document.getElementById('mode-flow').textContent = copy.MODES.flow;
+  document.getElementById('mode-agent').textContent = copy.MODES.agent;
   document.getElementById('flow-skip').textContent = F.page.skip;
   document.getElementById('flow-canvas').setAttribute('aria-label', F.page.canvasLabel);
   document.getElementById('flow-help').textContent = F.page.canvasHelp;

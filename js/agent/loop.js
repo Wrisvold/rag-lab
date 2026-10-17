@@ -201,7 +201,7 @@ async function runAndRecord(state, deps, decision, approval = null) {
     result = { ok: false, error: error.message, code: error.code || 'TOOL_ERROR' };
   }
   let next = patchRound({ ...state, failures, status: 'running', pending: null }, { act: { kind: 'tool', result }, ...(approval ? { approval } : {}) });
-  const event = { type: 'act', round, kind: 'tool', result };
+  const event = { type: 'act', round, kind: 'tool', toolName: decision.name, result };
   if (result.error && failures >= AGENT_TOOL_FAILURE_LIMIT) {
     next = stop(next, 'TOOL_FAILED');
     return { state: next, event: { ...event, stop: 'TOOL_FAILED' } };

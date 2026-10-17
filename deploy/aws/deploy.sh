@@ -33,8 +33,10 @@ aws s3 sync "$ROOT" "s3://$BUCKET" \
   --exclude "*" \
   --include "index.html" \
   --include "flow.html" \
+  --include "agent.html" \
   --include "styles.css" \
   --include "flow.css" \
+  --include "agent.css" \
   --include "js/*" \
   --include "data/*" \
   --cache-control "public, max-age=300"

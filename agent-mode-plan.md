@@ -461,7 +461,7 @@ Course link: Week 7 · Lesson 06.
 
 ### 12.3 The test for the text
 
-A new test, `tests/agent-copy.test.js`, checks all text in the `AGENT` part of `js/copy.js`:
+The test `tests/agent/copy.test.js` checks all text in the `AGENT` part of `js/copy.js`. Phase 13 added it, before Phase 16, because the page needs the text from its first version:
 
 - Each function in a fixed list has the three texts.
 - Each step of "How to use it" has 20 words or fewer.
@@ -470,7 +470,7 @@ A new test, `tests/agent-copy.test.js`, checks all text in the `AGENT` part of `
 - No text has a word from the existing banned list or from a list of phrasal verbs.
 - No text uses a perfect tense with "been."
 
-The checker is a small function in `tests/ste.js`. It does not replace a review by a person. It catches the most frequent errors.
+The test also checks that each help panel on the page has its three texts. It checks that each stop code has a message and a teaching note. It does not replace a review by a person. It catches the most frequent errors.
 
 ## 13. The exercises
 
@@ -627,7 +627,8 @@ The summary never has the key. The token count of the Glass Box agent is an esti
 | `tests/agent/handbook.test.js` | The sections of the handbook. Chunk 08 gets Section 3.1 from its position. |
 | `tests/agent/summary.test.js` | The run summary of the worked example |
 | `tests/agent/prompt.test.js` | Sections, versions, the compare data, and each finding of the prompt checker |
-| `tests/agent-copy.test.js` | The text contract of Section 12 |
+| `tests/agent/copy.test.js` | The text contract of Section 12 |
+| `tests/agent/describe.test.js` | The readout sentence for each part of each round |
 
 ## 17. Course integration
 
@@ -697,7 +698,7 @@ The phases continue the numbers of the Flow mode plan in `STATUS.md`. Each phase
 
 - The six exercises, with their set-ups and questions
 - The three texts of Section 12 for each function
-- `tests/agent-copy.test.js` and `tests/ste.js`
+- More checks in `tests/agent/copy.test.js`, if the review finds new types of error
 - The run summary button
 - The changes to the weekly guides of the agents course (Section 17)
 

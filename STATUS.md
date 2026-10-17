@@ -4,7 +4,27 @@ Updated at the end of each phase. Newest phase first.
 
 ## Agent mode — design plan (Phases 12 to 17)
 
-The plan is in [agent-mode-plan.md](agent-mode-plan.md). Phase 12 is done. Phases 13 to 17 are next.
+The plan is in [agent-mode-plan.md](agent-mode-plan.md). Phases 12 and 13 are done. Phases 14 to 17 are next.
+
+## Phase 13 — Agent mode page and loop display (done)
+
+**Delivered:**
+- `agent.html`, `agent.css`: the third page, three columns (set-up, loop, inspector); on screens under 1100px the loop comes first, then the set-up, then the inspector. No horizontal scroll at 390px.
+- `js/agent/main.js`: holds the set-up (kept in sessionStorage) and the run; creates the run from the set-up on the first Step; any set-up change clears the run and says so in the readout. Run round and Run to end pause 600 ms between parts (`AGENT_RUN_PAUSE_MS`), no pause with reduced motion.
+- `js/agent/view/setup.js`: decision maker (Glass Box only; the page says the Black Box agent is not available yet), employee, question, sample questions, the request form, the Glass Box rule table with its editable parts (synonym table, threshold, C3/F2/F3, balance words), the tools with their schemas and on/off boxes, and the loop settings (MAX_ROUNDS with "No limit", TOKEN_BUDGET with "No token budget", REPEAT_STOP, keep the last two rounds).
+- `js/agent/view/loop.js`: the loop diagram with the next part highlighted, the status line, the controls (Step, Run round, Run to end, Stop, Reset, Copy run summary), the stop message with its teaching note, the approval panel (the exact request and the result of each rule in code), and one card per round with the current part highlighted.
+- `js/agent/view/inspector.js`: the context of the selected round in the five types, with a size bar, a legend with token counts, the exact text of each type, and the Glass Box note.
+- `js/agent/describe.js`: the readout sentence for each loop event (pure, tested).
+- The "Agent" mode link on all three pages; `agent.html` and `agent.css` in the three deploy lists.
+- Every function has "How to use it, and why": numbered ASD-STE100 steps, a teaching note, and the course week (`AGENT.help`, 20 entries). This is the Section 12 contract of the plan, brought forward from Phase 16.
+
+**Decisions made while building:**
+- Buttons are disabled only for the state of the run (for example, Step after a stop), never while a step runs: a disabled button loses the keyboard focus. Each button has a `data-focus-key`, and focus returns to it after a redraw. When the approval panel first shows, focus moves to its heading.
+- The text test moved from Phase 16 to Phase 13 (`tests/agent/copy.test.js`): no semicolons, banned words, listed phrasal verbs, or "has/have/had been"; sentences of 25 words or fewer; help steps of 20 words or fewer; each help panel on the page has its text and each text is used; each stop code has a message and a note.
+
+**Tests:** 7 new (163 in all, all passing).
+
+**Exit check (Chromium, keyboard only):** Tab to "Skip to the loop", Enter, Tab to Step, then Enter 12 times on Exercise 2 with "PTO → vacation" in the synonym table. The readout announced all 12 parts (Context, Decide, Act, Check for three rounds) and ended "The check accepted the answer. The loop stopped." Focus stayed on Step, then moved to Reset after the stop. Also checked in the browser: the approval flow by keyboard (focus to the panel heading, Tab to Approve, Enter), a request refused by the notice rule with no approval panel, Exercise 1 to `HARD_LIMIT` (12 rounds, 43,543 tokens), the Agent link on the other two pages, and no console errors.
 
 ## Phase 12 — Agent mode loop core (done)
 

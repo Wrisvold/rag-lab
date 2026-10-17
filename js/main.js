@@ -440,6 +440,7 @@ function renderChrome() {
   document.getElementById('app-footer').textContent = copy.UI.footer;
   document.getElementById('mode-walkthrough').textContent = copy.MODES.walkthrough;
   document.getElementById('mode-flow').textContent = copy.MODES.flow;
+  document.getElementById('mode-agent').textContent = copy.MODES.agent;
 }
 
 // ---------------------------------------------------------------------------

@@ -229,3 +229,11 @@ export const AGENT_GLASS_BALANCE_WORDS = ['balance', 'left', 'how many days do i
 // Handbook rules that the tools enforce in code (Section 3.1).
 export const AGENT_NOTICE_DAYS = 14;
 export const AGENT_SERVICE_DAYS = 90;
+
+// Key used to keep the Agent mode set-up alive across a page reload.
+export const AGENT_SESSION_STORAGE_KEY = 'rag-lab-agent';
+
+// Pause between the parts of a round in "Run round" and "Run to end", in
+// milliseconds, so a student can follow the highlight. No pause when the
+// browser asks for reduced motion.
+export const AGENT_RUN_PAUSE_MS = 600;
