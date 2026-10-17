@@ -85,6 +85,34 @@ A model can give a different result each time. Do each run two times. If the res
 
 Exercise 3 shows that the system prompt goes to the model in each round. Exercise 4 shows the difference between a rule in the prompt and a rule in code. Exercise 6 shows knowledge base poisoning: the attack is in a handbook passage, not in the question of the user.
 
+### After the activity: why text in the prompt cannot control an agent
+
+Read this section after you do Exercise 4. The examples come from three test runs of Exercise 4 with the OpenAI model `gpt-5-mini`. Your results can be different.
+
+**1. A rule in the prompt is a request.** The system prompt is text. The model reads this text in each round. The text tells the model what to do. The text does not make the model do it.
+
+**2. The model predicts the next action.** In each round, the model predicts a good next action from all the text in its context. A rule in the prompt is only one part of that text. Other parts can be stronger: the request of the user, the tool results, and the history of the run. In the second test run, the model read the 14-day rule. Then the model sent the request for 9 to 13 November. The request form was more specific than the rule.
+
+**3. Each round is a new decision.** The loop asks the model for a decision in each round. Each decision has a small chance of an error. The model reads the context again in each round, and the context is different each time. The three test runs used the same model, the same prompt, and the same request. The model obeyed the rule in one run. The model broke the rule in two runs.
+
+**4. The loop multiplies the chance of an error.** Example: a model obeys a rule in 95 of 100 decisions. An agent makes 20 decisions for one task. The chance that all 20 decisions obey the rule is only 36 in 100. More rounds give more chances for an error.
+
+**5. The model can state a rule and break it.** In the second test run, the answer said: "Requests must be submitted at least two weeks in advance." The same answer said: "I've recorded your 2026-11-09 to 2026-11-13 request." The model knew the rule. Knowledge of a rule does not make an action correct.
+
+**6. A check of the text has the same limit.** Check A1 tested the citation [3.1]. It did not test the action. Thus, it accepted the answer of the second test run. A model check is also a model that reads text. It can find more errors, but it can also make errors.
+
+**7. A rule in code is different.** The rule in code runs before the tool runs. It calculates the days of notice. It refuses each request with less than 14 days. The model cannot change the calculation. The user cannot argue with it. In the third test run, the rule in code was on. The model sent the same bad request. The code refused it. Then the model gave a correct answer.
+
+**8. What to do when you design an agent:**
+
+1. Put each rule with an exact test in code. Examples are dates, amounts, balances, and permissions.
+2. Use the prompt for judgment, tone, and the sequence of steps.
+3. Use a person to approve each high-risk action.
+4. Do not make a person the only guard. A person can make an error.
+5. Give the loop a stop condition. Fewer rounds give fewer chances for an error.
+
+**Summary:** Text in the prompt guides the agent. Code controls the agent.
+
 ## Discussion 7
 
 A manager says: "The agent signs a receipt for each expense claim, so our expense process is safe." Use the limits in Lesson 18 to answer the manager. What other controls does the expense process need?
@@ -129,7 +157,7 @@ Then use your run of Exercise 6. Where did the attack enter the context? Which c
 You can run the Lesson 18 notebook with no Azure account and no model. It uses only Python libraries.
 
 1. Open the notebook in Google Colab at this address: `https://colab.research.google.com/github/microsoft/ai-agents-for-beginners/blob/main/18-securing-ai-agents/code_samples/18-signed-receipts.ipynb`
-2. Run the cells in Section 1. You sign a receipt and verify it.
-3. Run the cells in Section 2. You change the receipt, and the verification fails.
+2. Run the cells in Section 1. You sign a receipt and check its signature.
+3. Run the cells in Section 2. You change the receipt, and the signature check fails.
 4. Run the cells in Section 3. You make a chain of three receipts.
 5. Optional: read `06-building-trustworthy-agents/code_samples/06-human-in-the-loop.ipynb`. Find the function `classify_risk`. This notebook needs Azure to run.
