@@ -972,7 +972,7 @@ export const AGENT = {
           'Click Step four times. Each click runs one part of round 1.',
           'Read the Check line of round 1. Find the rule that failed.',
           'Click Run to end. Record the stop reason.',
-          'In the synonym table, type PTO in "Word in the question".',
+          'Scroll the set-up column to "Synonym table (rule F1)". Type PTO in "Word in the question".',
           'Type vacation in "Word in the handbook". Then click Add.',
           'Click Run to end. Read the Decide line and the Act line of each round.',
           'Click Copy run summary. Paste the summary in your notes.',
