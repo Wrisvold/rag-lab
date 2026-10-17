@@ -49,7 +49,8 @@ test('OpenAI: a developer message, function tools, one tool message for each cal
 test('Gemini: systemInstruction, JSON Schema tools, the model content sent back unchanged', () => {
   const reply = parseAgentResponse('gemini', gemini.functionCall('1', 'search_handbook', { query: 'vacation' }));
   const r = buildAgentRequest('gemini', { apiKey: KEY, system: 'Role:\nYou help.', tools, transcript: transcript(reply.raw) });
-  assert.match(r.url, /models\/gemini-2\.5-flash:generateContent$/);
+  assert.match(r.url, /models\/gemini-3-flash-preview:generateContent$/);
+  assert.deepEqual(r.body.generationConfig, { maxOutputTokens: 4096, thinkingConfig: { thinkingLevel: 'LOW' } });
   assert.deepEqual(r.body.systemInstruction, { parts: [{ text: 'Role:\nYou help.' }] });
   assert.ok(r.body.tools[0].functionDeclarations[0].parametersJsonSchema.properties.query);
   assert.equal(r.body.contents[1].parts[0].thoughtSignature, 'ts-1', 'the thought signature goes back unchanged');

@@ -38,14 +38,14 @@ export const openai = {
 
 export const gemini = {
   functionCall: (id, name, args) => ({
-    modelVersion: 'gemini-2.5-flash',
+    modelVersion: 'gemini-3-flash-preview',
     candidates: [{ finishReason: 'STOP', content: { role: 'model', parts: [
       { functionCall: { id: `fc_${id}`, name, args }, thoughtSignature: `ts-${id}` },
     ] } }],
     usageMetadata: { promptTokenCount: 650, candidatesTokenCount: 20, thoughtsTokenCount: 80, totalTokenCount: 750 },
   }),
   text: (id, text) => ({
-    modelVersion: 'gemini-2.5-flash',
+    modelVersion: 'gemini-3-flash-preview',
     candidates: [{ finishReason: 'STOP', content: { role: 'model', parts: [
       { text: 'Plan: answer.', thought: true },
       { text, thoughtSignature: `ts-${id}` },

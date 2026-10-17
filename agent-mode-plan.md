@@ -744,7 +744,7 @@ These notes describe the formats that the adapters must handle. Check each one a
 - `js-genai`: `parametersJsonSchema`, `systemInstruction`, the `id` of a `functionResponse`, `thoughtSignature`, the token counts, and `blockReason`.
 - `anthropic-sdk-typescript`: `output_config.effort`, `disable_parallel_tool_use`, `tool_use_id`, and the stop reason `refusal`. `fallbacks` and the header `server-side-fallback-2026-07-01` are in the beta types. A fallback runs when the model declines a request for policy reasons.
 
-| Item | Gemini (`gemini-2.5-flash`) | OpenAI (`gpt-5-mini`, chat completions) | Anthropic (`claude-opus-5-5`, messages) |
+| Item | Gemini (`gemini-3-flash-preview`; `gemini-2.5-flash` until 17 October 2026) | OpenAI (`gpt-5-mini`, chat completions) | Anthropic (`claude-opus-5-5`, messages) |
 |---|---|---|---|
 | System prompt | `systemInstruction: { parts: [{ text }] }` | A first message with the role `developer` | Top-level `system`. The field is left out when all sections are disabled. |
 | Tool definitions | `tools: [{ functionDeclarations: [{ name, description, parametersJsonSchema }] }]` | `tools: [{ type: "function", function: { name, description, parameters } }]` | `tools: [{ name, description, input_schema }]` |

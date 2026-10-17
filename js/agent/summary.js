@@ -41,6 +41,7 @@ export function formatAgentRunSummary(state, { scenario, agentKind, provider = '
       // The token budget stops a run in the context part, before the decision.
       if (state.stopReason && round.context) {
         lines.push(`${`Round ${round.number}`.padEnd(INDENT.length - 2)}  ${fill(AGENT.summary.contextOnly, { tokens: round.context.total.toLocaleString('en-US') })}`);
+        if (round.error) lines.push(`${INDENT}error:  ${round.error}`);
       }
       continue;
     }

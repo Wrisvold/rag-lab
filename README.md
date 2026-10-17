@@ -409,7 +409,7 @@ Station 5 sends the assembled prompt to a language model of the student's choice
 
 | Provider | Free tier | Key page | Model (in `constants.js`) |
 |---|---|---|---|
-| Google Gemini | yes | https://aistudio.google.com/apikey | `gemini-2.5-flash` |
+| Google Gemini | yes | https://aistudio.google.com/apikey | `gemini-3-flash-preview` |
 | OpenAI | no, prepaid credit | https://platform.openai.com/api-keys | `gpt-5-mini` |
 | Anthropic Claude | no, prepaid credit | https://console.anthropic.com/settings/keys | `claude-opus-5` |
 
@@ -613,7 +613,7 @@ The key works as in [the answer step](#the-optional-answer-step-and-api-keys): a
 
 | Provider | Model (`AGENT_PROVIDERS` in `js/constants.js`) | Notes |
 |---|---|---|
-| Google Gemini | `gemini-2.5-flash` | Free tier |
+| Google Gemini | `gemini-3-flash-preview` | Free tier (about 1,500 requests a day). Thinking level `LOW`. A new key cannot use the 2.5 models. |
 | OpenAI | `gpt-5-mini` | `parallel_tool_calls: false` |
 | Anthropic Claude | `claude-opus-5-5` | Effort `low`, server-side fallbacks on (the inspector shows the model that replied), one tool call in each round |
 

@@ -105,6 +105,9 @@ test('a failed model call stops the run with MODEL_ERROR, and the readout says w
   assert.equal(state.stopDetail, 'badKey');
   const line = describeEvent(events.at(-1));
   assert.ok(line.includes(AGENT.stops.MODEL_ERROR.message) && line.includes(AGENT.modelErrors.badKey));
+  const { scenario } = await fixtures();
+  const text = formatAgentRunSummary(state, { scenario, agentKind: 'black' });
+  assert.match(text, /\nRound 1 {2}context: [\d,]+ tokens\. The loop stopped before the decision\.\n +error: {2}badKey\n/, 'the summary gives the error code');
 });
 
 test('a refusal by the provider ends the run honestly', async () => {
