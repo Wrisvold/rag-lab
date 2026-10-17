@@ -6,6 +6,22 @@ Updated at the end of each phase. Newest phase first.
 
 The plan is in [agent-mode-plan.md](agent-mode-plan.md). Phases 12 to 17 are done. One exit check is still open: Phase 16 with a person who did not build the page. The Phase 15 check with real keys is done for OpenAI, Gemini, and Anthropic.
 
+## Fix — the run total in the inspector (17 October 2026)
+
+**The bug:** with the Black Box agent, the inspector line "The run read {run} tokens until now." did not match the token total in the status line and in the run summary.
+
+**The cause:** the inspector added the page's estimate for the round (`tokensBefore + context.total`). The loop replaces that estimate with the provider's count (input and output tokens), and it adds the tokens of a model check. The status line and the summary use the loop's total.
+
+**The fix:**
+- `js/agent/loop.js`: each round keeps the run total when it ends (`tokensAfter`), after the check or at the stop.
+- `js/agent/view/inspector.js`: the inspector shows `tokensAfter`. A round that is still running has no `tokensAfter`, so the inspector shows the old sum.
+- `js/copy.js`: "The run read {run} tokens" is now "The run used {run} tokens", and the status line "Tokens read:" is now "Tokens used:", because the total also has the output tokens.
+- The Glass Box numbers do not change: with no provider counts, `tokensAfter` is the old sum.
+
+**Tests:** 3 new in `tests/agent/tokenTotal.test.js` (206 in all, all passing): a Black Box run, a Black Box run with the model check, and a Glass Box run.
+
+**Check (Chrome, localhost:5173):** Exercise 1 (Glass Box), Run to end: HARD_LIMIT after 12 rounds. The inspector of round 12 says "The run used 43,543 tokens until now.", and the summary says "Stop: HARD_LIMIT after 12 rounds · about 43,543 tokens".
+
 ## Phase 17 — Polish, documentation, review, design rules, dark theme (done)
 
 **Delivered:**

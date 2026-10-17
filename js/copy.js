@@ -1212,7 +1212,7 @@ export const AGENT = {
     back: 'Next round',
     statusRound: 'Round {round}',
     statusRoundOf: 'Round {round} of {max}',
-    statusTokens: 'Tokens read: {tokens}',
+    statusTokens: 'Tokens used: {tokens}',
     statusIdle: 'No run yet. Click Step to start.',
     statusWaiting: 'Waiting for a person',
     statusStopped: 'Stopped: {code}',
@@ -1272,7 +1272,7 @@ export const AGENT = {
   inspector: {
     empty: 'Click Show context on a round card, or click Step. The context of the round shows here.',
     heading: 'Context of round {number}',
-    total: '{tokens} tokens in this round. The run read {run} tokens until now.',
+    total: '{tokens} tokens in this round. The run used {run} tokens until now.',
     types: {
       instructions: 'Instructions',
       knowledge: 'Knowledge',

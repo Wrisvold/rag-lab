@@ -70,7 +70,12 @@ function patchRound(state, patch) {
 }
 
 function stop(state, code) {
-  return { ...state, status: 'stopped', part: 'done', stopReason: code, pending: null };
+  return { ...endRound(state), status: 'stopped', part: 'done', stopReason: code, pending: null };
+}
+
+/** Keep the run total on the round when it ends: the number of the status line and the summary. */
+function endRound(state) {
+  return patchRound(state, { tokensAfter: state.tokens });
 }
 
 const current = (state) => state.rounds[state.rounds.length - 1];
@@ -213,6 +218,7 @@ export async function step(state, deps) {
       if (maxRounds !== null && round >= maxRounds) return { state: stop(next, 'MAX_ROUNDS'), event: { ...event, stop: 'MAX_ROUNDS' } };
       if (round >= AGENT_HARD_LIMIT) return { state: stop(next, 'HARD_LIMIT'), event: { ...event, stop: 'HARD_LIMIT' } };
 
+      next = endRound(next);
       next = { ...next, round: round + 1, part: 'context', rounds: [...next.rounds, { number: round + 1 }] };
       return { state: next, event };
     }

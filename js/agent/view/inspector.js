@@ -17,7 +17,9 @@ export function renderInspector(app, container) {
   }
 
   const { parts, total } = round.context;
-  const runTotal = (round.tokensBefore || 0) + total;
+  // A round that ended has the run total of the loop, with the counts of the
+  // provider. A round that is still running has only the estimate.
+  const runTotal = round.tokensAfter ?? (round.tokensBefore || 0) + total;
   const share = (tokens) => (total ? (tokens / total) * 100 : 0);
 
   const bar = el('div', { class: 'size-bar', 'aria-hidden': 'true' },
