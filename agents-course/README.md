@@ -27,7 +27,7 @@ The students are managers and analysts, not software engineers. The course teach
 
 ## How the weeks map to the Microsoft lessons
 
-The Microsoft course has 18 lessons. This course uses 13 of them as required readings. It gives 3 lessons as optional readings and does not use the other 2.
+The Microsoft course has 18 numbered lessons and a setup lesson, Lesson 00. This course uses 14 lessons as required readings and 3 lessons as optional readings. It does not use the other lesson.
 
 | Week | Required lessons | Optional lessons |
 |---|---|---|
@@ -41,6 +41,8 @@ The Microsoft course has 18 lessons. This course uses 13 of them as required rea
 | 8 | 10 Agents in Production | 16 Deploying Scalable Agents, 17 Local AI Agents |
 
 The course does not use Lesson 00 (Course Setup) as a reading. Students on the optional code path use it. The course does not use Lesson 15 (Computer Use Agents).
+
+Weeks 1, 6, 7, and 8 also give optional readings from [LangGraph](https://github.com/langchain-ai/langgraph), a second agent framework. These readings show that the ideas of the course apply to more than one framework. Students do not write LangGraph code.
 
 ## The writing standard
 

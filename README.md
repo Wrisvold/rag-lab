@@ -606,6 +606,7 @@ tools/probe.mjs     re-checks the synonym probe with the real model
 tools/flow-run.mjs  runs a Flow mode graph outside the browser and prints its summary
 deploy/aws/         CloudFormation template and deploy scripts for S3 + CloudFront
 .github/workflows/  optional automatic AWS deploy (off until configured)
+agents-course/      syllabus, weekly guides, and capstone for the AI agents course (not part of the app)
 STATUS.md           what was built in each phase and every decision made along the way
 ```
 
