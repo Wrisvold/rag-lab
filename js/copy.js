@@ -1216,6 +1216,8 @@ export const AGENT = {
     statusIdle: 'No run yet. Click Step to start.',
     statusWaiting: 'Waiting for a person',
     statusStopped: 'Stopped: {code}',
+    // The token budget stops a run in the context part. That round has no decision.
+    statusStoppedBeforeDecide: 'Stopped: {code} before the decision · Full rounds: {rounds}',
     controls: 'Run controls',
     step: 'Step',
     runRound: 'Run round',
