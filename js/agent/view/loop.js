@@ -74,7 +74,10 @@ function diagram(app, A) {
     const max = run.settings.maxRounds;
     const round = max === null ? fill(A.loop.statusRound, { round: run.round }) : fill(A.loop.statusRoundOf, { round: run.round, max });
     const tokens = fill(A.loop.statusTokens, { tokens: run.tokens.toLocaleString('en-US') });
+    const last = run.rounds[run.rounds.length - 1];
+    const beforeDecide = run.status === 'stopped' && last && !last.decision;
     const extra = run.status === 'waiting_for_approval' ? A.loop.statusWaiting
+      : beforeDecide ? fill(A.loop.statusStoppedBeforeDecide, { code: run.stopReason, rounds: run.rounds.filter((r) => r.decision).length })
       : run.status === 'stopped' ? fill(A.loop.statusStopped, { code: run.stopReason }) : '';
     status = [round, tokens, extra].filter(Boolean).join(' · ');
   }
