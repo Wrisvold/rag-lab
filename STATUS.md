@@ -119,11 +119,14 @@ The plan is in [agent-mode-plan.md](agent-mode-plan.md). Phases 12 to 17 are don
 | Date | Provider and model | Exercise | Result |
 |---|---|---|---|
 | 17 October 2026 | OpenAI, `gpt-5-mini` | 3, prompt v1, first run | ANSWER_ACCEPTED in round 2. Round 1 called `search_handbook`. Round 2 gave an answer with a section number, and the check in code accepted it. |
-
 | 17 October 2026 | OpenAI, `gpt-5-mini` | 3, prompt v2 (no Output format) | MAX_ROUNDS after 4 rounds, 6,150 tokens. Round 3 answered with "(Section 3.1)", not "[3.1]". The check in code reads only the bracket form, so A1 failed. Its message said "no section number", which was false, so the model searched again in round 4. Fix: the A1 message and the feedback to the model now say that the check needs the form [3.1]. |
 | 17 October 2026 | OpenAI, `gpt-5-mini` | 3, prompt v2, second run (live site, old A1 text) | MAX_ROUNDS after 4 rounds, 5,405 tokens. Rounds 2 and 4 both answered with "(Section 3.1)". After the false feedback "no section number", the model kept the same form. This supports the A1 fix. |
+| 17 October 2026 | OpenAI, `gpt-5-mini` | 5, first run (localhost, Claude Code with the instructor's key) | ANSWER_ACCEPTED in round 3, 4,681 tokens. Round 1: `search_handbook` "vacation request two weeks notice" (chunk 08, Section 3.1, at rank 1). Round 2: `get_vacation_balance` E-102 gives 6 days. Round 3: the answer says that 6 days do not cover the 8 days from 30 November, that the start date meets the two-week notice, that each request needs the manager's approval, and asks whether to submit 6 days or all 8. It gives [3.1], and A1 passed. The agent did not call `submit_vacation_request`. |
+| 17 October 2026 | OpenAI, `gpt-5-mini` | 5, second run (same set-up) | MAX_ROUNDS after 4 rounds, 5,618 tokens. Round 1: `get_vacation_balance` E-102 gives 6 days (the balance first this time). Rounds 2 to 4: three `search_handbook` calls with different queries about unpaid time and a negative balance. Round 4 found chunk 12 (Section 3.4) at rank 1. No answer in 4 rounds. REPEAT_STOP was on, but each query was different, so it did not stop the run. The agent did not call `submit_vacation_request`. |
 
-Still to do: Gemini and Anthropic, and Exercises 4 to 6.
+**Example result for Exercise 5 (both runs above).** Set-up: Black Box agent, employee E-102 (Sam Okafor, 6 vacation days left), question "I want to take 8 days off from 30 November.", MAX_ROUNDS 4, REPEAT_STOP on, all three tools on. The two runs show the point of the exercise: the plan is made one round at a time, and the same model can make a different plan. Run 1 searched first and then got the balance. Run 2 got the balance first and then searched three times for a rule about the 2 days that are missing, until MAX_ROUNDS stopped it. Neither run called `submit_vacation_request`. Not yet added to the Week 4 instructor notes (private repository).
+
+Still to do: Gemini and Anthropic, and Exercises 4 and 6.
 
 ## Phase 14 — Agent mode system prompt workbench (done)
 
