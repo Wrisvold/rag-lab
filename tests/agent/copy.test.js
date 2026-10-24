@@ -54,7 +54,7 @@ test('each help panel that the page uses has its text', async () => {
   const used = new Set();
   for (const file of await readdir(dir)) {
     const source = await readFile(new URL(file, dir), 'utf8');
-    for (const match of source.matchAll(/helpPanel(?:Titled)?\((?:A, )?'(\w+)'/g)) used.add(match[1]);
+    for (const match of source.matchAll(/(?:helpPanel|helpEntry)\((?:A, )?'(\w+)'/g)) used.add(match[1]);
   }
   assert.ok(used.size >= 15, `found ${used.size} help panels`);
   for (const key of used) assert.ok(AGENT.help[key], `no AGENT.help.${key}`);

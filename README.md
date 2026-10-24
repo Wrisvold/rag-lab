@@ -573,11 +573,11 @@ The page has three columns:
 
 | Column | What it shows |
 |---|---|
-| Set-up | The exercises, the decision maker, the system prompt workbench, the question, the rule table, the tools with their rules in code, and the loop settings |
+| Set-up | The exercises, the decision maker, the question, the rule table, the tools with their rules in code, the loop settings, and the system prompt workbench (closed for the Glass Box agent) |
 | The loop | The loop diagram, the controls (Step, Run round, Run to end, Stop, Reset, Copy run summary), the stop banner, the approval panel, and one card for each round |
 | Inspector | The context of the selected round, split into five types, with the tokens of each type |
 
-Each function has a help panel with three texts. They are "How to use it" (steps of 20 words or fewer), "Why we do this," and the course link. `tests/agent/copy.test.js` enforces this.
+Each function has three help texts. They are "How to use it" (steps of 20 words or fewer), "Why we do this," and the course link. One closed panel at the end of each group holds the texts of the group's controls, each under the control's name. `tests/agent/copy.test.js` enforces this.
 
 ### The two agents
 

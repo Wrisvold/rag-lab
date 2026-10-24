@@ -6,6 +6,26 @@ Updated at the end of each phase. Newest phase first.
 
 The plan is in [agent-mode-plan.md](agent-mode-plan.md). Phases 12 to 17 are done. One exit check is still open: Phase 16 with a person who did not build the page. The Phase 15 check with real keys is done for OpenAI, Gemini, and Anthropic.
 
+## Change — Agent mode is less dense (24 October 2026)
+
+**The problem:** the set-up column was about 6,600 pixels tall at 1,440 pixels wide with Exercise 2 loaded. The page showed 28 closed "How to use it, and why" panels, one under each control. The system prompt workbench was always open, with six text boxes, also for the Glass Box agent, which does not read the prompt. The rule table had three columns in a 340-pixel column, so each cell wrapped to three or four lines.
+
+**The change:**
+- `js/agent/view/help.js`: `helpEntry(key, title)` and `helpGroup(entries)`. One closed panel stands at the end of each group and holds the entry of each control in the group, under the name of the control. `helpPanel(key)` stays for a control that stands alone. Every help text is the same. The page has 8 panels, not 28.
+- `js/agent/view/loop.js`: one panel under the six buttons, with an entry for each button.
+- `js/agent/view/setup.js`: the groups end with one panel each. The rule table is a list, one line per rule (id, condition, arrow, action). The tags of a tool share the line of its name. In the exercise panel, the course link is on the title line, and "Look at" and "Question for your notes" are one line each. The group order is: Exercises, Decision maker, The question, Rule table, Tools, Loop settings, System prompt.
+- `js/agent/view/workbench.js`: the System prompt group is a disclosure. It is closed for the Glass Box agent and open for the Black Box agent, until the student changes it. Each section is one line (title and tokens). The text opens on a click. The open states live in `ui` (`js/agent/main.js`: `setWorkbenchOpen`, `setPromptSectionOpen`), so a redraw of the column keeps them.
+- `agent.css`: columns 360 / fluid / 360 pixels (the inspector gave 60 pixels to the set-up column). New rules for the help entries, the rule list, the tool head, the workbench summary, and the section rows. Tokens only.
+- `js/copy.js`: one new label, `AGENT.setup.ruleSwitches` ("Rule switches (C3, F2, F3)"), as a heading over the three switches and the name of their help entry.
+- `tests/agent/copy.test.js`: the check that each help key is on the page also reads `helpEntry('key'`.
+- README: the set-up column order and the help panel sentence.
+
+**Numbers (1,440 pixels wide, Exercise 2 loaded, Glass Box):** the set-up column went from 6,648 to 4,523 pixels. The System prompt group went from 1,681 pixels to 39 closed and 930 open. The rule table group went from 1,415 to 1,200 pixels. The help panels went from 28 to 8, with the same 28 entries.
+
+**Tests:** `npm test`: 206 tests, all passing. The theme test finds no raw value in the new CSS.
+
+**Check (Chrome, localhost:5173, 1,440 and 375 pixels wide):** no console errors. The System prompt group opens when the student selects the Black Box agent, and closes again with the Glass Box agent. A section stays open after a redraw of the column (the box of the section cleared and selected again), and the focus comes back to the box. The exercise steps still name the controls as the page names them. No horizontal scroll at 375 pixels. The STE linter is not in this repository, so the new label was not run through it.
+
 ## Fix — the run total in the inspector (17 October 2026)
 
 **The bug:** with the Black Box agent, the inspector line "The run read {run} tokens until now." did not match the token total in the status line and in the run summary.

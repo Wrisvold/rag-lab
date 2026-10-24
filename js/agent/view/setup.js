@@ -1,13 +1,16 @@
-// Agent mode: the set-up column. The decision maker, the system prompt
-// workbench, the question, the rule table of the Glass Box agent, the tools
-// with the rules in code, and the loop settings.
+// Agent mode: the set-up column. The exercises, the decision maker, the
+// question, the rule table of the Glass Box agent, the tools with the rules
+// in code, the loop settings, and last the system prompt workbench.
 //
 // Each control calls app.setSetup() (or a workbench action). Every control
 // has a fixed id, so main.js can put the focus back on it after a redraw.
+//
+// Each group ends with one "How to use it, and why" panel that holds the
+// entry of each control in the group (see help.js).
 
 import { el, fill } from '../../dom.js';
 import { toolSchemas, TOOL_DEFINITIONS, TOOL_NAMES } from '../tools.js';
-import { helpPanel } from './help.js';
+import { helpPanel, helpGroup, helpEntry } from './help.js';
 import { renderWorkbench } from './workbench.js';
 import { EXERCISES, exercise } from '../exercises.js';
 
@@ -19,13 +22,13 @@ export function renderSetup(app, container) {
   container.replaceChildren(
     exercises(app, s),
     decisionMaker(app, T, s),
-    renderWorkbench(app),
     question(app, T, s),
     s.agentKind === 'glass'
       ? ruleTable(app, T, s)
       : group(T.rulesHeading, [el('p', { class: 'hint', text: app.copy.AGENT.blackBox.noRuleTable })]),
     tools(app, T, s),
     loopSettings(app, T, s),
+    renderWorkbench(app),
   );
 }
 
@@ -69,18 +72,18 @@ function exercisePanel(app, X, entry) {
   const item = X.items[entry.key];
   const black = entry.agentKind === 'black';
   return el('section', { class: 'agent-exercise-panel', 'aria-labelledby': 'agent-exercise-heading' }, [
-    el('h4', { id: 'agent-exercise-heading', tabindex: '-1', text: item.label }),
-    el('p', { class: 'hint', text: fill(X.course, { course: item.course }) }),
+    el('div', { class: 'agent-exercise-panel__head' }, [
+      el('h4', { id: 'agent-exercise-heading', tabindex: '-1', text: item.label }),
+      el('p', { class: 'hint', text: fill(X.course, { course: item.course }) }),
+    ]),
     el('h5', { text: X.goalHeading }),
     el('p', { text: item.goal }),
     black ? el('p', { class: 'hint', text: X.needsKey }) : null,
     entry.handbook === 'poisoned' ? el('p', { class: 'hint agent-warn', text: X.poisonNote }) : null,
     el('h5', { text: X.stepsHeading }),
     el('ol', { class: 'agent-exercise-steps' }, item.steps.map((step) => el('li', { text: step }))),
-    el('h5', { text: X.lookHeading }),
-    el('p', { text: item.look }),
-    el('h5', { text: X.questionHeading }),
-    el('p', { class: 'agent-exercise-question', text: item.question }),
+    el('p', {}, [el('strong', { text: `${X.lookHeading}. ` }), item.look]),
+    el('p', {}, [el('strong', { text: `${X.questionHeading}. ` }), el('span', { class: 'agent-exercise-question', text: item.question })]),
     black ? el('p', { class: 'hint', text: X.modelNote }) : null,
     el('p', { class: 'agent-exercise-why' }, [el('strong', { text: `${X.whyHeading} ` }), item.why]),
     el('button', { type: 'button', class: 'button agent-small', id: 'agent-exercise-close', text: X.close, onclick: () => app.closeExercise() }),
@@ -122,7 +125,6 @@ function decisionMaker(app, T, s) {
       ]),
       el('p', { class: 'hint', text: B.costNote }),
       checkbox('agent-model-check', B.modelCheck, s.modelCheck, (on) => app.setSetup({ modelCheck: on })),
-      helpPanel('modelCheck'),
     );
   }
 
@@ -132,9 +134,12 @@ function decisionMaker(app, T, s) {
       option('glass', T.glassBox, T.glassBoxHelp),
       option('black', B.option, B.optionHelp),
     ]),
-    helpPanel('decisionMaker'),
     ...black,
-    helpPanel('blackBox'),
+    helpGroup([
+      helpEntry('decisionMaker', T.glassBox),
+      helpEntry('blackBox', B.option),
+      s.agentKind === 'black' ? helpEntry('modelCheck', B.modelCheck) : null,
+    ]),
   ]);
 }
 
@@ -168,26 +173,24 @@ function question(app, T, s) {
     labelled('agent-question', T.questionLabel, text),
     el('p', { class: 'agent-field__label', text: T.samples }),
     samples,
-    helpPanel('question'),
     request,
     ...dates,
     el('p', { class: 'hint', text: fill(T.today, { date: app.scenario.today }) }),
-    helpPanel('request'),
+    helpGroup([helpEntry('question', T.questionLabel), helpEntry('request', T.requestToggle)]),
   ]);
 }
 
 function ruleTable(app, T, s) {
-  const rows = app.copy.AGENT.ruleTable.map((r) => el('tr', {}, [
-    el('th', { scope: 'row', text: r.id }), el('td', { text: r.when }), el('td', { text: r.action }),
-  ]));
-  const table = el('table', { class: 'agent-rules' }, [
-    el('thead', {}, el('tr', {}, [
-      el('th', { scope: 'col', text: T.ruleColumns.rule }),
-      el('th', { scope: 'col', text: T.ruleColumns.when }),
-      el('th', { scope: 'col', text: T.ruleColumns.action }),
-    ])),
-    el('tbody', {}, rows),
-  ]);
+  // One line per rule: the id, the condition, an arrow, the action. A
+  // three-column table does not fit the column without wrapping every cell.
+  const table = el('ol', { class: 'agent-rule-list', 'aria-label': T.rulesHeading }, app.copy.AGENT.ruleTable.map((r) => el('li', {}, [
+    el('span', { class: 'agent-rule__id', text: r.id }),
+    el('span', { class: 'agent-rule__text' }, [
+      el('span', { class: 'agent-rule__when', text: r.when }),
+      el('span', { class: 'agent-rule__arrow', 'aria-hidden': 'true', text: ' → ' }),
+      el('span', { class: 'agent-rule__action', text: r.action }),
+    ]),
+  ])));
 
   // The synonym table (rule F1)
   const list = s.synonyms.length
@@ -221,19 +224,22 @@ function ruleTable(app, T, s) {
   balance.addEventListener('change', () => app.setSetup({ balanceWords: balance.value }));
 
   return group(T.rulesHeading, [
-    el('div', { class: 'agent-table-wrap' }, table),
+    table,
     el('h4', { text: T.synonymsHeading }),
     list,
     el('div', { class: 'agent-synonym-add' }, [labelled('agent-syn-from', T.synonymFrom, from), labelled('agent-syn-to', T.synonymTo, to), add]),
-    helpPanel('synonyms'),
     labelled('agent-threshold', T.threshold, threshold),
-    helpPanel('threshold'),
+    el('h4', { text: T.ruleSwitches }),
     checkbox('agent-rule-c3', T.switchC3, s.c3, (on) => app.setSetup({ c3: on })),
     checkbox('agent-rule-f2', T.switchF2, s.f2, (on) => app.setSetup({ f2: on })),
     checkbox('agent-rule-f3', T.switchF3, s.f3, (on) => app.setSetup({ f3: on })),
-    helpPanel('ruleSwitches'),
     labelled('agent-balance-words', T.balanceWords, balance),
-    helpPanel('balanceWords'),
+    helpGroup([
+      helpEntry('synonyms', T.synonymsHeading),
+      helpEntry('threshold', T.threshold),
+      helpEntry('ruleSwitches', T.ruleSwitches),
+      helpEntry('balanceWords', T.balanceWords),
+    ]),
   ]);
 }
 
@@ -243,12 +249,12 @@ function tools(app, T, s) {
     const def = TOOL_DEFINITIONS[name];
     const schema = toolSchemas([name])[0];
     return el('li', { class: `agent-tool agent-tool--${def.type}` }, [
-      checkbox(`agent-tool-${name}`, name, s.tools[name], (on) => app.setSetup({ tools: { ...s.tools, [name]: on } })),
-      el('p', { class: 'agent-tool__desc', text: schema.description }),
-      el('p', { class: 'agent-tool__tags' }, [
+      el('div', { class: 'agent-tool__head' }, [
+        checkbox(`agent-tool-${name}`, name, s.tools[name], (on) => app.setSetup({ tools: { ...s.tools, [name]: on } })),
         el('span', { class: 'agent-tag', text: T.toolType[def.type] }),
         el('span', { class: 'agent-tag', text: T.toolApproval[def.approval] }),
       ]),
+      el('p', { class: 'agent-tool__desc', text: schema.description }),
       el('details', { class: 'agent-tool__schema' }, [
         el('summary', { text: T.toolSchema }),
         el('pre', { text: JSON.stringify(schema, null, 2) }),
@@ -265,11 +271,10 @@ function tools(app, T, s) {
 
   return group(T.toolsHeading, [
     el('ul', { class: 'agent-tools' }, items),
-    helpPanel('tools'),
     el('h4', { text: W.rulesInCodeHeading }),
     ...rules,
     disabled.size ? el('p', { class: 'hint agent-warn', text: W.ruleInCodeOff }) : null,
-    helpPanel('ruleInCode'),
+    helpGroup([helpEntry('tools', T.toolsHeading), helpEntry('ruleInCode', W.rulesInCodeHeading)]),
   ]);
 }
 
@@ -297,13 +302,15 @@ function loopSettings(app, T, s) {
   return group(T.loopHeading, [
     labelled('agent-max-rounds', T.maxRounds, max),
     s.maxRounds === null ? el('p', { class: 'hint agent-warn', text: fill(T.noLimitNote, { limit }) }) : null,
-    helpPanel('maxRounds'),
     labelled('agent-token-budget', T.tokenBudget, budget),
     checkbox('agent-no-budget', T.budgetNoLimit, s.tokenBudget === null, (on) => app.setSetup({ tokenBudget: on ? null : app.constants.AGENT_TOKEN_BUDGET_DEFAULT }, { rebuild: true })),
-    helpPanel('tokenBudget'),
     checkbox('agent-repeat-stop', T.repeatStop, s.repeatStop, (on) => app.setSetup({ repeatStop: on })),
-    helpPanel('repeatStop'),
     checkbox('agent-keep-two', T.keepLastTwo, s.keepLastTwo, (on) => app.setSetup({ keepLastTwo: on })),
-    helpPanel('keepLastTwo'),
+    helpGroup([
+      helpEntry('maxRounds', T.maxRounds),
+      helpEntry('tokenBudget', T.tokenBudget),
+      helpEntry('repeatStop', T.repeatStop),
+      helpEntry('keepLastTwo', T.keepLastTwo),
+    ]),
   ]);
 }
