@@ -31,7 +31,7 @@ const shortNotice = (scenario) => ({
  * key        the key of the text in AGENT.exercises.items
  * agentKind  'glass' or 'black' (a Black Box exercise needs a key)
  * setup      the changes to the default set-up
- * promptV1   use the default system prompt (v1) as the working copy
+ * promptV1   use the default system prompt (v1) as the working copy (Exercises 3 and 4)
  * handbook   'poisoned' adds AGENT.exercises.poison to Section 3.1
  */
 export const EXERCISES = [
@@ -62,6 +62,7 @@ export const EXERCISES = [
   {
     key: 'ruleInPrompt',
     agentKind: 'black',
+    promptV1: true,   // the student starts from the default prompt, then removes its notice sentence
     setup: (scenario) => ({ employeeId: 'E-103', ...shortNotice(scenario), disabledRules: ['notice'] }),
   },
   {
