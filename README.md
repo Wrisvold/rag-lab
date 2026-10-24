@@ -448,13 +448,13 @@ It is deliberately not a general node editor. There are eight kinds of card and 
 
 ### The canvas
 
-- **Palette** (left): one button per kind of card, with a one-line hint. A new card lands near the middle of the view, clear of the others, and takes focus.
+- **Left column**: "Start from" (the standard pipeline or an empty canvas), the exercises, then one button per kind of card. The one-line hint of a card is the button's tooltip and the first line of its inspector. A new card lands near the middle of the view, clear of the others, and takes focus.
 - **Cards**: title, lane tag (build time teal, run time amber, as on the stepper), input ports on the left, output port on the right, the card's own settings, then a footer with a summary line ("20 chunks · 19 mid-sentence cuts"), a gold "Re-run to update" badge when the card is stale, any error, and Run.
 - **Wires**: drag from an output port to an input port. Matching inputs glow teal while you drag; a refused drop prints why in the line under the canvas and makes no wire. A click on an output port (no drag) starts a wire that finishes on the next click. The small × at a wire's midpoint removes it.
 - **Run** on a card runs it and anything stale upstream, exactly as "Retrieve" in the walkthrough re-chunks and re-embeds if it must. **Run all** on the toolbar runs whatever is missing or stale, in order. Changing a setting greys the card and every card and wire downstream; nothing is re-run until you ask.
 - **Inspector** (right): click a card and its artifact appears, drawn by the walkthrough's own station for that step: the chunk cards, the vector map and inspector, the ranked table with the question on the map, the three-block prompt with Copy prompt and Copy run summary, the answer form. Hide it with the button in its header.
 - **Export and load** (toolbar menu): the flow summary, the graph as JSON, a download, and a file picker. See below.
-- **Readout**: the line under the canvas announces every action (aria-live), so screen-reader users hear what happened.
+- **Readout**: the line under the canvas announces every action (aria-live), so screen-reader users hear what happened. Until the first action it shows the pointer help (drag a title to move, drag output to input to wire, scroll to pan, Ctrl+scroll to zoom).
 
 The canvas, its zoom, and every setting survive a reload in the same tab, like the walkthrough. Artifacts do not; press Run all.
 
@@ -546,8 +546,8 @@ For a single chain the walkthrough's own run summary is also available: click th
 
 | Constant | Default | What it is |
 |---|---|---|
-| `FLOW_NODE_WIDTH` | 250 | width of every card, in pixels at 100% |
-| `FLOW_COLUMN_GAP`, `FLOW_ROW_GAP` | 70, 300 | spacing the presets and exercises use |
+| `FLOW_NODE_WIDTH` | 220 | width of every card, in pixels at 100% (`.flow-node` in `flow.css` matches) |
+| `FLOW_COLUMN_GAP`, `FLOW_ROW_GAP` | 60, 300 | spacing the presets and exercises use |
 | `FLOW_CANVAS_PADDING` | 40 | margin around a preset and around Fit |
 | `FLOW_GRID_STEP`, `FLOW_KEYBOARD_STEP_LARGE` | 20, 5 | cards snap to the grid; arrows move one step, Shift+arrow five |
 | `FLOW_ZOOM_MIN`, `FLOW_ZOOM_MAX`, `FLOW_ZOOM_STEP` | 0.4, 1.6, 1.2 | zoom range and the factor per button press |

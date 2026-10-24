@@ -177,8 +177,8 @@ export const FLOW_NOTEBOOK_NAMES = {
 export const FLOW_SESSION_STORAGE_KEY = 'rag-lab-flow';
 
 // Canvas layout. Pixels at 100% zoom.
-export const FLOW_NODE_WIDTH = 250;      // every node card is this wide
-export const FLOW_COLUMN_GAP = 70;       // space between columns in a preset
+export const FLOW_NODE_WIDTH = 220;      // every node card is this wide (flow.css .flow-node matches)
+export const FLOW_COLUMN_GAP = 60;       // space between columns in a preset
 export const FLOW_ROW_GAP = 300;         // space between rows in a preset
 export const FLOW_CANVAS_PADDING = 40;   // margin around a preset, and around "Fit"
 export const FLOW_GRID_STEP = 20;        // nodes snap to this grid; arrow keys move by it

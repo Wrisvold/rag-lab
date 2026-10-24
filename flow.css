@@ -1,6 +1,7 @@
 /* RAG Lab — Flow mode. Loaded after styles.css; uses its palette variables. */
 
-.flow-page { height: 100vh; display: flex; flex-direction: column; }
+/* min-height, not height: on a short screen the page scrolls instead of the footer covering the readout. */
+.flow-page { min-height: 100vh; display: flex; flex-direction: column; }
 .flow-page .app-footer { flex: none; }
 
 /* ---------- Three columns: palette, canvas, inspector ---------- */
@@ -8,17 +9,20 @@
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: 200px 1fr 460px;
+  grid-template-columns: 180px 1fr 420px;
   /* One row exactly as tall as the space left under the header, so the side
      columns scroll inside it instead of stretching the page. */
   grid-template-rows: minmax(0, 1fr);
   gap: 0;
 }
-.flow-layout.inspector-hidden { grid-template-columns: 200px 1fr; }
+.flow-layout.inspector-hidden { grid-template-columns: 180px 1fr; }
 .flow-layout.inspector-hidden .flow-inspector { display: none; }
-.flow-inspector__head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
-.flow-inspector__head h2 { margin: 0; }
+/* The panel's own heading is for screen readers. Hide floats beside the node's title. */
+.flow-inspector__head { float: right; margin: 0 0 var(--space-1) var(--space-2); }
 .flow-inspector__head .button { font-size: var(--text-sm); padding: var(--space-1) var(--space-2); }
+#inspector-body .station__header .lane-tag { text-transform: none; letter-spacing: 0; }
+.inspector-dials { list-style: none; margin: 0 0 var(--space-2); padding: 0; font-size: var(--text-sm); color: var(--ink-soft); }
+.inspector-dials .mono { color: var(--green); font-weight: 700; }
 .inspector-station { margin-top: var(--space-3); overflow-x: auto; }
 .inspector-station .station__header h3 { margin: 0; }
 .inspector-station .explainer { margin: var(--space-2) 0 var(--space-4); }
@@ -42,7 +46,6 @@
 .flow-side__intro { font-size: var(--text-md); color: var(--ink-soft); }
 
 .palette, .presets { display: flex; flex-direction: column; gap: var(--space-2); }
-.palette__item { display: flex; flex-direction: column; gap: var(--space-1); }
 .palette__button {
   font: inherit;
   text-align: left;
@@ -59,7 +62,6 @@
 .palette__button--build { border-left-color: var(--teal); }
 .palette__button--run { border-left-color: var(--amber); }
 .palette__button--none { border-left-color: var(--line); }
-.palette__hint { font-size: var(--text-xs); color: var(--ink-soft); margin: 0 0 var(--space-1); }
 
 .flow-main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 .flow-toolbar {
@@ -146,7 +148,7 @@
 /* ---------- Nodes ---------- */
 .flow-node {
   position: absolute;
-  width: 250px;
+  width: 220px; /* FLOW_NODE_WIDTH in js/constants.js */
   background: var(--paper);
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
@@ -217,6 +219,10 @@
 .flow-node__params { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
 .flow-node__params label { display: block; font-size: var(--text-xs); font-weight: 700; color: var(--green); }
 .flow-node__params label .mono { font-family: var(--font-mono); }
+/* A dial is one row: the name, then the box. */
+.flow-node__params .flow-dial { display: flex; align-items: center; gap: var(--space-2); }
+.flow-node__params .flow-dial .mono { flex: 1; }
+.flow-node__params .flow-dial input[type="number"] { width: 5.5em; flex: none; }
 .flow-node__params input[type="number"], .flow-node__params input[type="text"], .flow-node__params select, .flow-node__params textarea {
   font: inherit;
   font-size: var(--text-md);
@@ -258,7 +264,7 @@
 .is-stale .flow-node__summary { color: var(--ink-soft); }
 .is-stale .flow-node__foot { background: var(--gold-soft); }
 
-/* ---------- Readout and help under the canvas ---------- */
+/* ---------- The one line under the canvas: the last message, or the pointer help ---------- */
 .flow-readout {
   margin: 0;
   padding: var(--space-2) var(--space-4);
@@ -268,7 +274,6 @@
   border-top: 1px solid var(--line);
   color: var(--ink);
 }
-.flow-help { margin: 0; padding: var(--space-1) var(--space-4) var(--space-2); font-size: var(--text-xs); color: var(--ink-soft); background: var(--paper); }
 
 /* ---------- Inspector ---------- */
 .inspector-placeholder { color: var(--ink-soft); font-size: var(--text-md); }
@@ -281,12 +286,12 @@
   .flow-side h2 { font-size: var(--text-base); margin: 0 0 var(--space-1); }
   .flow-side h3 { font-size: var(--text-md); display: inline-block; margin: var(--space-2) var(--space-3) var(--space-1) 0; }
   .flow-palette .flow-side__intro { display: none; }
+  .flow-inspector__head { float: none; margin: 0; }
   .palette__button { padding: var(--space-1) var(--space-2); font-size: var(--text-md); }
   .flow-palette { border-right: 0; border-bottom: 1px solid var(--line); }
   .flow-inspector { border-left: 0; border-top: 1px solid var(--line); }
   .palette, .presets { flex-direction: row; flex-wrap: wrap; }
   .flow-side h3 { margin-top: var(--space-3); }
-  .palette__hint { display: none; }
 }
 
 @media (prefers-reduced-motion: no-preference) {
