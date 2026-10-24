@@ -1,13 +1,19 @@
-// Agent mode: the system prompt workbench, a group in the set-up column.
-// Sections with on/off boxes and editable text, the cost of each section,
-// saved versions with a note, the prompt checker, compare, download, and load.
+// Agent mode: the system prompt workbench, the last group in the set-up
+// column. Sections with on/off boxes and editable text, the cost of each
+// section, saved versions with a note, the prompt checker, compare,
+// download, and load.
+//
+// The group is a disclosure. It is closed for the Glass Box agent, which
+// does not read the prompt, and open for the Black Box agent, until the
+// student changes it. Each section shows its title and its tokens on one
+// line; the text opens on a click.
 //
 // Every control has a fixed id, so main.js can put the focus back on the
 // same control after it redraws the column.
 
 import { el, fill } from '../../dom.js';
 import { matchingVersion, promptCost } from '../prompt.js';
-import { helpPanel } from './help.js';
+import { helpPanel, helpGroup, helpEntry } from './help.js';
 
 export function renderWorkbench(app) {
   const A = app.copy.AGENT;
@@ -21,7 +27,7 @@ export function renderWorkbench(app) {
 
   const sections = working.sections.map((s) => {
     const tokens = cost.sections.find((c) => c.id === s.id).tokens;
-    const box = el('input', { type: 'checkbox', id: `agent-ps-on-${s.id}`, checked: s.enabled });
+    const box = el('input', { type: 'checkbox', id: `agent-ps-on-${s.id}`, checked: s.enabled, 'aria-label': fill(W.sectionEnabled, { title: s.title }) });
     box.addEventListener('change', () => app.editPromptSection(s.id, { enabled: box.checked }));
     const text = el('textarea', {
       id: `agent-ps-text-${s.id}`, rows: '3', class: 'prompt-section__text',
@@ -29,15 +35,16 @@ export function renderWorkbench(app) {
     });
     text.value = s.text;
     text.addEventListener('change', () => app.editPromptSection(s.id, { text: text.value }));
-    return el('div', { class: `prompt-section${s.enabled ? '' : ' is-off'}` }, [
-      el('div', { class: 'prompt-section__head' }, [
-        el('div', { class: 'agent-field agent-field--inline' }, [
-          box, el('label', { for: box.id, text: s.title }),
-        ]),
+    // The text is behind the title. The open state survives a redraw of the column.
+    const body = el('details', { class: 'prompt-section__body', open: Boolean(app.ui.openPromptSections[s.id]) }, [
+      el('summary', { class: 'prompt-section__summary' }, [
+        el('span', { class: 'prompt-section__title', text: s.title }),
         el('span', { class: 'agent-tag', text: fill(W.sectionTokens, { tokens }) }),
       ]),
       text,
     ]);
+    body.addEventListener('toggle', () => app.setPromptSectionOpen(s.id, body.open));
+    return el('div', { class: `prompt-section${s.enabled ? '' : ' is-off'}` }, [box, body]);
   });
 
   const tab = app.ui.promptTab || 'agent';
@@ -49,36 +56,48 @@ export function renderWorkbench(app) {
     tabButton('agent-tab-agent', 'agent', W.tabAgent),
     tabButton('agent-tab-checker', 'checker', W.tabChecker),
   ]);
-  if (tab === 'checker') {
-    return el('section', { class: 'agent-group agent-workbench' }, [el('h3', { text: W.heading }), tabs, ...checkerTab(app, A)]);
-  }
+  const body = tab === 'checker'
+    ? [tabs, ...checkerTab(app, A)]
+    : [
+      tabs,
+      app.setup.agentKind === 'glass' ? el('p', { class: 'hint', text: W.glassNote }) : null,
+      el('p', { class: 'workbench-current', text: fill(W.current, { label }) }),
+      el('p', { class: 'hint', text: fill(W.cost, { tokens: cost.total }) }),
+      ...sections,
+      saveArea(app, W, match),
+      versionList(app, W, store, match),
+      el('div', { class: 'workbench-actions' }, [
+        button('agent-prompt-check', W.check, () => app.checkPrompt()),
+        button('agent-compare-open', W.compare, () => app.openCompare(), store.versions.length < 2),
+        button('agent-prompt-reset', W.resetPrompt, () => app.usePromptVersion('v1'), match && match.version === 'v1'),
+      ]),
+      findings(app, A),
+      el('div', { class: 'workbench-actions' }, [
+        button('agent-prompt-download', W.download, () => app.downloadPrompts()),
+        loadButton(app, W),
+      ]),
+      ...metaPrompt(app, A),
+      helpGroup([
+        helpEntry('promptSections', W.tabAgent),
+        helpEntry('promptVersions', W.save),
+        helpEntry('promptChecker', W.check),
+        helpEntry('promptCompare', W.compare),
+        helpEntry('promptFiles', W.download),
+        helpEntry('metaPrompt', A.metaPrompt.heading),
+      ]),
+    ];
 
-  return el('section', { class: 'agent-group agent-workbench' }, [
-    el('h3', { text: W.heading }),
-    tabs,
-    app.setup.agentKind === 'glass' ? el('p', { class: 'hint', text: W.glassNote }) : null,
-    el('p', { class: 'workbench-current', text: fill(W.current, { label }) }),
-    el('p', { class: 'hint', text: fill(W.cost, { tokens: cost.total }) }),
-    ...sections,
-    helpPanel('promptSections'),
-    saveArea(app, W, match),
-    helpPanel('promptVersions'),
-    versionList(app, W, store, match),
-    el('div', { class: 'workbench-actions' }, [
-      button('agent-prompt-check', W.check, () => app.checkPrompt()),
-      button('agent-compare-open', W.compare, () => app.openCompare(), store.versions.length < 2),
-      button('agent-prompt-reset', W.resetPrompt, () => app.usePromptVersion('v1'), match && match.version === 'v1'),
+  // Closed for the Glass Box agent, open for the Black Box agent, until the student changes it.
+  const open = app.ui.workbenchOpen ?? app.setup.agentKind === 'black';
+  const group = el('details', { class: 'agent-group agent-workbench', id: 'agent-workbench', open }, [
+    el('summary', { class: 'agent-workbench__summary' }, [
+      el('h3', { text: W.heading }),
+      el('span', { class: 'agent-tag', text: fill(W.sectionTokens, { tokens: cost.total }) }),
     ]),
-    findings(app, A),
-    helpPanel('promptChecker'),
-    helpPanel('promptCompare'),
-    el('div', { class: 'workbench-actions' }, [
-      button('agent-prompt-download', W.download, () => app.downloadPrompts()),
-      loadButton(app, W),
-    ]),
-    helpPanel('promptFiles'),
-    ...metaPrompt(app, A),
+    el('div', { class: 'agent-workbench__body' }, body),
   ]);
+  group.addEventListener('toggle', () => app.setWorkbenchOpen(group.open));
+  return group;
 }
 
 /** The second system prompt: the prompt of the model check. */
@@ -128,7 +147,6 @@ function metaPrompt(app, A) {
     ready ? null : el('p', { class: 'hint', text: M.blackOnly }),
     el('div', { class: 'workbench-actions' }, [button('agent-meta-ask', M.ask, () => app.askMetaPrompt(), !ready || app.busy)]),
     ...proposals,
-    helpPanel('metaPrompt'),
   ];
 }
 

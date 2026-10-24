@@ -9,7 +9,7 @@ import { el, fill } from '../../dom.js';
 import { formatCall } from '../context.js';
 import { dayNumber, workDays } from '../tools.js';
 import { stopMessage } from '../describe.js';
-import { helpPanel } from './help.js';
+import { helpPanel, helpGroup, helpEntry } from './help.js';
 
 const PARTS = ['context', 'decide', 'act', 'check'];
 
@@ -110,22 +110,18 @@ function controls(app, A) {
       button('reset', A.loop.reset, () => app.reset(), !run),
       button('copy', A.loop.copySummary, () => app.copySummary(), !run),
     ]),
+    // One panel for the six buttons. Each entry has the name of its button.
     el('div', { class: 'agent-controls__help' }, [
-      helpPanelTitled(A, 'step', A.loop.step),
-      helpPanelTitled(A, 'runRound', A.loop.runRound),
-      helpPanelTitled(A, 'runToEnd', A.loop.runToEnd),
-      helpPanelTitled(A, 'stop', A.loop.stop),
-      helpPanelTitled(A, 'reset', A.loop.reset),
-      helpPanelTitled(A, 'summary', A.loop.copySummary),
+      helpGroup([
+        helpEntry('step', A.loop.step),
+        helpEntry('runRound', A.loop.runRound),
+        helpEntry('runToEnd', A.loop.runToEnd),
+        helpEntry('stop', A.loop.stop),
+        helpEntry('reset', A.loop.reset),
+        helpEntry('summary', A.loop.copySummary),
+      ]),
     ]),
   ]);
-}
-
-/** A help panel whose summary names the button it explains. */
-function helpPanelTitled(A, key, name) {
-  const panel = helpPanel(key);
-  panel.querySelector('summary').textContent = `${name}: ${A.helpLabel}`;
-  return panel;
 }
 
 function stopBanner(app, A) {

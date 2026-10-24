@@ -78,7 +78,9 @@ const state = {
   runId: 0,
   recordedRunId: null,
   // apiKey lives here only: in memory for this tab, never in sessionStorage, the set-up, or a summary.
-  ui: { saveOpen: false, saveMessage: '', findings: null, compare: null, apiKey: '', promptTab: 'agent', metaBasic: '', metaResult: undefined },
+  ui: { saveOpen: false, saveMessage: '', findings: null, compare: null, apiKey: '', promptTab: 'agent', metaBasic: '', metaResult: undefined,
+    // The System prompt group is closed for the Glass Box agent until the student opens it (undefined = that default).
+    workbenchOpen: undefined, openPromptSections: {} },
 };
 
 const reducedMotion = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -122,6 +124,16 @@ const app = {
     state.ui.metaBasic = text;
   },
 
+  /** The student opened or closed the System prompt group. No redraw: the browser did it. */
+  setWorkbenchOpen(open) {
+    state.ui.workbenchOpen = open;
+  },
+
+  /** The student opened or closed the text of one prompt section. */
+  setPromptSectionOpen(id, open) {
+    state.ui.openPromptSections[id] = open;
+  },
+
   askMetaPrompt: () => guarded(async () => {
     const s = state.setup;
     if (s.agentKind !== 'black' || !state.ui.apiKey) { readout(A.blackBox.noKey); return; }
@@ -163,6 +175,8 @@ const app = {
    * remove controls); typing in a field does not, so the cursor stays.
    */
   setSetup(patch, { rebuild = false } = {}) {
+    // A new decision maker gets the default open state of the System prompt group again.
+    if ('agentKind' in patch && patch.agentKind !== state.setup.agentKind) state.ui.workbenchOpen = undefined;
     state.setup = { ...state.setup, ...patch };
     saveSession(constants.AGENT_SESSION_STORAGE_KEY, state.setup);
     invalidateRun();
@@ -283,6 +297,7 @@ const app = {
     state.lastApprovalRound = null;
     state.ui.findings = null;
     state.ui.compare = null;
+    state.ui.workbenchOpen = undefined;
     // Exercise 3 starts from the default prompt. The saved versions stay.
     if (entry.promptV1) state.prompts = useVersion(state.prompts, 'v1');
     saveSession(constants.AGENT_PROMPTS_SESSION_KEY, state.prompts);

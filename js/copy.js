@@ -906,6 +906,7 @@ export const AGENT = {
     synonymRemove: 'Remove {from}',
     synonymsEmpty: 'The synonym table is empty.',
     threshold: 'Score threshold (rule C2)',
+    ruleSwitches: 'Rule switches (C3, F2, F3)',
     switchC3: 'C3: the best passage must be in a numbered section',
     switchF2: 'F2: search again with more passages',
     switchF3: 'F3: say that the handbook does not answer',
