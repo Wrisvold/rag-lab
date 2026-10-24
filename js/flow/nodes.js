@@ -280,7 +280,8 @@ function buildParams(node, app, hooks, message) {
 
     case 'answer': {
       const select = el('select', { 'aria-label': F.params.provider, 'data-param': 'provider' },
-        Object.entries(C.ANSWER_PROVIDERS).map(([key, provider]) => el('option', { value: key, text: `${provider.label} · ${provider.note}` })));
+        // The provider's note (free tier, prepaid credit) is in the inspector's station.
+        Object.entries(C.ANSWER_PROVIDERS).map(([key, provider]) => el('option', { value: key, text: provider.label })));
       select.value = node.params.provider;
       select.addEventListener('change', () => change('provider', select.value));
       return [labelled(F.params.provider, select)];
@@ -327,9 +328,12 @@ function numberControl(app, node, key, dial, min, max, change, message) {
     message.textContent = '';
     change(key, value);
   });
-  return el('label', {}, [
+  // One row: the name and the box. The help sentence stays for screen readers
+  // and as the tooltip; the inspector prints it in full.
+  input.title = dial.help;
+  return el('label', { class: 'flow-dial' }, [
     el('span', { class: 'mono', text: dial.label }),
-    el('span', { class: 'hint', text: ` ${dial.help}` }),
+    el('span', { class: 'visually-hidden', text: ` ${dial.help}` }),
     input,
   ]);
 }

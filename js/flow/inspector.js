@@ -48,6 +48,15 @@ export function renderInspector(container, flow, nodeId) {
     el('p', { class: 'hint', text: F.nodes[node.type].hint }),
   );
 
+  // The card shows each dial as a name and a box. The sentence that says what the dial means is here.
+  const dials = { chunk: [copy.DIALS.chunkSize, copy.DIALS.chunkOverlap], retrieve: [copy.DIALS.topK] }[node.type];
+  if (dials) {
+    container.append(el('ul', { class: 'inspector-dials' }, dials.map((dial) => el('li', {}, [
+      el('span', { class: 'mono', text: dial.label }),
+      ` ${dial.help}`,
+    ]))));
+  }
+
   const explainer = copy.EXPLAINERS[node.type];
   if (explainer) {
     const labels = copy.EXPLAINER_LABELS;

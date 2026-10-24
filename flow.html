@@ -42,16 +42,16 @@
   </div>
 
   <div class="flow-layout">
-    <!-- Palette: one button per node type. Built by js/flow/main.js from the registry. -->
-    <aside class="flow-side flow-palette" aria-labelledby="palette-heading">
-      <h2 id="palette-heading"></h2>
-      <p id="palette-intro" class="flow-side__intro"></p>
-      <div id="palette" class="palette"></div>
-      <h3 id="presets-heading"></h3>
+    <!-- Left column: where to start, the exercises, then one button per node type.
+         Built by js/flow/main.js from the registry. -->
+    <aside class="flow-side flow-palette" aria-labelledby="presets-heading">
+      <h2 id="presets-heading"></h2>
       <div id="presets" class="presets"></div>
       <h3 id="exercises-heading"></h3>
       <p id="exercises-intro" class="flow-side__intro"></p>
       <div id="exercises" class="presets"></div>
+      <h3 id="palette-heading"></h3>
+      <div id="palette" class="palette"></div>
     </aside>
 
     <main class="flow-main">
@@ -63,14 +63,14 @@
           <div id="flow-handles" class="flow-handles"></div>
         </div>
       </div>
+      <!-- One line under the canvas: the last message, or the pointer help while there is none. -->
       <p id="flow-readout" class="flow-readout" role="status" aria-live="polite"></p>
-      <p id="flow-help" class="flow-help"></p>
     </main>
 
     <!-- The inspector: the selected node's artifact (Phase 9). -->
     <aside class="flow-side flow-inspector" id="flow-inspector" aria-labelledby="inspector-heading">
       <div class="flow-inspector__head">
-        <h2 id="inspector-heading"></h2>
+        <h2 id="inspector-heading" class="visually-hidden"></h2>
         <button type="button" id="inspector-close" class="button"></button>
       </div>
       <div id="inspector-body"></div>

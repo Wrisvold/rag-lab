@@ -6,6 +6,28 @@ Updated at the end of each phase. Newest phase first.
 
 The plan is in [agent-mode-plan.md](agent-mode-plan.md). Phases 12 to 17 are done. One exit check is still open: Phase 16 with a person who did not build the page. The Phase 15 check with real keys is done for OpenAI, Gemini, and Anthropic.
 
+## Change — Flow mode is less dense (24 October 2026)
+
+**The problem:** at 1,440 pixels wide, Fit put the standard pipeline at 63 percent, where no card text was readable, because each card printed the help sentence of each dial ("characters shared with the previous chunk") on three lines. The palette repeated a hint under each button, so "Start from" and "Exercises" were below the fold. The inspector had three headers before its content. Two bands of text stood under the canvas, and on a short screen (800 by 600) the footer painted over the readout.
+
+**The change:**
+- `js/flow/nodes.js`, `flow.css`: a dial on a card is one row, the name and the box. The help sentence is the tooltip of the box and a visually hidden text for screen readers. The Answer card lists the provider names only. Cards are 220 pixels wide (`FLOW_NODE_WIDTH` in `js/constants.js`, and `.flow-node` in `flow.css`), and the preset column gap is 60 pixels (`FLOW_COLUMN_GAP`).
+- `js/flow/inspector.js`: the inspector prints the dial sentences under the card's hint (Chunk: two, Retrieve: one), so the sentence is not lost.
+- `flow.html`, `js/flow/main.js`: the left column is "Start from", "Exercises", then "Nodes". The buttons have no hint under them; the hint is the tooltip. The palette intro is gone (the readout says how to wire). The column is 180 pixels wide, and the inspector 420.
+- Inspector header: the "Inspector" heading is for screen readers only, and Hide floats beside the node's title. The lane tag in the inspector is in regular case.
+- One line under the canvas: the readout shows the pointer help until the first message replaces it. The separate help line is gone.
+- `.flow-page` has `min-height: 100vh` instead of `height`, so a short screen scrolls and the footer no longer covers the readout.
+- `tests/flow/serialize.test.js`: the pinned layout of the canonical graph follows the new column step (40 + n × 280).
+- README: the left column, the readout, and the `FLOW_NODE_WIDTH` row.
+
+**Numbers (1,440 by 900):** the left column is 1,148 pixels tall and fits without a scroll. The Chunk card is 199 pixels tall at 100 percent. Fit puts the standard pipeline at 72 percent with the inspector hidden (63 before). At 800 by 600 the readout ends where the footer starts, and the page scrolls.
+
+**Tests:** `npm test`: 206 tests, all passing.
+
+**Check (Chrome, localhost:5173):** no console errors. The standard pipeline loads with the new positions, Run all gives the same result as before (6 ran, 1 failed: Answer with no key). The Chunk inspector shows the two dial sentences, the lane tag "happens once per document" in regular case, and Hide beside the title. No text of the page changed.
+
+**Not done:** Fit is still not applied again when the window changes size. The student clicks Fit to screen.
+
 ## Change — Agent mode is less dense (24 October 2026)
 
 **The problem:** the set-up column was about 6,600 pixels tall at 1,440 pixels wide with Exercise 2 loaded. The page showed 28 closed "How to use it, and why" panels, one under each control. The system prompt workbench was always open, with six text boxes, also for the Glass Box agent, which does not read the prompt. The rule table had three columns in a 340-pixel column, so each cell wrapped to three or four lines.

@@ -249,7 +249,8 @@ function renderChrome() {
   mountThemeControl();
   document.getElementById('flow-skip').textContent = F.page.skip;
   document.getElementById('flow-canvas').setAttribute('aria-label', F.page.canvasLabel);
-  document.getElementById('flow-help').textContent = F.page.canvasHelp;
+  // The readout shows the pointer help until the first message replaces it.
+  document.getElementById('flow-readout').textContent = F.page.canvasHelp;
   document.getElementById('global-notice-dismiss').textContent = copy.UI.dismiss;
   document.getElementById('global-notice-dismiss').addEventListener('click', () => {
     document.getElementById('global-notice').hidden = true;
@@ -263,19 +264,17 @@ function renderChrome() {
 
 function renderPalette() {
   document.getElementById('palette-heading').textContent = F.palette.heading;
-  document.getElementById('palette-intro').textContent = F.palette.intro;
   const palette = document.getElementById('palette');
+  // The one-line hint of each node is its tooltip here; the inspector shows it in full.
   palette.replaceChildren(...Object.values(NODE_TYPES).map((definition) => {
     const label = F.nodes[definition.type].label;
-    return el('div', { class: 'palette__item' }, [
-      el('button', {
-        type: 'button',
-        class: `palette__button palette__button--${definition.lane || 'none'}`,
-        text: fill(F.palette.add, { node: label }),
-        onclick: () => canvas.addNode(definition.type),
-      }),
-      el('p', { class: 'palette__hint', text: F.nodes[definition.type].hint }),
-    ]);
+    return el('button', {
+      type: 'button',
+      class: `palette__button palette__button--${definition.lane || 'none'}`,
+      text: fill(F.palette.add, { node: label }),
+      title: F.nodes[definition.type].hint,
+      onclick: () => canvas.addNode(definition.type),
+    });
   }));
 
   document.getElementById('presets-heading').textContent = F.presets.heading;
